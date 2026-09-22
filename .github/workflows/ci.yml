@@ -28,7 +28,7 @@ jobs:
           terraform_version: '1.15.5'
           terraform_wrapper: false
       - name: Check Go formatting
-        run: test -z "$(gofmt -l main.go internal)"
+        run: test -z "$(gofmt -l main.go internal tools)"
       - name: Check Terraform formatting
         run: terraform fmt -check -recursive examples
       - name: Check dependencies
@@ -40,5 +40,5 @@ jobs:
       - name: Verify generated documentation
         run: |
           go generate ./...
-          git diff --exit-code -- docs
-          test -z "$(git ls-files --others --exclude-standard docs)"
+          git diff --exit-code -- docs examples
+          test -z "$(git ls-files --others --exclude-standard docs examples)"

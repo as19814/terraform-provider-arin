@@ -1,0 +1,6 @@
+<org xmlns="http://www.arin.net/regrws/core/v1">
+ <handle>EXAMPLE-1</handle><orgName>Example Organization</orgName><registrationDate>2026-01-01</registrationDate>
+ <city>Example City</city><iso3166-1><code2>US</code2><name>United States</name></iso3166-1><iso3166-2>VA</iso3166-2><postalCode>20151</postalCode>
+ <streetAddress><line number="1">1 Example Road</line></streetAddress><acceptReassignments>true</acceptReassignments>
+ <taxId>synthetic-tax-id</taxId><pocLinks><pocLinkRef handle="EXAMPLE-ARIN" function="T" description="Tech"/></pocLinks>
+</org>

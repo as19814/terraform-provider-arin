@@ -4,7 +4,7 @@ build:
 	go build -o bin/terraform-provider-arin .
 
 fmt:
-	gofmt -w main.go internal
+	gofmt -w main.go internal tools
 	terraform fmt -recursive examples
 
 vet:
@@ -21,7 +21,7 @@ generate:
 
 check: vet test testacc build
 
-# Read-only live test. Requires ARIN_API_KEY and ARIN_TEST_ORG_HANDLE.
+# Read-only live tests. Requires ARIN_API_KEY and ARIN_TEST_ORG_HANDLE.
 .PHONY: testlive
 testlive:
 	ARIN_LIVE_TESTS=1 TF_ACC=1 go test ./internal/provider -run '^TestLive' -v -count=1 -timeout 5m

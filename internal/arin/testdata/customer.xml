@@ -1,0 +1,1 @@
+<customer xmlns="http://www.arin.net/regrws/core/v1"><handle>C00000001</handle><customerName>Example Customer</customerName><parentOrgHandle>EXAMPLE-1</parentOrgHandle><privateCustomer>true</privateCustomer><city>Example City</city></customer>

@@ -1,0 +1,9 @@
+<net xmlns="http://www.arin.net/regrws/core/v1">
+  <handle>NET-192-0-2-0-1</handle><netName>EXAMPLE-NET</netName><version>4</version>
+  <orgHandle>EXAMPLE-1</orgHandle><parentNetHandle>NET-192-0-0-0-1</parentNetHandle>
+  <registrationDate>2026-01-01T00:00:00Z</registrationDate>
+  <comment><line number="10">Last line</line><line number="2">First line</line></comment>
+  <netBlocks><netBlock><type>DA</type><description>Direct allocation</description><startAddress>192.000.002.000</startAddress><endAddress>192.000.002.255</endAddress><cidrLength>24</cidrLength></netBlock></netBlocks>
+  <originASes><originAS>64496</originAS></originASes>
+  <pocLinks><pocLinkRef handle="EXAMPLE-ARIN" function="T" description="Tech"/></pocLinks>
+</net>

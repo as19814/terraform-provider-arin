@@ -12,6 +12,8 @@ import (
 // version is set at build time with -ldflags.
 var version = "dev"
 
+//go:generate go run ./tools/catalog
+//go:generate terraform fmt -recursive examples
 //go:generate go tool tfplugindocs generate --provider-name arin
 
 func main() {

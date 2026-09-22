@@ -1,0 +1,1 @@
+<autnum xmlns="http://www.arin.net/regrws/core/v1"><asNumber>AS64496</asNumber><asName>EXAMPLE</asName><orgHandle>EXAMPLE-1</orgHandle><source>ARIN</source><import><line number="0">from AS64497 accept ANY</line></import><mpExport><line number="0">to AS64497 announce AS64496</line></mpExport></autnum>

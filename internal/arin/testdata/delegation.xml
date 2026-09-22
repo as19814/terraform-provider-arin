@@ -1,0 +1,5 @@
+<delegation xmlns="http://www.arin.net/regrws/core/v1" xmlns:ttl="http://www.arin.net/regrws/ttl/v1">
+ <name>2.0.192.in-addr.arpa.</name>
+ <nameservers><nameserver ttl:ttl="86400">ns1.example.net</nameserver><nameserver>ns2.example.net</nameserver></nameservers>
+ <delegationKeys><delegationKey><algorithm name="ECDSAP256SHA256">13</algorithm><digest>AABBCC</digest><digestType name="SHA-256">2</digestType><keyTag>12345</keyTag><ttl>3600</ttl></delegationKey></delegationKeys>
+</delegation>

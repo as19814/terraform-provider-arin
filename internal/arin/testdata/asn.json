@@ -1,0 +1,1 @@
+{"objectClassName":"autnum","handle":"AS64496","name":"EXAMPLE-AS","startAutnum":64496,"endAutnum":64496,"country":"US","status":["active"],"entities":[{"handle":"EXAMPLE-1","roles":["registrant"]},{"handle":"EXAMPLE-ARIN","roles":["technical"]}],"events":[{"eventAction":"registration","eventDate":"2026-01-01T00:00:00Z"}]}

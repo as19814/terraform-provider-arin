@@ -8,7 +8,13 @@ A provider instance creates one immutable client shared by its resources and dat
 
 ## Current API behavior
 
-The initial authenticated operation is `GET /rest/org/{handle}`. Its response model contains only fields exposed by the organization data source. Do not serialize this partial model for updates: omitted organization fields can carry meaning in Reg-RWS.
+Authenticated reads are defined in `internal/arin/read_catalog.go` with explicit endpoints, validated inputs, expected XML roots, collection members, and typed field mappings. A shared Terraform adapter exposes those fields as concrete schemas rather than raw XML. Public ASN and contact reads have a separate RDAP implementation. Network discovery keeps its map keyed by handle.
+
+The read models are not replacement payloads for writes. Do not serialize them for updates: omitted registration fields can carry meaning in Reg-RWS. Report-request endpoints are absent from the catalog because they create tickets.
+
+The XML parser validates document shape and namespaces, limits nesting, rejects unexpected collection members, preserves absent scalars as null, and orders multiline text by numeric line indices. It normalizes ARIN's zero-padded IPv4 addresses and equivalent CIDR representations. Unordered collections are sorted deterministically. Identity checks prevent assigning mismatched records to requested handles, prefixes, or ASNs.
+
+Attachment reads return base64 plus response metadata and a checksum, without writing files. Ticket/customer content and tax IDs are marked sensitive in the schema; Terraform still persists those values in state.
 
 Network discovery uses `GET /registry/ips/reverse_search/entity?handle={org}` on public RDAP and filters results by direct registrant role. Network handles key the Terraform map, so response order does not affect identity. No authorization header is sent to RDAP. Explicit truncation or pagination is an error; a 404 search is checked against the entity endpoint before an empty inventory is returned. A missing entity remains an error. CIDRs come from the optional cidr0 extension and are not inferred from a potentially non-CIDR address range.
 
@@ -22,7 +28,7 @@ Non-success HTTP responses become `APIError` values with status code and sanitiz
 
 Unit tests cover origin and handle validation, request headers, XML decoding, credential redaction, response size, redirects, cancellation, timeout, status classification, configuration precedence, and unknown values.
 
-Fake-server acceptance tests exercise Terraform protocol negotiation, provider configuration, organization reads, network discovery, state refresh, empty inventories, truncation, and missing-record diagnostics. The opt-in live acceptance test performs registration reads with the user's shell credentials and public RDAP discovery for an explicit organization handle. It must stay separate from normal CI.
+Fake-server acceptance tests exercise Terraform protocol negotiation, provider configuration, every catalog entry, network discovery, state refresh, empty inventories, truncation, sensitive nested fields, binary attachments, and missing-record diagnostics. The opt-in live acceptance test performs registration reads with the user's shell credentials and public RDAP discovery for an explicit organization handle. It chains discovery into existing network, delegation, contact, ASN, IRR, and RPKI records. Families without existing test-account records remain mock-tested. The live suite stays separate from normal CI.
 
 ## Deferred decisions
 

@@ -1,0 +1,1 @@
+<poc xmlns="http://www.arin.net/regrws/core/v1"><handle>EXAMPLE-ARIN</handle><contactType>ROLE</contactType><companyName>Example Organization</companyName><lastName>Network Operations</lastName><emails><email>noc@example.net</email></emails><phones><phone><type><code>O</code><description>Office</description></type><number>+1-555-0100</number></phone></phones></poc>

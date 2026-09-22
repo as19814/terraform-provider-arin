@@ -33,7 +33,7 @@ func (p *ARINProvider) Metadata(_ context.Context, _ provider.MetadataRequest, r
 }
 func (p *ARINProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manage ARIN registration and routing resources. Supports organization lookup through Reg-RWS and network discovery through public RDAP. Configure the API key through `ARIN_API_KEY` when possible.",
+		MarkdownDescription: "Manage ARIN registration and routing resources. Read registration records, delegations, IRR objects, hosted RPKI objects, and existing tickets through authenticated APIs. Discover networks, ASN registrations, and contact references through public RDAP. Configure the API key through `ARIN_API_KEY` when possible.",
 		Attributes: map[string]schema.Attribute{
 			"api_key":         schema.StringAttribute{Optional: true, Sensitive: true, MarkdownDescription: "ARIN API key. Defaults to `ARIN_API_KEY`. Required for Reg-RWS operations, but not public RDAP network discovery. Your account must have authority over requested registration records."},
 			"base_url":        schema.StringAttribute{Optional: true, MarkdownDescription: "API origin. Defaults to `ARIN_BASE_URL`, then `https://reg.arin.net`. Use `https://reg.ote.arin.net` for OT&E. HTTPS is required except for loopback test servers."},
@@ -104,5 +104,9 @@ func (p *ARINProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 }
 func (p *ARINProvider) Resources(_ context.Context) []func() resource.Resource { return nil }
 func (p *ARINProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{NewOrganizationDataSource, NewNetworksDataSource}
+	sources := []func() datasource.DataSource{NewNetworksDataSource}
+	for _, spec := range append(arin.RegistrationReads(), arin.PublicReads()...) {
+		sources = append(sources, func() datasource.DataSource { return newRegistrationDataSource(spec) })
+	}
+	return sources
 }

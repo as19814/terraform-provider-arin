@@ -1,0 +1,1 @@
+<routeSet xmlns="http://www.arin.net/regrws/core/v1"><name>RS-EXAMPLE</name><orgHandle>EXAMPLE-1</orgHandle><members><member name="192.0.2.0/24"/></members><mpMembers><mpMember name="2001:db8::/32"/></mpMembers><membersByRef><memberByRef name="MNT-EXAMPLE-1"/></membersByRef></routeSet>

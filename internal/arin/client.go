@@ -140,7 +140,20 @@ func (c *Client) getXML(ctx context.Context, path string, out any) error {
 	return nil
 }
 
+type readResponse struct {
+	Body   []byte
+	Header http.Header
+}
+
 func (c *Client) get(ctx context.Context, origin, path, accept string, authenticated bool) ([]byte, error) {
+	response, err := c.fetch(ctx, origin, path, accept, authenticated)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+func (c *Client) fetch(ctx context.Context, origin, path, accept string, authenticated bool) (*readResponse, error) {
 	if authenticated && c.apiKey == "" {
 		return nil, errors.New("api_key or ARIN_API_KEY is required for Reg-RWS operations")
 	}
@@ -150,6 +163,8 @@ func (c *Client) get(ctx context.Context, origin, path, accept string, authentic
 	}
 	if authenticated {
 		req.Header.Set("Authorization", "ApiKey "+c.apiKey)
+		// ASPA reads require Content-Type even though GET has no body.
+		req.Header.Set("Content-Type", "application/xml")
 	}
 	req.Header.Set("Accept", accept)
 	req.Header.Set("User-Agent", c.userAgent)
@@ -195,7 +210,7 @@ func (c *Client) get(ctx context.Context, origin, path, accept string, authentic
 		}
 		return nil, apiErr
 	}
-	return body, nil
+	return &readResponse{Body: body, Header: resp.Header.Clone()}, nil
 }
 
 func (c *Client) redact(s string) string {

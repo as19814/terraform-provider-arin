@@ -2,11 +2,11 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The foundation includes a Reg-RWS/RDAP client and the read-only `arin_org` and `arin_networks` data sources. Managed resources are not implemented yet. The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Managed resources are not implemented yet. The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
-For Reg-RWS organization reads, set `ARIN_API_KEY` in your shell. The provider sends it as an authorization header, and your account must have authority over the requested records. Public network discovery uses RDAP without sending an API key and works without credentials.
+For authenticated registration, IRR, RPKI, and ticket reads, set `ARIN_API_KEY` in your shell. The provider sends it as an authorization header, and your account must have authority over the requested records. Public network/ASN discovery and contact references use RDAP without sending an API key and work without credentials.
 
 ```hcl
 terraform {
@@ -70,7 +70,7 @@ Rebuild with `make build` after source changes. Use `bin/terraform-provider-arin
 | --- | --- | --- |
 | `make test` | Client and provider unit tests, race detector | None |
 | `make testacc` | Real Terraform against an in-process fake API, including refresh, empty inventories, truncation, and missing records | None |
-| `make testlive` | Real Terraform reading an organization and its public network inventory | Read-only |
+| `make testlive` | Real Terraform following existing organization, network, contact, ASN, IRR, and RPKI records | Read-only |
 | `make check` | Vet, unit tests, fake acceptance tests, binary build | None |
 
 The fake server remains the default for deterministic tests and CI. Live tests need a separate opt-in, an existing organization handle, and your shell's API key:
@@ -79,21 +79,26 @@ The fake server remains the default for deterministic tests and CI. Live tests n
 ARIN_TEST_ORG_HANDLE=FT-684 ARIN_BASE_URL=https://reg.arin.net make testlive
 ```
 
-`make testlive` sets `ARIN_LIVE_TESTS=1` and `TF_ACC=1` and disables test caching. It reads only; it does not create, update, or delete ARIN records. Network reads use public RDAP and do not transmit the key. CI receives no ARIN credentials and does not run live tests. No private fixtures or account responses are committed.
+`make testlive` sets `ARIN_LIVE_TESTS=1` and `TF_ACC=1` and disables test caching. It reads only; it does not create, update, or delete ARIN records. Public discovery uses RDAP and does not transmit the key. The selected live organization must have a network to exercise the chained registration test. Optional families are read only when existing objects are discovered. CI receives no ARIN credentials and does not run live tests. No private fixtures or account responses are committed.
 
 ## Layout
 
-- `internal/arin/`: HTTP client, XML/JSON response models, typed errors, and fake-server unit tests. Independent of Terraform.
+- `internal/arin/`: HTTP client, XML/JSON response models, an explicit catalog of read endpoints, typed errors, and fake-server unit tests. Independent of Terraform.
 - `internal/provider/`: provider configuration, data sources, and Terraform acceptance tests.
 - `examples/`: Terraform configuration examples used in generated documentation.
 - `docs/`: generated provider and data source documentation.
 - `docs/reference/arin-api/`: official API snapshots, source provenance, and implementation research.
 - `scripts/`: documentation snapshot tooling.
+- `tools/catalog/`: deterministic example and catalog generation for every data source.
 
 API requests have deadlines and bounded responses. Redirects are rejected, raw response bodies are excluded from diagnostics, and the API key is redacted from parsed server errors. Retries are intentionally not automatic: individual mutation APIs will need explicit completion and retry semantics.
 
+## Read-only scope
+
+Every non-report read endpoint in the collected Reg-RWS, IRR, and hosted RPKI guides is covered. Report-request endpoints are excluded because they create tickets, even when called with GET. Existing ticket summaries, messages, and attachments can be read. Sensitive customer/ticket content and organization tax IDs remain in Terraform state even when Terraform masks them. Full API coverage and live-test limitations are recorded in the [catalog](docs/reference/data-sources.md).
+
 ## Next steps
 
-Build resource support one API family at a time, with import, refresh, update, deletion, and error behavior tested against both a fake server and OT&E. Networks are the current focus: discovery is implemented, followed by authenticated network detail and metadata management. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
+Build resource support one API family at a time, with import, refresh, update, deletion, and error behavior tested against both a fake server and OT&E. Network discovery and authenticated detail reads are implemented; network metadata management can build on those models. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
 
 Start with the [API index](docs/reference/arin-api/README.md), [provider notes](docs/reference/arin-api/PROVIDER-NOTES.md), and [schema findings](docs/reference/arin-api/schemas/README.md).
