@@ -1,0 +1,14 @@
+default namespace = "http://www.arin.net/regrws/rpki/v1"
+
+start =
+  (notAllowed
+   | element roaSpecResource {
+        element cidrLength { \string }? &
+        element endAddress { \string }? &
+        element startAddress { \string }? &
+        element maxLength { \integer } &
+        element ipVersion { \integer } &
+        external "utils/foreignElements.rnc"*
+     })
+\string = xsd:string
+\integer = xsd:integer

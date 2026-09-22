@@ -1,0 +1,29 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+start =
+  (notAllowed
+   | element routeSet {
+       ( element orgHandle { \string } &
+         element name { \string } &
+         element description { external "utils/multiline.rnc" } &
+         element remarks { external "utils/multiline.rnc" }? &
+         element creationDate { dateTime }? &
+         element lastModifiedDate { dateTime }? &
+         element source { \string }? &
+         element pocLinks { pocLink* }? &
+         element members { resourceSetMember* }? &
+         element mpMembers {
+           element mpMember { attribute name { \string } }*
+         }? &
+         element membersByRef { resourceSetMemberByRef* }?
+       )
+       & external "utils/foreignElements.rnc"*
+     })
+  | pocLink
+
+pocLink  = external "utils/pocLinkRef.rnc"
+resourceSetMember  = external "utils/resourceSetMember.rnc"
+resourceSetMemberByRef  = external "utils/resourceSetMemberByRef.rnc"
+\string = xsd:string
+integer = xsd:integer
+dateTime = \string

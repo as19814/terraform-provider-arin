@@ -1,0 +1,3957 @@
+[
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/",
+    "label": "Quick Start Guide",
+    "url": "https://www.arin.net/resources/registry/regrws/quickstart/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/",
+    "label": "Reg-RWS Basics Explainer Video",
+    "url": "https://youtu.be/Kn0GiLiVPfI"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/",
+    "label": "RESTful Methods",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/",
+    "label": "RESTful Payloads",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/",
+    "label": "OT&E page",
+    "url": "https://www.arin.net/reference/tools/testing/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/",
+    "label": "ARIN\u2019s tech-discuss mailing list,",
+    "url": "http://lists.arin.net/mailman/listinfo/arin-tech-discuss"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/",
+    "label": "Ask ARIN",
+    "url": "https://account.arin.net/public/communication/message/beginQuestion.xhtml"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/",
+    "label": "IPAM for IPv4 and IPv6 module",
+    "url": "https://www.6connect.com/ipam/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/",
+    "label": "info@arin.net",
+    "url": "mailto:info@arin.net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/",
+    "label": "open source command-line scripts",
+    "url": "https://github.com/arineng/arincli"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Automating Record Management with Reg-RWS",
+    "url": "https://www.arin.net/resources/manage/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "ARIN\u2019s database structure",
+    "url": "https://www.arin.net/resources/guide/account/database/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "API key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Methods Page",
+    "url": "https://www.arin.net/resources/manage/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Payloads Page",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Reporting Reassignments",
+    "url": "https://www.arin.net/resources/manage/regrws/methods/#reassign-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Reporting Reallocations",
+    "url": "https://www.arin.net/resources/manage/regrws/methods/#reallocate-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Requesting Reassignment Reports",
+    "url": "https://www.arin.net/resources/manage/regrws/methods/#request-reassignment-report"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "Requesting Associations Reports",
+    "url": "https://www.arin.net/resources/manage/regrws/methods/#request-associations-report"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "WhoWas NET Reports",
+    "url": "https://www.arin.net/resources/manage/regrws/methods/#request-whowas-net-report"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/quickstart/",
+    "label": "WhoWas ASN Reports",
+    "url": "https://www.arin.net/resources/manage/regrws/methods/#request-whowas-asn-report"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ARIN IRR RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#as-set-objects"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ARIN IRR RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#aut-num-objects"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NETS",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#nets"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Get Customer",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#customers-get"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Get Delegation",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#delegations-get"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delete NET",
+    "url": "https://www.arin.net/resources/manage/regrws/methods/#delete-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Get NET",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#net-get"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delegation Payloads",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#delegation-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Payload List of Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#payload-list-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Payload List of Delegation Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#payload-list-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Viewing a List of route Objects for a NET",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#viewing-a-list-of-route-objects-for-a-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Viewing a List of route Objects for Reassignments of a NET",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#viewing-a-list-of-route-objects-for-reassignments-of-a-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Payload List of Net Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#payload-list-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Payload List of Net Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#payload-list-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Create Recipient Customer",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#create-recipient-customer"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticketed Request Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticketed-request-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Viewing a List of route Objects for an Org ID",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#viewing-a-list-of-route-objects-for-an-org-id"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Viewing a List of route-set Objects for an Org ID",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#viewing-a-list-of-route-set-objects-for-an-org-id"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Viewing a List of as-set Objects for an Org ID",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#viewing-a-list-of-as-set-objects-for-an-org-id"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Viewing a List of aut-num Objects for an Org ID",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#viewing-a-list-of-aut-num-objects-for-an-org-id"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Get Org",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#org-get"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Add POC",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#add-poc"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Remove POC",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#remove-poc"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Modify Org",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#org-modify"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Org Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Introduction to ARIN\u2019s Database",
+    "url": "https://www.arin.net/resources/guide/account/database/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Modify Org",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#org-modify"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Modify NET",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#modify-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Remove Org POC",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#remove-poc"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Get POC",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#poc-get"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Add Phone",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#add-phone-to-poc"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delete Phone",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#delete-phone-from-poc"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Add Email",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#add-email-to-poc"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Delete Email",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#delete-email-from-poc"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Phone Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#phone-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Phone Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#phone-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Phone Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#phone-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Phone Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#phone-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Phone Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#phone-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Payload List",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#payload-list-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Payload List",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#payload-list-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "request WhoWas access",
+    "url": "https://www.arin.net/reference/research/whowas/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "WhoWas Terms of Use",
+    "url": "https://www.arin.net/reference/research/whowas/tou/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ticket calls",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#tickets-all"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "https://www.arin.net/resources/whowas/",
+    "url": "https://www.arin.net/reference/research/whowas/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ticket calls",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#tickets-all"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "authorization process",
+    "url": "https://www.arin.net/reference/research/whowas/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ticket calls",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#tickets-all"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ticket calls",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#tickets-all"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ARIN IRR RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#route-and-route6-objects"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ARIN IRR RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#route-set-objects"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ARIN RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ARIN RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ARIN RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "ARIN RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Message Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Message Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Message Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Message Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Message Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Get Message",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#get-ticket-message"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Payload List Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#payload-list-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Codes",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Payload List of Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#payload-list-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Payload List Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#payload-list-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Payload List of Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#payload-list-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Payload List of Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#payload-list-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Message Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Attachment Reference Payloads",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#attachment-reference-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Get Ticket Attachment",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#get-ticket-attachment"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Message Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Message Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/methods/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/manage/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "RESTful methods",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "ARIN IRR RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "ORG",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "NET",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "POC",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Add Message",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#add-message-to-ticket"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "POC Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#poc-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Add Phone",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#add-phone-to-poc"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Country Payload section",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#country-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Message Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Message Reference Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#message-reference-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "ORG Modify",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#org-modify"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "RFC 2167",
+    "url": "https://datatracker.ietf.org/doc/rfc2167"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "POC Link Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#poc-link-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "http://en.wikipedia.org/wiki/ISO_3166-1",
+    "url": "http://en.wikipedia.org/wiki/ISO_3166-1"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "http://en.wikipedia.org/wiki/ISO_3166-2",
+    "url": "http://en.wikipedia.org/wiki/ISO_3166-2"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Ticket Modify",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#ticket-modify"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "IPv4 Waiting List",
+    "url": "https://www.arin.net/resources/guide/ipv4/waiting_list/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Get Ticket Payload List",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#get-ticket-payload-list"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Get Ticket Summaries",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#get-ticket-summaries"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Get Ticket Details",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#get-ticket-details"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Get Ticket Payload List",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#get-ticket-payload-list"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Viewing a List of route Objects",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#viewing-a-list-of-route-objects-for-a-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "ARIN RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "ARIN RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "ARIN RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "NET Block Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#net-block-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "NET Modify",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#modify-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "NET Modify",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#modify-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Customer Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#customer-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Message Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Message Reference Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#message-reference-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "POC Link Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#poc-link-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "ORG",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#org-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "NET",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Message Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Get Ticket Payload List",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#get-ticket-payload-list"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Message Reference Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#message-reference-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Get Ticket Payload List",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#get-ticket-payload-list"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Ticket Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#ticket-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Get Ticket Payload List",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#get-ticket-payload-list"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Get Ticket Message",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#get-ticket-message"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "MessagePayload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#message-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Error Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#error-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Phone Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#phone-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Add Message",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#add-message-to-ticket"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Methods page",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Get Message",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#get-ticket-message"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Methods page",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "https://www.arin.net/about/welcome/region/",
+    "url": "https://www.arin.net/about/welcome/region/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "http://www.itu.int/dms_pub/itu-t/opb/sp/T-SP-E.164D-2009-PDF-E.pdf",
+    "url": "http://www.itu.int/dms_pub/itu-t/opb/sp/T-SP-E.164D-2009-PDF-E.pdf"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "NET Payload",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/#net-payload"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Reassign NET",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#reassign-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Reallocate NET",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#reallocate-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "Modify POC",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#poc-modify"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "http://en.wikipedia.org/wiki/ISO_3166-1",
+    "url": "http://en.wikipedia.org/wiki/ISO_3166-1"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/regrws/payloads/",
+    "label": "http://en.wikipedia.org/wiki/ISO_3166-2",
+    "url": "http://en.wikipedia.org/wiki/ISO_3166-2"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Internet Routing Registry",
+    "url": "https://www.arin.net/resources/manage/irr/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "API Keys",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "RFC 2622",
+    "url": "https://datatracker.ietf.org/doc/rfc2622"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Reg-RWS",
+    "url": "https://www.arin.net/resources/manage/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "aut-num payloads",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#creating-an-aut-num-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "this table",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Creating a route Object",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#creating-a-route-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Creating a route Object",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#creating-a-route-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Creating a route6 Object",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#creating-a-route6-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Creating a route6 Object",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#creating-a-route6-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Creating an aut-num Object",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#creating-an-aut-num-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Creating an aut-num Object",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#creating-an-aut-num-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Creating an as-set Object",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#creating-an-as-set-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Creating an as-set Object",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#creating-an-as-set-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Creating a route-set Object",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#creating-a-route-set-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Creating a route-set Object",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#creating-a-route-set-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "Object Permissions",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#object-permissions"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "aut-num Objects",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#aut-num-objects"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "headers of application/rpsl",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#headers"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/irr-restful/",
+    "label": "application/xml",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#headers"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/",
+    "label": "list of routing registries",
+    "url": "http://www.irr.net/docs/list.html"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/",
+    "label": "aggregators",
+    "url": "https://www.arin.net/resources/manage/irr/irr_faq/#aggregator"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/",
+    "label": "routing security best practices and source pre-transfer checklist",
+    "url": "https://www.arin.net/resources/registry/transfers/#requirements-for-the-source-organization-current-registrant"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/",
+    "label": "ARIN IRR-online User Guide",
+    "url": "https://www.arin.net/resources/manage/irr/userguide"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/",
+    "label": "ARIN IRR RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/",
+    "label": "https://ftp.arin.net/pub/rr/",
+    "url": "https://ftp.arin.net/pub/rr/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/",
+    "label": "https://ftp.arin.net/pub/rr/arin.db.gz",
+    "url": "https://ftp.arin.net/pub/rr/arin.db.gz"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/irr/",
+    "label": "IRRd: Running queries - Whois protocol reference",
+    "url": "https://irrd.readthedocs.io/en/stable/users/queries/whois/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/rpki-restful/",
+    "label": "Resource Public Key Infrastructure (RPKI)",
+    "url": "https://www.arin.net/rpki"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/rpki-restful/",
+    "label": "can be found here",
+    "url": "https://www.arin.net/resources/manage/regrws/quickstart/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/rpki-restful/",
+    "label": "error codes",
+    "url": "https://www.arin.net/resources/manage/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/rpki-restful/",
+    "label": "IRR Auto-Manager",
+    "url": "https://www.arin.net/resources/manage/rpki/irrautomanager"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/rpki-restful/",
+    "label": "REST API",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/#viewing-a-route-or-route6-object"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/rpki-restful/",
+    "label": "error codes",
+    "url": "https://www.arin.net/resources/manage/regrws/methods/#error-codes"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "Learn more about how RPKI works globally",
+    "url": "https://www.nro.net/security/certification/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "More information",
+    "url": "https://www.arin.net/resources/manage/rpki/info"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "More information",
+    "url": "https://www.arin.net/resources/manage/rpki/options/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "More information",
+    "url": "https://www.arin.net/resources/manage/rpki/roas/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "More information",
+    "url": "https://www.arin.net/resources/manage/rpki/aspa/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "More information",
+    "url": "https://www.arin.net/resources/manage/rpki/help/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "ARIN Help Videos",
+    "url": "https://www.arin.net/reference/training/help_videos/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "ARIN Academy: RPKI 101",
+    "url": "https://www.arin.net/reference/training/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "RPKI Documentation",
+    "url": "https://rpki.readthedocs.io/en/latest/index.html"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "RFC 6810: The Resource Public Key Infrastructure (RPKI) to Router Protocol",
+    "url": "https://datatracker.ietf.org/doc/rfc6810"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "Resource Certification Explained",
+    "url": "https://www.youtube.com/watch?v=rH3CPosGNjY"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "SIDR Working Group Documents",
+    "url": "https://datatracker.ietf.org/wg/sidrops/documents/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "Resource Certification at AFRINIC",
+    "url": "https://afrinic.net/resources.html"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "Resource Certification at APNIC",
+    "url": "https://www.apnic.net/community/security/resource-certification/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "Resource Certification at LACNIC",
+    "url": "https://www.lacnic.net/640/2/lacnic/resource-certification-system-rpki"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/",
+    "label": "Resource Certification at RIPE NCC",
+    "url": "https://www.ripe.net/manage-ips-and-asns/resource-management/certification"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/aspa/",
+    "label": "ARIN\u2019s RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/aspa/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/aspa/",
+    "label": "API Key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/aspa/",
+    "label": "Using ARIN\u2019s RPKI Repository for Routing",
+    "url": "https://www.arin.net/resources/manage/rpki/#rpki-routing"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/aspa/",
+    "label": "ARIN\u2019s RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/aspa/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/aspa/",
+    "label": "API Key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/aspa/",
+    "label": "ARIN\u2019s RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/aspa/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/aspa/",
+    "label": "API Key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/",
+    "label": "Hosted RPKI",
+    "url": "https://www.arin.net/resources/manage/rpki/options/hosted"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/",
+    "label": "Delegated RPKI",
+    "url": "https://www.arin.net/resources/manage/rpki/options/delegated"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/",
+    "label": "Repository Publication Service",
+    "url": "https://www.arin.net/resources/manage/rpki/options/rps"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/",
+    "label": "Hosted RPKI",
+    "url": "https://www.arin.net/resources/manage/rpki/options/hosted/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/",
+    "label": "Delegated RPKI",
+    "url": "https://www.arin.net/resources/manage/rpki/options/delegated/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/",
+    "label": "Repository Publication Service (RPS)",
+    "url": "https://www.arin.net/resources/manage/rpki/options/rps/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/hosted/",
+    "label": "ARIN Agreement",
+    "url": "https://www.arin.net/about/corporate/agreements/#registration-services-agreement"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/hosted/",
+    "label": "matching IRR route object",
+    "url": "https://www.arin.net/resources/manage/rpki/roas/#irr-auto-manager"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/hosted/",
+    "label": "OT&E page",
+    "url": "https://www.arin.net/reference/tools/testing/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "routing security best practices and source pre-transfer checklist",
+    "url": "https://www.arin.net/resources/registry/transfers/#requirements-for-the-source-organization-current-registrant"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "RPKI FAQ",
+    "url": "https://www.arin.net/resources/manage/rpki/faq/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "ARIN\u2019s RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "API Key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "Using ARIN\u2019s RPKI Repository for Routing",
+    "url": "https://www.arin.net/resources/manage/rpki/#rpki-routing"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "ARIN\u2019s RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "API Key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "RFC 9319",
+    "url": "https://datatracker.ietf.org/doc/html/rfc9319"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "BCP 185",
+    "url": "https://datatracker.ietf.org/doc/bcp185/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/roas/",
+    "label": "ARIN\u2019s RPKI RESTful API User Guide",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "ARIN\u2019s Whois page",
+    "url": "https://www.arin.net/resources/registry/whois/#combined-search"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC STD 95",
+    "url": "https://datatracker.ietf.org/doc/std95/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "https://search.arin.net/rdap/",
+    "url": "https://search.arin.net/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 9083",
+    "url": "https://datatracker.ietf.org/doc/rfc9083"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 3912",
+    "url": "https://datatracker.ietf.org/doc/rfc3912"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RDAP client",
+    "url": "https://rdap.rcode3.com/client_implementations/index.html"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 9224",
+    "url": "https://datatracker.ietf.org/doc/rfc9224"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "use the correct query URL",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/#rdap-urls"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "GitHub",
+    "url": "https://github.com/arineng/rdap_bootstrap_server"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "Using the Whois/RDAP web interface",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/#rdap-web"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "Using Query URLs",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/#rdap-urls"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "https://search.arin.net/rdap/",
+    "url": "https://search.arin.net/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "https://search.arin.net",
+    "url": "https://search.arin.net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "Whois page",
+    "url": "https://www.arin.net/resources/registry/whois/#combined-search"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 9082",
+    "url": "https://datatracker.ietf.org/doc/rfc9082"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "Registration Data Access Protocol (RDAP) Regional Internet Registry (RIR) Search documentation",
+    "url": "https://datatracker.ietf.org/doc/draft-ietf-regext-rdap-rir-search/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC5952",
+    "url": "https://datatracker.ietf.org/doc/rfc5952"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC4632",
+    "url": "https://datatracker.ietf.org/doc/rfc4632"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 952",
+    "url": "http://datatracker.ietf.org/doc/html/rfc0952"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 1123",
+    "url": "http://datatracker.ietf.org/doc/html/rfc1123"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RDAP clients",
+    "url": "https://rdap.rcode3.com/client_implementations/index.html"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 7480",
+    "url": "https://datatracker.ietf.org/doc/rfc7480"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 7481",
+    "url": "https://datatracker.ietf.org/doc/rfc7481"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 7485",
+    "url": "https://datatracker.ietf.org/doc/rfc7485"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 9082",
+    "url": "https://datatracker.ietf.org/doc/rfc9082"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 9083",
+    "url": "https://datatracker.ietf.org/doc/rfc9083"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "RFC 9224",
+    "url": "https://datatracker.ietf.org/doc/rfc9224"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "Registration Data Access Protocol (RDAP) Regional Internet Registry (RIR) Search",
+    "url": "https://datatracker.ietf.org/doc/draft-ietf-regext-rdap-rir-search/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "arin-tech-discuss mailing list",
+    "url": "https://www.arin.net/participate/community/mailing_lists/#technical-discussions"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rdap/",
+    "label": "mailing list archives",
+    "url": "http://lists.arin.net/pipermail/arin-tech-discuss/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/api/",
+    "label": "Whois/RDAP",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/api/",
+    "label": "ARIN\u2019s Whois Terms of Use",
+    "url": "https://www.arin.net/resources/registry/whois/tou/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/api/",
+    "label": "RESTful Web Services",
+    "url": "https://www.oreilly.com/library/view/restful-web-services/9780596529260/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/api/",
+    "label": "http://whois.arin.net",
+    "url": "http://whois.arin.net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/api/",
+    "label": "Relax NG schemas",
+    "url": "https://www.arin.net/resources/registry/whois/rws/whoisrws-relaxng-compact-schemas.zip"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/api/",
+    "label": "RELAX NG",
+    "url": "http://relaxng.org/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/api/",
+    "label": "matrix parameters",
+    "url": "http://www.w3.org/DesignIssues/MatrixURIs.html"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/",
+    "label": "web search interface",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/#using-the-whois-rdap-web-interface"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/",
+    "label": "clients",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/#rdap-client"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/",
+    "label": "query URLs",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/#rdap-urls"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/",
+    "label": "Whois-RWS web interface",
+    "url": "http://whois.arin.net/ui/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/",
+    "label": "Whois-RWS API",
+    "url": "https://www.arin.net/resources/registry/whois/rws/api/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/",
+    "label": "command-line interface",
+    "url": "https://www.arin.net/resources/registry/whois/rws/cli/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/",
+    "label": "Frequently Asked Questions about Whois-RWS",
+    "url": "https://www.arin.net/resources/registry/whois/rws/faq/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/",
+    "label": "Ask ARIN",
+    "url": "https://account.arin.net/public/communication/message/beginQuestion.xhtml"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/",
+    "label": "contact the ARIN Help Desk",
+    "url": "https://www.arin.net/resources/guide/helpdesk/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/whois/rws/",
+    "label": "file a report",
+    "url": "https://www.arin.net/resources/registry/whois/inaccuracy_reporting/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "(Reg-RWS)",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "RESTful calls",
+    "url": "https://www.arin.net/resources/registry/manage/netmod/#using-restful-calls"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "Securing DNS",
+    "url": "https://www.arin.net/resources/manage/dnssec/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "(RPKI)",
+    "url": "https://www.arin.net/resources/manage/rpki/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "Reverse DNS",
+    "url": "https://www.arin.net/resources/manage/reverse/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "Bulk Whois",
+    "url": "https://www.arin.net/reference/research/bulkwhois/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "ARIN\u2019s RESTful Provisioning system",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "Bulk Whois Data",
+    "url": "https://www.arin.net/reference/research/bulkwhois/#downloading-using-an-api-key"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "Report of Resources with No Valid POCs",
+    "url": "https://www.arin.net/resources/guide/account/records/poc/validation/readme/#downloading-using-an-api-key"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "WhoWas NET Report",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#request-whowas-net-report"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/security/api_keys/",
+    "label": "WhoWas ASN Report",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#request-whowas-asn-report"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/testing/",
+    "label": "ARIN Online user account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/testing/",
+    "label": "API key for your user account",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/testing/",
+    "label": "Ask ARIN",
+    "url": "https://account.arin.net/public/communication/message/beginQuestion.xhtml"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/testing/",
+    "label": "www.arin.net",
+    "url": "https://www.arin.net"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/testing/",
+    "label": "Whois-RWS API Documentation)",
+    "url": "https://www.arin.net/resources/registry/whois/rws/api/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/testing/",
+    "label": "Automating Record Management with Reg-RWS",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/testing/",
+    "label": "IRR RESTful API",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/testing/",
+    "label": "follow the steps to configure RPKI",
+    "url": "https://www.arin.net/resources/manage/rpki/options/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/testing/",
+    "label": "ARIN OT&E TAL",
+    "url": "https://www.arin.net/reference/tools/testing/arin_ote.tal"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/testing/",
+    "label": "ARIN Technical Discussions",
+    "url": "https://www.arin.net/participate/community/mailing_lists/#technical-discussions"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Planned ARIN Online Functionality page",
+    "url": "https://www.arin.net/resources/guide/account/features/planned/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Reg-RWS Quick Start Guide",
+    "url": "https://www.arin.net/resources/registry/regrws/quickstart/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Restful Methods",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "RPKI",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "IRR",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Suggestion 2022.5",
+    "url": "https://www.arin.net/participate/community/acsp/suggestions/2022/2022-05/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Suggestion 2022.11",
+    "url": "https://www.arin.net/participate/community/acsp/suggestions/2022/2022-11/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20260728-release/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20260526/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "blog post",
+    "url": "https://www.arin.net/blog/2026/03/28/arins-refreshed-logo/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20260328/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "blog post",
+    "url": "https://www.arin.net/blog/2026/01/14/new-point-of-contact-linking-workflow/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "here",
+    "url": "https://www.arin.net/resources/guide/account/records/poc/#linking-a-point-of-contact-to-your-arin-online-account"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "here",
+    "url": "https://www.arin.net/resources/registry/reassignments/incoming/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Consultation 2024.6",
+    "url": "https://www.arin.net/participate/community/acsp/consultations/2024/2024-6/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Suggestion 2024.13",
+    "url": "https://www.arin.net/participate/community/acsp/suggestions/2024/2024-13/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Autonomous System Provider Authorizations (ASPA)",
+    "url": "https://www.arin.net/resources/manage/rpki/aspa/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20260120/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "here",
+    "url": "https://www.arin.net/resources/manage/rpki/roa_request/#roa-change-log"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20250929/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20250730/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20250519/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20250329/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20250113/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20241102/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20240603/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20240318/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20240108/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "2024 Fee Schedule effective 1 January 2024",
+    "url": "https://www.arin.net/resources/fees/fee_schedule/2024_fee_schedule/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Officer Attestation",
+    "url": "https://www.arin.net/about/corporate/agreements/attestation/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "\u2018Resources Under Agreement\u2019",
+    "url": "https://www.arin.net/reference/research/statistics/resources/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20231009/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20230810/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20230807/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20230513/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20230227/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20230103/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20220801-rn/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20220510-rn/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20220226-rn/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20211216-rn/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20211116-rn/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20210809-rn/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements//20210607-rn/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "nicinfo",
+    "url": "https://github.com/arineng/nicinfo"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20210331-rn"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20210201-rn/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20201121/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20200814-rn/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20200610-irr/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20200401_release/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/announcements/20200123/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20190911/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20190713/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20190518/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20190302/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20180915/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20180721/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20180512/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "https://account.arin.net/public/hashTool.xhtml",
+    "url": "https://account.arin.net/public/hashTool.xhtml"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20180224/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "https://account.arin.net/public/hashTool.xhtml",
+    "url": "https://account.arin.net/public/hashTool.xhtml"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20171118/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "page",
+    "url": "https://account.arin.net/public/transferLog.xhtml"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20170916/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "FTP",
+    "url": "https://ftp.arin.net/pub/stats/arin/transfers"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20170617/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "page",
+    "url": "https://account.arin.net/public/transferLog.xhtml"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20170916/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "FTP",
+    "url": "https://ftp.arin.net/pub/stats/arin/transfers"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20170617/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "RFC 6605",
+    "url": "https://datatracker.ietf.org/doc/rfc6605"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20170318/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20170128/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20161029/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20160716/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20160514/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "fee schedule effective 1 July",
+    "url": "https://www.arin.net/vault/resources/fees/fee_schedule_2016/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20160312/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20160130/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20151114/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20150912/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20150620/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20150502/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20150124/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20141213/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Suggestion 2012.11",
+    "url": "https://www.arin.net/participate/community/acsp/suggestions/2012/2012-11/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20140920/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Full Release Notes",
+    "url": "https://www.arin.net/vault/announcements/20140713/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Policy 2011-3",
+    "url": "https://www.arin.net/vault/participate/policy/drafts/2011/2011_3"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/software/",
+    "label": "Ask ARIN",
+    "url": "https://account.arin.net/public/communication/message/beginQuestion.xhtml"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "Whois-RWS",
+    "url": "https://www.arin.net/resources/registry/whois/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "Registration Data Access Protocol (RDAP)",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "Reverse Domain Name System",
+    "url": "https://www.arin.net/resources/manage/reverse/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "Internet Routing Registry",
+    "url": "https://www.arin.net/resources/manage/irr/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "RPKI",
+    "url": "https://www.arin.net/resources/manage/rpki/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "Internet operations and coordination",
+    "url": "https://www.nro.net/technical-coordination/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "security and management services",
+    "url": "https://www.arin.net/resources/manage/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "statistics",
+    "url": "https://www.arin.net/reference/research/statistics/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "Bulk Whois",
+    "url": "https://www.arin.net/reference/research/bulkwhois/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "WhoWas",
+    "url": "https://www.arin.net/reference/research/whowas/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "Policy Development Process (PDP)",
+    "url": "https://www.arin.net/participate/policy/pdp/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "ARIN Consultation and Suggestion Process (ACSP)",
+    "url": "https://www.arin.net/participate/community/acsp/process/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "elections",
+    "url": "https://www.arin.net/participate/oversight/elections/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "events and meetings",
+    "url": "https://www.arin.net/participate/meetings/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "mailing lists",
+    "url": "https://www.arin.net/participate/community/mailing_lists/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "ARIN Online",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "Registration RESTful Service (Reg-RWS)",
+    "url": "https://www.arin.net/resources/registry/regrws//"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "ARIN\u2019s Number Resource Policy Manual (NRPM)",
+    "url": "https://www.arin.net/participate/policy/nrpm/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "Registration Services Agreement (RSA) / Legacy Registration Services Agreement (LRSA)",
+    "url": "https://www.arin.net/about/corporate/agreements/rsa.pdf"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "ARIN\u2019s Privacy Policy",
+    "url": "https://www.arin.net/about/privacy/"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "ARIN Online",
+    "url": "https://account.arin.net/public/login"
+  },
+  {
+    "source": "https://www.arin.net/reference/materials/data/",
+    "label": "accurate registration information",
+    "url": "https://www.arin.net/reference/materials/accuracy/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/software/",
+    "label": "a software repository",
+    "url": "http://projects.arin.net/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/software/",
+    "label": "Whois RESTful Web Service (Whois-RWS)",
+    "url": "https://www.arin.net/resources/registry/whois/rws/api/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/software/",
+    "label": "Registration RESTful Web Service (Reg-RWS)",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/software/",
+    "label": "Resource Public Key Infrastructure (RPKI)",
+    "url": "https://www.arin.net/resources/manage/rpki/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/software/",
+    "label": "projects@arin.net",
+    "url": "mailto:projects@arin.net"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/software/",
+    "label": "ARIN-Whois.NET",
+    "url": "https://github.com/MaxHorstmann/ArinWhois.NET"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/software/",
+    "label": "RDAP Bootstrap",
+    "url": "https://github.com/arineng/rdap_bootstrap_server"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/software/",
+    "label": "Registration Data Access Protocol (RDAP)",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/software/",
+    "label": "Operational Test and Evaluation environment (OT&E)",
+    "url": "https://www.arin.net/reference/tools/testing/"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/software/",
+    "label": "ARINcli",
+    "url": "https://github.com/arineng/arincli"
+  },
+  {
+    "source": "https://www.arin.net/reference/tools/software/",
+    "label": "the following scripts",
+    "url": "http://projects.arin.net/arincli_html/arincli.7.html"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/reverse/",
+    "label": "Using your ARIN Online account",
+    "url": "https://www.arin.net/resources/manage/dnssec/#managing-reverse-dns-using-arin-online"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/reverse/",
+    "label": "Using the RESTful web service",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#delegations"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/reverse/",
+    "label": "obtain an API key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/reverse/",
+    "label": "Domain Name System Security (DNSSEC)",
+    "url": "https://www.arin.net/resources/manage/dnssec/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/dnssec/",
+    "label": "Reverse DNS",
+    "url": "https://www.arin.net/resources/manage/reverse/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/dnssec/",
+    "label": "Operation Ghost Click",
+    "url": "https://www.fbi.gov/news/stories/international-cyber-ring-that-infected-millions-of-computers-dismantled"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/dnssec/",
+    "label": "a list of DNS record types",
+    "url": "https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-4"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/dnssec/",
+    "label": "RESTful provisioning system (Reg-RWS)",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#delegations"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/dnssec/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/dnssec/",
+    "label": "API Key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/dnssec/",
+    "label": "routing security best practices and source pre-transfer checklist",
+    "url": "https://www.arin.net/resources/registry/transfers/#requirements-for-the-source-organization-current-registrant"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Learn how to create, manage and use your API keys",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "ARIN policy",
+    "url": "https://www.arin.net/participate/policy/nrpm/#3-2-distributed-information-service-use-requirements"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Reporting Reassignments via RWhois",
+    "url": "https://www.arin.net/resources/registry/reassignments/rwhois/#reporting-reassignments-via-rwhois"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Requesting Removal of Stale Reassignment / Reallocation Records",
+    "url": "https://www.arin.net/resources/registry/reassignments/stale_records/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "RESTful Provisioning (Reg-RWS) Information",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Reassigning NETs with Reg-RWS",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#reassign-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Reallocating NETs with Reg-RWS",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/#reallocate-net"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Modifying an IPv4 or IPv6 Network",
+    "url": "https://www.arin.net/resources/registry/manage/netmod/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Modifying Networks Using ARIN Online (Recommended)",
+    "url": "https://www.arin.net/resources/registry/manage/netmod/#using-your-arin-online-account"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "RESTful Provisioning (Reg-RWS)",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Understanding the Return and Revocation Process",
+    "url": "https://www.arin.net/resources/registry/manage/return_revoke/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Reverse DNS",
+    "url": "https://www.arin.net/resources/manage/reverse/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Securing DNS (DNSSEC)",
+    "url": "https://www.arin.net/resources/manage/dnssec/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "RESTful Provisioning (Automating Record Management with Reg-RWS)",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Internet Routing Registry",
+    "url": "https://www.arin.net/resources/manage/irr/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Resource Certification (RPKI)",
+    "url": "https://www.arin.net/resources/manage/rpki/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Legacy Resource Holder FAQ",
+    "url": "https://www.arin.net/about/corporate/agreements/rsa_faq/#legacy"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Registration Services Agreement FAQ",
+    "url": "https://www.arin.net/about/corporate/agreements/rsa_faq/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/",
+    "label": "Legacy Resource Services",
+    "url": "https://www.arin.net/resources/guide/legacy/services/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "on 3 June 2024",
+    "url": "https://www.arin.net/announcements/20240111-templates"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "open-source template processor",
+    "url": "https://www.arin.net/resources/registry/reassignments/ostp/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "defined regions",
+    "url": "https://www.arin.net/about/welcome/region/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "\u201cUnderstanding Customer Delegation Actions in the ARIN Registry\u201d",
+    "url": "https://www.arin.net/blog/2025/06/26/customer-delegation-actions/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "create an API key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "Creating a Points of Contact",
+    "url": "https://www.arin.net/resources/guide/account/records/poc/#creating-a-poc"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "Linking a Point of Contact to Your ARIN Online Account",
+    "url": "https://www.arin.net/resources/guide/account/records/poc/#linking-a-poc-to-your-arin-online-account"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "Creating an Org ID",
+    "url": "https://www.arin.net/resources/guide/account/records/org/#creating-an-org-id"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "Automating Record Management with Reg-RWS page",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "Section 3.2 of ARIN\u2019s Number Resource Policy Manual (NRPM)",
+    "url": "https://www.arin.net/participate/policy/nrpm/#3-2-distributed-information-service-use-requirements"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "Referral Whois (RWhois) page",
+    "url": "https://www.arin.net/resources/registry/reassignments/rwhois/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "note",
+    "url": "https://www.arin.net/resources/registry/reassignments/#note"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/",
+    "label": "note",
+    "url": "https://www.arin.net/resources/registry/reassignments/#note"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/",
+    "label": "WhoWas Terms of Use (ToU)",
+    "url": "https://www.arin.net/reference/research/whowas/tou/"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/",
+    "label": "WhoWas ReadMe",
+    "url": "https://www.arin.net/reference/research/whowas/readme/"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/",
+    "label": "Registration Records and Reg-RWS",
+    "url": "https://www.arin.net/resources/registry/regrws/quickstart/"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/",
+    "label": "WhoWas ReadMe documentation",
+    "url": "https://www.arin.net/reference/research/whowas/readme/"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/bulkwhois/",
+    "label": "website here",
+    "url": "https://ftp.arin.net/pub/stats/"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/bulkwhois/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/bulkwhois/",
+    "label": "Bulk Whois ToU and Data Request Form",
+    "url": "https://www.arin.net/about/corporate/agreements/bulkwhois.pdf"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/bulkwhois/",
+    "label": "API key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/bulkwhois/",
+    "label": "Report Content",
+    "url": "https://www.arin.net/reference/research/bulkwhois/#report-content"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/bulkwhois/",
+    "label": "Report of Resources with No Valid POCs",
+    "url": "https://www.arin.net/resources/guide/account/records/poc/validation/readme/"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/bulkwhois/",
+    "label": "Ask ARIN",
+    "url": "https://account.arin.net/public/communication/message/beginQuestion.xhtml"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/bulkwhois/",
+    "label": "http://www.relaxng.org/compact-tutorial-20030326.html",
+    "url": "http://www.relaxng.org/compact-tutorial-20030326.html"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/bulkwhois/",
+    "label": "http://www.thaiopensource.com/relaxng/jing.html",
+    "url": "http://www.thaiopensource.com/relaxng/jing.html"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/bulkwhois/",
+    "label": "http://code.google.com/p/jing-trang/downloads/list",
+    "url": "http://code.google.com/p/jing-trang/downloads/list"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/readme/",
+    "label": "Terms of Use (ToU)",
+    "url": "https://www.arin.net/reference/research/whowas/tou/"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/readme/",
+    "label": "Find out more",
+    "url": "https://www.arin.net/resources/guide/account/database/"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/readme/",
+    "label": "Networks (NET) Report",
+    "url": "https://www.arin.net/reference/research/whowas/readme/#net"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/readme/",
+    "label": "Autonomous System Number (ASN) Report",
+    "url": "https://www.arin.net/reference/research/whowas/readme/#asn"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/readme/",
+    "label": "Organization (Org ID) Report",
+    "url": "https://www.arin.net/reference/research/whowas/readme/#org"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/readme/",
+    "label": "Customer Report",
+    "url": "https://www.arin.net/reference/research/whowas/readme/#customer"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/readme/",
+    "label": "Point of Contact (POC) Report",
+    "url": "https://www.arin.net/reference/research/whowas/readme/#poc"
+  },
+  {
+    "source": "https://www.arin.net/reference/research/whowas/readme/",
+    "label": "ARIN policy 2021-8",
+    "url": "https://www.arin.net/vault/participate/policy/drafts/2021/2021_8/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/validation/readme/",
+    "label": "16 September 2017",
+    "url": "https://www.arin.net/vault/announcements/20170916/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/validation/readme/",
+    "label": "ARIN\u2019s Bulk Whois Acceptable Use Policy",
+    "url": "https://www.arin.net/about/corporate/agreements/bulkwhois.pdf"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/validation/readme/",
+    "label": "http://www.relaxng.org/compact-tutorial-20030326.html",
+    "url": "http://www.relaxng.org/compact-tutorial-20030326.html"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/validation/readme/",
+    "label": "https://github.com/relaxng/jing-trang",
+    "url": "https://github.com/relaxng/jing-trang"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/validation/readme/",
+    "label": "http://code.google.com/p/jing-trang/downloads/list",
+    "url": "http://code.google.com/p/jing-trang/downloads/list"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/validation/readme/",
+    "label": "Settings",
+    "url": "https://account.arin.net/public/secure/profile"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "RFC 8183",
+    "url": "https://datatracker.ietf.org/doc/rfc8183"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "Repository Publication Service",
+    "url": "https://www.arin.net/resources/manage/rpki/options/rps/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "RFC 8182",
+    "url": "https://datatracker.ietf.org/doc/rfc8182/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "Krill",
+    "url": "https://krill.docs.nlnetlabs.nl/en/stable/publication-server.html"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "ARIN Agreement",
+    "url": "https://www.arin.net/about/corporate/agreements/rsa_faq/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "Krill",
+    "url": "https://www.nlnetlabs.nl/projects/krill/about"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "RPKI Toolkit",
+    "url": "https://github.com/dragonresearch/rpki.net"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "Operational Test & Evaluation environment",
+    "url": "https://www.arin.net/reference/tools/testing/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "ARIN Repository Publication Service",
+    "url": "https://www.arin.net/resources/manage/rpki/options/rps/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "the OT&E page",
+    "url": "https://www.arin.net/reference/tools/testing/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "https://rpki.readthedocs.io",
+    "url": "https://rpki.readthedocs.io/en/latest/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "Krill - a free, open source RPKI daemon",
+    "url": "https://krill.docs.nlnetlabs.nl/en/stable/index.html"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "3986: Uniform Resource Identifier (URI): Generic Syntax",
+    "url": "http://datatracker.ietf.org/doc/rfc3986"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "5280: Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile",
+    "url": "http://datatracker.ietf.org/doc/rfc5280"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "6481: A Profile for Resource Certificate Repository Structure",
+    "url": "http://datatracker.ietf.org/doc/rfc6481"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "6486: Manifests for the Resource Public Key Infrastructure (RPKI)",
+    "url": "http://datatracker.ietf.org/doc/rfc6486"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "6492: A Protocol for Provisioning Resource Certificates",
+    "url": "http://datatracker.ietf.org/doc/rfc6492"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/delegated/",
+    "label": "8183: An Out-of-Band Setup Protocol for Resource Public Key Infrastructure (RPKI) Production Services",
+    "url": "https://datatracker.ietf.org/doc/rfc8183"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/rwhois/",
+    "label": "RFC 1034",
+    "url": "https://www.rfc-editor.org/rfc/rfc1034.txt"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/rwhois/",
+    "label": "RFC 821",
+    "url": "https://www.rfc-editor.org/rfc/rfc821.txt"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/rwhois/",
+    "label": "establishes requirements",
+    "url": "https://www.arin.net/participate/policy/nrpm/#3-2-distributed-information-service-use-requirements"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/rwhois/",
+    "label": "on GitHub",
+    "url": "https://github.com/arineng/rwhoisd"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/rwhois/",
+    "label": "RFC 2167",
+    "url": "https://www.rfc-editor.org/rfc/rfc2167.txt"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/rwhois/",
+    "label": "Number Resource Policy Manual (NRPM",
+    "url": "https://www.arin.net/participate/policy/nrpm/#3-2-distributed-information-service-use-requirements"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/reassignments/rwhois/",
+    "label": "ARIN\u2019s residential customer privacy policy",
+    "url": "https://www.arin.net/participate/policy/nrpm/#4-2-3-7-3-2-residential-customer-privacy"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "meet the legal requirements",
+    "url": "https://www.arin.net/resources/guide/request/individual_request/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "ARIN Online account",
+    "url": "https://account.arin.net/public/accountSetup.xhtml"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "RESTful Provisioning System",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "API key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "API Keys",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "Organization Create",
+    "url": "https://www.arin.net/resources/fees/fee_schedule/#transactional-fees"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "Registration Services Agreement",
+    "url": "https://www.arin.net/about/corporate/agreements/#registration-services-agreement"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "Creating a POC",
+    "url": "https://www.arin.net/resources/guide/account/records/poc/#creating-a-poc"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "Registration Services Agreement",
+    "url": "https://www.arin.net/about/corporate/agreements/#registration-services-agreement"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "RESTful Methods",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "API documentation for ARIN\u2019s RESTful web service",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "RESTful Methods",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "API documentation for ARIN\u2019s RESTful web service.",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "Registration Services Agreement (RSA)",
+    "url": "https://www.arin.net/about/corporate/agreements/rsa.pdf"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "transfer request",
+    "url": "https://www.arin.net/resources/registry/transfers/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "RESTful Methods",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "API documentation for ARIN\u2019s RESTful web service.",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "Organization Recovery",
+    "url": "https://www.arin.net/resources/fees/fee_schedule/#transactional-fees"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/org/",
+    "label": "Registration Services Agreement",
+    "url": "https://www.arin.net/about/corporate/agreements/#registration-services-agreement"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/",
+    "label": "Introduction to ARIN\u2019s Database page",
+    "url": "https://www.arin.net/resources/guide/account/database/#point-of-contact-poc-records"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/",
+    "label": "ARIN Online account",
+    "url": "https://account.arin.net/public/accountSetup.xhtml"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/",
+    "label": "RESTful Provisioning System",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/",
+    "label": "API key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/",
+    "label": "ARIN Online account",
+    "url": "https://www.arin.net/resources/guide/account/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/",
+    "label": "RESTful Methods",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/",
+    "label": "RESTful Methods",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/",
+    "label": "RESTful Methods",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/",
+    "label": "organization instructions",
+    "url": "https://www.arin.net/resources/guide/account/records/org/"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/",
+    "label": "associating Points of Contact (POCs) with an Org ID in ARIN Online",
+    "url": "https://www.arin.net/resources/guide/account/records/org/#associating-points-of-contact-pocs-with-an-org-id-in-arin-online"
+  },
+  {
+    "source": "https://www.arin.net/resources/guide/account/records/poc/",
+    "label": "NRPM Section 3.6: Annual Validation of ARIN\u2019s Public Whois Point of Contact Data",
+    "url": "https://www.arin.net/participate/policy/nrpm/#3-6-annual-validation-of-arin-s-public-whois-point-of-contact-data"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/rps/",
+    "label": "RFC8181",
+    "url": "https://datatracker.ietf.org/doc/html/rfc8181"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/rps/",
+    "label": "A Publication Protocol for the Resource Public Key Infrastructure (RPKI)",
+    "url": "http://datatracker.ietf.org/doc/rfc8181"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/rps/",
+    "label": "https://rpki.readthedocs.io",
+    "url": "https://rpki.readthedocs.io/en/latest/"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/rps/",
+    "label": "Krill - a free, open source RPKI daemon",
+    "url": "https://krill.docs.nlnetlabs.nl/en/stable/index.html"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/rps/",
+    "label": "3986: Uniform Resource Identifier (URI): Generic Syntax",
+    "url": "http://datatracker.ietf.org/doc/rfc3986"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/rps/",
+    "label": "5280: Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile",
+    "url": "http://datatracker.ietf.org/doc/rfc5280"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/rps/",
+    "label": "6481: A Profile for Resource Certificate Repository Structure",
+    "url": "http://datatracker.ietf.org/doc/rfc6481"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/rps/",
+    "label": "6486: Manifests for the Resource Public Key Infrastructure (RPKI)",
+    "url": "http://datatracker.ietf.org/doc/rfc6486"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/rps/",
+    "label": "6492: A Protocol for Provisioning Resource Certificates",
+    "url": "http://datatracker.ietf.org/doc/rfc6492"
+  },
+  {
+    "source": "https://www.arin.net/resources/manage/rpki/options/rps/",
+    "label": "8183: An Out-of-Band Setup Protocol for Resource Public Key Infrastructure (RPKI) Production Services",
+    "url": "https://datatracker.ietf.org/doc/rfc8183"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/netmod/",
+    "label": "reverse DNS delegation",
+    "url": "https://www.arin.net/resources/manage/reverse/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/netmod/",
+    "label": "generate an API key",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "source": "https://www.arin.net/resources/registry/manage/netmod/",
+    "label": "Automating Record Management with Reg-RWS",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  }
+]

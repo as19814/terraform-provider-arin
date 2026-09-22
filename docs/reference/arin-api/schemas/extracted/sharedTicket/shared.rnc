@@ -1,0 +1,5 @@
+default namespace = "http://www.arin.net/regrws/shared-ticket/v1"
+
+# NOTE:  when adding additional files to this directory, you must add them to PayloadValidationHelper.supplements
+
+start = element shared { xsd:boolean }

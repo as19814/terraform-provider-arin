@@ -1,0 +1,5 @@
+default namespace = "http://www.arin.net/regrws/messages/v1"
+
+# NOTE:  when adding additional files to this directory, you must add them to RelaxNgSchemaHelper.supplements
+
+start = element messageId { xsd:integer }

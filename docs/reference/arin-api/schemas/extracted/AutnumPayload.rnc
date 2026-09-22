@@ -1,0 +1,32 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+start =
+  (notAllowed
+    | element autnum {
+       ( element asNumber { \string } &
+         element asName { \string } &
+         element orgHandle { \string } &
+         element description { external "utils/multiline.rnc" } &
+         element remarks { external "utils/multiline.rnc" }? &
+         element creationDate { dateTime }? &
+         element lastModifiedDate { dateTime }? &
+         element source { \string }? &
+         element pocLinks { pocLink* }? &
+         element import { external "utils/multiline.rnc" }? &
+         element export { external "utils/multiline.rnc" }? &
+         element default { external "utils/multiline.rnc" }? &
+         element mpImport { external "utils/multiline.rnc" }? &
+         element mpExport { external "utils/multiline.rnc" }? &
+         element mpDefault { external "utils/multiline.rnc" }? &
+         element memberOf {
+            attribute name { \string }
+          }*
+       )
+       & external "utils/foreignElements.rnc"*
+    })
+  | pocLink
+
+
+\string = xsd:string
+dateTime = \string
+pocLink = external "utils/pocLinkRef.rnc"

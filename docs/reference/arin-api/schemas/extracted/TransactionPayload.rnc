@@ -1,0 +1,18 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+start =
+  notAllowed
+  | element transaction {
+      ( element sessionId { \string }? &
+        element state {
+          xsd:string
+          # Possible Values for 'sate'
+          # OPEN
+          # COMMITTED
+          # ROLLEDBACK
+        }? &
+        element transactionId { \string }?
+      )
+      & external "utils/foreignElements.rnc"*
+    }
+\string = xsd:string

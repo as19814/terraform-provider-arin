@@ -1,0 +1,10 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+# NOTE:  when adding additional files to this directory, you must add them to RelaxNgSchemaHelper.supplements
+
+start =
+  notAllowed
+  | element routeSetRef {
+      attribute name { \string }
+    }
+\string = xsd:string

@@ -1,0 +1,11 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+# NOTE:  when adding additional files to this directory, you must add them to RelaxNgSchemaHelper.supplements
+
+start = multiline
+multiline =
+    element line {
+        attribute number { xsd:integer },
+        \string
+    }*
+\string = xsd:string

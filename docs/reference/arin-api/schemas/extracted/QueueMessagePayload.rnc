@@ -1,0 +1,13 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+start =
+  notAllowed
+  | element queueMessage {
+      ( element queueMessageId { \long }? &
+        element queueName { \string }? &
+        element content { \string }?
+      )
+      & external "utils/foreignElements.rnc"*
+    }
+\string = xsd:string
+\long = xsd:long

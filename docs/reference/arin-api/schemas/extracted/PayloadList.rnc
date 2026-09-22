@@ -1,0 +1,10 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+start =
+  (notAllowed
+     | element collection { (phone | ticket | delegation | roaSpec)* })
+
+phone = external "PhonePayload.rnc"
+ticket = external "TicketPayload.rnc"
+delegation = external "DelegationPayload.rnc"
+roaSpec = external "RoaSpecPayload.rnc"

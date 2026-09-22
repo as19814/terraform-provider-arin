@@ -1,0 +1,10 @@
+default namespace = "http://www.arin.net/regrws/rpki/v1"
+
+start =
+  (notAllowed
+   | element roa {
+         element roaData { \string } &
+         element signature { \string } &
+         external "utils/foreignElements.rnc"*
+     })
+\string = xsd:string

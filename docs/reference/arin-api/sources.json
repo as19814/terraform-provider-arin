@@ -1,0 +1,146 @@
+[
+  {
+    "file": "reg-rws/overview.md",
+    "url": "https://www.arin.net/resources/registry/regrws/"
+  },
+  {
+    "file": "reg-rws/quickstart.md",
+    "url": "https://www.arin.net/resources/registry/regrws/quickstart/"
+  },
+  {
+    "file": "reg-rws/methods.md",
+    "url": "https://www.arin.net/resources/registry/regrws/methods/"
+  },
+  {
+    "file": "reg-rws/payloads.md",
+    "url": "https://www.arin.net/resources/registry/regrws/payloads/"
+  },
+  {
+    "file": "irr/api.md",
+    "url": "https://www.arin.net/resources/manage/irr/irr-restful/"
+  },
+  {
+    "file": "irr/overview.md",
+    "url": "https://www.arin.net/resources/manage/irr/"
+  },
+  {
+    "file": "rpki/api.md",
+    "url": "https://www.arin.net/resources/manage/rpki/rpki-restful/"
+  },
+  {
+    "file": "rpki/overview.md",
+    "url": "https://www.arin.net/resources/manage/rpki/"
+  },
+  {
+    "file": "rpki/aspa.md",
+    "url": "https://www.arin.net/resources/manage/rpki/aspa/"
+  },
+  {
+    "file": "rpki/options.md",
+    "url": "https://www.arin.net/resources/manage/rpki/options/"
+  },
+  {
+    "file": "rpki/hosted.md",
+    "url": "https://www.arin.net/resources/manage/rpki/options/hosted/"
+  },
+  {
+    "file": "rpki/roas.md",
+    "url": "https://www.arin.net/resources/manage/rpki/roas/"
+  },
+  {
+    "file": "lookup/rdap.md",
+    "url": "https://www.arin.net/resources/registry/whois/rdap/"
+  },
+  {
+    "file": "lookup/whois-rws-api.md",
+    "url": "https://www.arin.net/resources/registry/whois/rws/api/"
+  },
+  {
+    "file": "lookup/whois-rws.md",
+    "url": "https://www.arin.net/resources/registry/whois/rws/"
+  },
+  {
+    "file": "operations/api-keys.md",
+    "url": "https://www.arin.net/reference/materials/security/api_keys/"
+  },
+  {
+    "file": "operations/ote.md",
+    "url": "https://www.arin.net/reference/tools/testing/"
+  },
+  {
+    "file": "operations/software-releases.md",
+    "url": "https://www.arin.net/reference/materials/software/"
+  },
+  {
+    "file": "operations/registry-data.md",
+    "url": "https://www.arin.net/reference/materials/data/"
+  },
+  {
+    "file": "operations/software-tools.md",
+    "url": "https://www.arin.net/reference/tools/software/"
+  },
+  {
+    "file": "dns/reverse.md",
+    "url": "https://www.arin.net/resources/manage/reverse/"
+  },
+  {
+    "file": "dns/dnssec.md",
+    "url": "https://www.arin.net/resources/manage/dnssec/"
+  },
+  {
+    "file": "registry/records.md",
+    "url": "https://www.arin.net/resources/registry/manage/"
+  },
+  {
+    "file": "registry/reassignments.md",
+    "url": "https://www.arin.net/resources/registry/reassignments/"
+  },
+  {
+    "file": "reports/whowas.md",
+    "url": "https://www.arin.net/reference/research/whowas/"
+  },
+  {
+    "file": "reports/bulk-whois.md",
+    "url": "https://www.arin.net/reference/research/bulkwhois/"
+  },
+  {
+    "file": "schemas/whoisrws-relaxng-compact-schemas.zip",
+    "url": "https://www.arin.net/resources/registry/whois/rws/whoisrws-relaxng-compact-schemas.zip"
+  },
+  {
+    "file": "rpki/arin_ote.tal",
+    "url": "https://www.arin.net/reference/tools/testing/arin_ote.tal"
+  },
+  {
+    "file": "reports/whowas-readme.md",
+    "url": "https://www.arin.net/reference/research/whowas/readme/"
+  },
+  {
+    "file": "reports/invalid-pocs.md",
+    "url": "https://www.arin.net/resources/guide/account/records/poc/validation/readme/"
+  },
+  {
+    "file": "rpki/delegated.md",
+    "url": "https://www.arin.net/resources/manage/rpki/options/delegated/"
+  },
+  {
+    "file": "registry/rwhois.md",
+    "url": "https://www.arin.net/resources/registry/reassignments/rwhois/"
+  },
+  {
+    "file": "registry/orgs.md",
+    "url": "https://www.arin.net/resources/guide/account/records/org/"
+  },
+  {
+    "file": "registry/pocs.md",
+    "url": "https://www.arin.net/resources/guide/account/records/poc/"
+  },
+  {
+    "file": "rpki/repository-publication.md",
+    "url": "https://www.arin.net/resources/manage/rpki/options/rps/"
+  },
+  {
+    "file": "registry/network-modifications.md",
+    "url": "https://www.arin.net/resources/registry/manage/netmod/"
+  }
+]

@@ -1,0 +1,16 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+\string = xsd:string
+
+start =
+    (notAllowed
+        | element legacyTicketLink {
+            (
+                element tktNo { \string } &
+                element resourceType { \string }? &
+                element entityHandle { \string }? &
+                element aliasHandle { \string }?
+            )
+            & external "utils/foreignElements.rnc"*
+        }
+    )

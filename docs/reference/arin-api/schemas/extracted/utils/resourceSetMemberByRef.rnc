@@ -1,0 +1,8 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+start =
+  notAllowed
+  | element memberByRef {
+      attribute name { \string }
+    }
+\string = xsd:string

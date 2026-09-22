@@ -1,0 +1,17 @@
+default namespace = "http://www.arin.net/regrws/rpki/v1"
+
+start =
+  (notAllowed
+   | element roaSpec {
+         element roaHandle { \string } &
+         element name { \string } &
+         element asNumber { \integer } &
+         element notValidBefore { \dateTime } &
+         element notValidAfter { \dateTime } &
+         element resources { roaResource* } &
+         external "utils/foreignElements.rnc"*
+     })
+\string = xsd:string
+\integer = xsd:integer
+dateTime = \string
+roaResource = external "RoaResourcePayload.rnc"

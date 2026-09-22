@@ -1,0 +1,16 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+start =
+    (notAllowed
+        | element legacyTicket {
+            (
+                element tktNo { \string } &
+                element initialDate { dateTime} &
+                element legacyTicketEnvelopes { legacyTicketEnvelope* }?
+            )
+            & external "utils/foreignElements.rnc"*
+        }
+    )
+legacyTicketEnvelope = external "LegacyTicketEnvelopePayload.rnc"
+\string = xsd:string
+dateTime = \string

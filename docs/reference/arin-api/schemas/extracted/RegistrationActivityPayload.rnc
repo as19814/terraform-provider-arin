@@ -1,0 +1,18 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+start =
+  notAllowed
+  | element registrationActivity {
+      ( element apiKey { \string }? &
+        element createdDate { dateTime }? &
+        element contents { \string }? &
+        element description { \string }? &
+        element activityType {
+          xsd:string "TEMPLATE_REQUEST" | xsd:string "XML_REQUEST" | xsd:string "RPSL_REQUEST" |
+          xsd:string "TEMPLATE_RESPONSE" | xsd:string "XML_RESPONSE" | xsd:string "RPSL_RESPONSE"
+        }?
+      )
+      & external "utils/foreignElements.rnc"*
+    }
+\string = xsd:string
+dateTime = \string

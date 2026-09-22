@@ -1,0 +1,15 @@
+default namespace = "http://www.arin.net/regrws/core/v1"
+
+start =
+  notAllowed
+  | element apiKey {
+      ( element active { xsd:boolean }? &
+        element createDate { dateTime }? &
+        element deactivateDate { dateTime }? &
+        element monitorUntilDate { dateTime }? &
+        element email { \string }? &
+        element key { \string }?
+      )
+      & external "utils/foreignElements.rnc"*
+    }
+\string = xsd:string
