@@ -150,7 +150,7 @@ func TestConfigurationAndHandleValidation(t *testing.T) {
 			t.Errorf("invalid URL accepted: %s", raw)
 		}
 	}
-	for _, key := range []string{"", "  ", "secret\r\nheader"} {
+	for _, key := range []string{"  ", "secret\r\nheader"} {
 		if _, err := New(Config{APIKey: key}); err == nil {
 			t.Error("invalid key accepted")
 		}

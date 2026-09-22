@@ -3,6 +3,7 @@ package arin
 
 import (
 	"context"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -16,27 +17,31 @@ import (
 )
 
 const (
-	ProductionURL    = "https://reg.arin.net"
-	OTEURL           = "https://reg.ote.arin.net"
-	DefaultTimeout   = 30 * time.Second
-	maxResponseBytes = 4 << 20
+	ProductionURL     = "https://reg.arin.net"
+	OTEURL            = "https://reg.ote.arin.net"
+	RDAPProductionURL = "https://rdap.arin.net"
+	RDAPOTEURL        = "https://rdap.ote.arin.net"
+	DefaultTimeout    = 30 * time.Second
+	maxResponseBytes  = 4 << 20
 )
 
 // Config is immutable after New. HTTPClient allows callers to supply a transport.
 type Config struct {
-	APIKey     string
-	BaseURL    string
-	Timeout    time.Duration
-	UserAgent  string
-	HTTPClient *http.Client
+	APIKey      string
+	BaseURL     string
+	RDAPBaseURL string
+	Timeout     time.Duration
+	UserAgent   string
+	HTTPClient  *http.Client
 }
 
 // Client is safe for concurrent use. Credentials are never placed in request URLs.
 type Client struct {
-	baseURL   string
-	apiKey    string
-	userAgent string
-	http      *http.Client
+	baseURL     string
+	rdapBaseURL string
+	apiKey      string
+	userAgent   string
+	http        *http.Client
 }
 
 func ValidateBaseURL(raw string) error {
@@ -56,7 +61,7 @@ func ValidateBaseURL(raw string) error {
 }
 
 func New(cfg Config) (*Client, error) {
-	if strings.TrimSpace(cfg.APIKey) == "" || strings.ContainsAny(cfg.APIKey, "\r\n") {
+	if (cfg.APIKey != "" && strings.TrimSpace(cfg.APIKey) == "") || strings.ContainsAny(cfg.APIKey, "\r\n") {
 		return nil, errors.New("api_key must be nonempty and must not contain line breaks")
 	}
 	if cfg.BaseURL == "" {
@@ -64,6 +69,19 @@ func New(cfg Config) (*Client, error) {
 	}
 	if err := ValidateBaseURL(cfg.BaseURL); err != nil {
 		return nil, err
+	}
+	if cfg.RDAPBaseURL == "" {
+		switch strings.TrimRight(cfg.BaseURL, "/") {
+		case ProductionURL:
+			cfg.RDAPBaseURL = RDAPProductionURL
+		case OTEURL:
+			cfg.RDAPBaseURL = RDAPOTEURL
+		}
+	}
+	if cfg.RDAPBaseURL != "" {
+		if err := ValidateBaseURL(cfg.RDAPBaseURL); err != nil {
+			return nil, fmt.Errorf("invalid rdap_base_url: %w", err)
+		}
 	}
 	if cfg.Timeout == 0 {
 		cfg.Timeout = DefaultTimeout
@@ -81,7 +99,7 @@ func New(cfg Config) (*Client, error) {
 	hc.Timeout = cfg.Timeout
 	// Never forward credentials or replay mutations through redirects.
 	hc.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
-	return &Client{baseURL: strings.TrimRight(cfg.BaseURL, "/"), apiKey: cfg.APIKey, userAgent: cfg.UserAgent, http: &hc}, nil
+	return &Client{baseURL: strings.TrimRight(cfg.BaseURL, "/"), rdapBaseURL: strings.TrimRight(cfg.RDAPBaseURL, "/"), apiKey: cfg.APIKey, userAgent: cfg.UserAgent, http: &hc}, nil
 }
 
 // APIError exposes status and sanitized ARIN error fields without retaining a raw body.
@@ -112,32 +130,48 @@ func IsNotFound(err error) bool {
 
 // getXML performs one request. Retry policies belong to individual API operations.
 func (c *Client) getXML(ctx context.Context, path string, out any) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil)
+	body, err := c.get(ctx, c.baseURL, path, "application/xml", true)
 	if err != nil {
-		return errors.New("could not construct ARIN request")
+		return err
 	}
-	req.Header.Set("Authorization", "ApiKey "+c.apiKey)
-	req.Header.Set("Accept", "application/xml")
+	if err := xml.Unmarshal(body, out); err != nil {
+		return errors.New("ARIN returned an invalid or unexpected XML payload")
+	}
+	return nil
+}
+
+func (c *Client) get(ctx context.Context, origin, path, accept string, authenticated bool) ([]byte, error) {
+	if authenticated && c.apiKey == "" {
+		return nil, errors.New("api_key or ARIN_API_KEY is required for Reg-RWS operations")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, origin+path, nil)
+	if err != nil {
+		return nil, errors.New("could not construct ARIN request")
+	}
+	if authenticated {
+		req.Header.Set("Authorization", "ApiKey "+c.apiKey)
+	}
+	req.Header.Set("Accept", accept)
 	req.Header.Set("User-Agent", c.userAgent)
 	resp, err := c.http.Do(req)
 	if err != nil {
 		if ctx.Err() != nil {
-			return fmt.Errorf("ARIN request interrupted: %w", ctx.Err())
+			return nil, fmt.Errorf("ARIN request interrupted: %w", ctx.Err())
 		}
 		var ne net.Error
 		if errors.As(err, &ne) && ne.Timeout() {
-			return errors.New("ARIN request timed out")
+			return nil, errors.New("ARIN request timed out")
 		}
 		// Do not expose transport errors that may include URLs or custom headers.
-		return errors.New("ARIN request failed; check connectivity and TLS configuration")
+		return nil, errors.New("ARIN request failed; check connectivity and TLS configuration")
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
 	if err != nil {
-		return errors.New("could not read ARIN response")
+		return nil, errors.New("could not read ARIN response")
 	}
 	if len(body) > maxResponseBytes {
-		return errors.New("ARIN response exceeded the 4 MiB limit")
+		return nil, errors.New("ARIN response exceeded the 4 MiB limit")
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var payload struct {
@@ -150,15 +184,24 @@ func (c *Client) getXML(ctx context.Context, path string, out any) error {
 			apiErr.Code = c.redact(payload.Code)
 			apiErr.Message = c.redact(payload.Message)
 		}
-		return apiErr
+		if accept == "application/rdap+json" {
+			var rdapError struct {
+				Title       string   `json:"title"`
+				Description []string `json:"description"`
+			}
+			if json.Unmarshal(body, &rdapError) == nil {
+				apiErr.Message = c.redact(strings.Join(append([]string{rdapError.Title}, rdapError.Description...), " "))
+			}
+		}
+		return nil, apiErr
 	}
-	if err := xml.Unmarshal(body, out); err != nil {
-		return errors.New("ARIN returned an invalid or unexpected XML payload")
-	}
-	return nil
+	return body, nil
 }
 
 func (c *Client) redact(s string) string {
+	if c.apiKey == "" {
+		return s
+	}
 	s = strings.ReplaceAll(s, c.apiKey, "[REDACTED]")
 	s = strings.ReplaceAll(s, url.QueryEscape(c.apiKey), "[REDACTED]")
 	return s

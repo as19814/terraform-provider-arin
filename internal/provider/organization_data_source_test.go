@@ -30,6 +30,7 @@ func TestAccOrganizationDataSource(t *testing.T) {
 		fmt.Fprintf(w, `<org xmlns="http://www.arin.net/regrws/core/v1"><handle>EXAMPLE-1</handle><orgName>%s</orgName><registrationDate>2026-01-01</registrationDate></org>`, name)
 	}))
 	defer server.Close()
+	t.Setenv("ARIN_RDAP_BASE_URL", "")
 	t.Setenv("ARIN_API_KEY", "acceptance-test-key")
 	t.Setenv("ARIN_BASE_URL", server.URL)
 	config := `provider "arin" {}
@@ -49,6 +50,7 @@ func TestAccOrganizationNotFound(t *testing.T) {
 		fmt.Fprint(w, `<error><code>E_OBJECT_NOT_FOUND</code><message>Organization does not exist</message></error>`)
 	}))
 	defer server.Close()
+	t.Setenv("ARIN_RDAP_BASE_URL", "")
 	t.Setenv("ARIN_API_KEY", "acceptance-test-key")
 	t.Setenv("ARIN_BASE_URL", server.URL)
 	resource.Test(t, resource.TestCase{

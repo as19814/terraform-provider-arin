@@ -2,11 +2,11 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The foundation includes an authenticated Reg-RWS client and the read-only `arin_org` data source. Managed resources are not implemented yet. The repository is private and the provider has not been published to a registry.
+The foundation includes a Reg-RWS/RDAP client and the read-only `arin_org` and `arin_networks` data sources. Managed resources are not implemented yet. The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
-Set `ARIN_API_KEY` in your shell. The provider sends it as an authorization header. Your ARIN account must have authority over the requested records.
+For Reg-RWS organization reads, set `ARIN_API_KEY` in your shell. The provider sends it as an authorization header, and your account must have authority over the requested records. Public network discovery uses RDAP without sending an API key and works without credentials.
 
 ```hcl
 terraform {
@@ -25,9 +25,19 @@ provider "arin" {
 data "arin_org" "ours" {
   handle = "FT-684"
 }
+
+data "arin_networks" "ours" {
+  org_handle = "FT-684"
+}
+
+output "networks" {
+  value = data.arin_networks.ours.networks
+}
 ```
 
-`base_url` defaults to `ARIN_BASE_URL`, then production. Set it to `https://reg.ote.arin.net` for OT&E. Explicit provider attributes take precedence over environment variables. See the [provider schema](docs/index.md) and [organization data source](docs/data-sources/org.md).
+`base_url` defaults to `ARIN_BASE_URL`, then production. Set it to `https://reg.ote.arin.net` for OT&E. Explicit provider attributes take precedence over environment variables. The RDAP origin automatically follows production or OT&E; override it with `rdap_base_url` or `ARIN_RDAP_BASE_URL`. Custom registration origins require an explicit RDAP origin for network discovery. See the [provider schema](docs/index.md), [organization data source](docs/data-sources/org.md), and [network listing](docs/data-sources/networks.md).
+
+`arin_networks` returns a map keyed by network handle, with names, address families, registration types, address ranges, and CIDRs. It includes allocations and assignments directly registered to the organization, including overlapping parent and more-specific registrations. Contact-only associations and networks reassigned to other organizations are excluded. A public registration does not establish API-key authority. Searches that report truncation or pagination fail rather than returning a partial inventory.
 
 ## Local development
 
@@ -59,8 +69,8 @@ Rebuild with `make build` after source changes. Use `bin/terraform-provider-arin
 | Command | Coverage | ARIN access |
 | --- | --- | --- |
 | `make test` | Client and provider unit tests, race detector | None |
-| `make testacc` | Real Terraform against an in-process fake API, including refresh and missing records | None |
-| `make testlive` | Real Terraform reading an existing organization | Read-only |
+| `make testacc` | Real Terraform against an in-process fake API, including refresh, empty inventories, truncation, and missing records | None |
+| `make testlive` | Real Terraform reading an organization and its public network inventory | Read-only |
 | `make check` | Vet, unit tests, fake acceptance tests, binary build | None |
 
 The fake server remains the default for deterministic tests and CI. Live tests need a separate opt-in, an existing organization handle, and your shell's API key:
@@ -69,11 +79,11 @@ The fake server remains the default for deterministic tests and CI. Live tests n
 ARIN_TEST_ORG_HANDLE=FT-684 ARIN_BASE_URL=https://reg.arin.net make testlive
 ```
 
-`make testlive` sets `ARIN_LIVE_TESTS=1` and `TF_ACC=1` and disables test caching. It reads only; it does not create, update, or delete ARIN records. CI receives no ARIN credentials and does not run live tests. No private fixtures or account responses are committed.
+`make testlive` sets `ARIN_LIVE_TESTS=1` and `TF_ACC=1` and disables test caching. It reads only; it does not create, update, or delete ARIN records. Network reads use public RDAP and do not transmit the key. CI receives no ARIN credentials and does not run live tests. No private fixtures or account responses are committed.
 
 ## Layout
 
-- `internal/arin/`: HTTP client, XML response models, typed errors, and fake-server unit tests. Independent of Terraform.
+- `internal/arin/`: HTTP client, XML/JSON response models, typed errors, and fake-server unit tests. Independent of Terraform.
 - `internal/provider/`: provider configuration, data sources, and Terraform acceptance tests.
 - `examples/`: Terraform configuration examples used in generated documentation.
 - `docs/`: generated provider and data source documentation.
@@ -84,6 +94,6 @@ API requests have deadlines and bounded responses. Redirects are rejected, raw r
 
 ## Next steps
 
-Build resource support one API family at a time, with import, refresh, update, deletion, and error behavior tested against both a fake server and OT&E. The likely first candidates are IRR objects and RPKI ROAs. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
+Build resource support one API family at a time, with import, refresh, update, deletion, and error behavior tested against both a fake server and OT&E. Networks are the current focus: discovery is implemented, followed by authenticated network detail and metadata management. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
 
 Start with the [API index](docs/reference/arin-api/README.md), [provider notes](docs/reference/arin-api/PROVIDER-NOTES.md), and [schema findings](docs/reference/arin-api/schemas/README.md).

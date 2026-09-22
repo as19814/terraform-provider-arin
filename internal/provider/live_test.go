@@ -39,3 +39,25 @@ func TestLiveOrganization(t *testing.T) {
 		}},
 	})
 }
+
+// TestLiveNetworks discovers the organization's public registrations without
+// transmitting the API key. It intentionally does not pin a changing inventory count.
+func TestLiveNetworks(t *testing.T) {
+	if os.Getenv("ARIN_LIVE_TESTS") != "1" {
+		t.Skip("set ARIN_LIVE_TESTS=1 and TF_ACC=1 to run read-only live tests")
+	}
+	if os.Getenv("TF_ACC") != "1" {
+		t.Fatal("live tests also require TF_ACC=1")
+	}
+	handle := os.Getenv("ARIN_TEST_ORG_HANDLE")
+	if handle == "" {
+		t.Fatal("ARIN_TEST_ORG_HANDLE is required")
+	}
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("live-test")())},
+		Steps: []resource.TestStep{{
+			Config: fmt.Sprintf("provider \"arin\" {}\ndata \"arin_networks\" \"live\" { org_handle = %q }", handle),
+			Check:  resource.TestCheckResourceAttrSet("data.arin_networks.live", "networks.%"),
+		}},
+	})
+}
