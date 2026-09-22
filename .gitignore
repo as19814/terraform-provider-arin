@@ -14,3 +14,5 @@ crash.*.log
 /bin/
 /dist/
 /terraform-provider-arin
+.terraformrc.local
+coverage.out

@@ -1,0 +1,27 @@
+.PHONY: build fmt vet test testacc generate check
+
+build:
+	go build -o bin/terraform-provider-arin .
+
+fmt:
+	gofmt -w main.go internal
+	terraform fmt -recursive examples
+
+vet:
+	go vet ./...
+
+test:
+	go test -race ./...
+
+testacc:
+	TF_ACC=1 go test -race ./internal/provider -run TestAcc -v -timeout 5m
+
+generate:
+	go generate ./...
+
+check: vet test testacc build
+
+# Read-only live test. Requires ARIN_API_KEY and ARIN_TEST_ORG_HANDLE.
+.PHONY: testlive
+testlive:
+	ARIN_LIVE_TESTS=1 TF_ACC=1 go test ./internal/provider -run '^TestLive' -v -count=1 -timeout 5m
