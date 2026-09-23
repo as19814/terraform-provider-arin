@@ -447,3 +447,27 @@ not authenticated certificate-path tests. The caller must separately validate
 signatures, profiles, revocation and the chosen trust anchor before using the
 result. Issuance integration, comparison with requested/advised resource sets,
 full path verification and native evidence remain unfinished.
+
+## Authenticated resource-path primitive
+
+A private verifier now combines an exact, leaf-first CA certificate path with an
+explicitly configured resource trust anchor, caller-supplied CRLs and a validation
+time. It reparses all DER, bounds inputs, validates PKIX signatures and dates,
+checks issuer identities and key identifiers, checks current CRL status, and then
+resolves resource inheritance and containment for that same path. It uses no
+system roots and fetches no URLs. Alternative paths cannot silently replace the
+supplied path.
+
+Only successfully decoded original-profile resource extensions are removed from
+the parsed copies' unhandled-critical list before PKIX verification. Unknown
+critical extensions still fail. Caller-owned certificate objects are unchanged.
+Signed three-level test chains cover successful inheritance, wrong anchors,
+missing/reordered issuers, expired paths, revoked leaf/intermediate certificates,
+missing CRLs, invalid signatures, forged parsed fields and signed overclaims.
+
+This primitive is not yet connected to issuance acceptance. It is not complete
+RFC 6487 validation: certificate/CRL profile rules, resource-anchor provisioning,
+newer extension profiles, requested-allocation comparison and persistent CRL
+rollback history remain to be addressed. CRLs use the existing signature,
+currentness and revocation checks; stricter resource-CRL profile checks remain.
+Terraform integration, recovery and native delegated evidence are still pending.
