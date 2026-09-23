@@ -14,7 +14,7 @@ import (
 // IRRRoute owns simple route metadata. Registration and POC links are server-owned.
 type IRRRoute struct {
 	Prefix, OriginAS, OrgHandle, NetHandle              string
-	Description, Remarks                                []string
+	Description, Remarks, MemberOf                      []string
 	POCs                                                []IRRPOC
 	CreationDate, LastModifiedDate, AutoLinkedROAHandle string
 }
@@ -56,6 +56,11 @@ func (r IRRRoute) Validate() error {
 			}
 		}
 	}
+	for _, name := range r.MemberOf {
+		if err := ValidateRouteSetName(name); err != nil {
+			return fmt.Errorf("member_of: %w", err)
+		}
+	}
 	return nil
 }
 func routePath(id string) (string, error) {
@@ -74,6 +79,7 @@ type routeXML struct {
 	Source      string       `xml:"source"`
 	Prefix      string       `xml:"prefix"`
 	OriginAS    string       `xml:"originAS"`
+	MemberOf    []irrMember  `xml:"memberOf>routeSetRef"`
 }
 
 func (r IRRRoute) marshal() ([]byte, error) {
@@ -90,6 +96,9 @@ func (r IRRRoute) marshal() ([]byte, error) {
 			p.Remarks.Lines = append(p.Remarks.Lines, irrLine{i, line})
 		}
 	}
+	for _, name := range r.MemberOf {
+		p.MemberOf = append(p.MemberOf, irrMember{name})
+	}
 	return xml.Marshal(p)
 }
 func decodeIRRRoute(body []byte, id string) (*IRRRoute, error) {
@@ -105,8 +114,18 @@ func decodeIRRRoute(body []byte, id string) (*IRRRoute, error) {
 		if child.Name.Space != root.Name.Space || !allowed[child.Name.Local] {
 			return nil, errors.New("ARIN returned unsupported route fields; refusing to manage a partial representation")
 		}
-		if child.Name.Local == "memberOf" && (len(child.Children) > 0 || strings.TrimSpace(child.Text) != "") {
-			return nil, errors.New("routes with memberOf associations are not supported by this resource")
+		if child.Name.Local == "memberOf" {
+			if strings.TrimSpace(child.Text) != "" || len(child.Attrs) != 0 {
+				return nil, errors.New("ARIN returned unsupported route membership")
+			}
+			for _, ref := range child.Children {
+				if ref.Name.Space != root.Name.Space || ref.Name.Local != "routeSetRef" || len(ref.Children) != 0 || strings.TrimSpace(ref.Text) != "" || len(ref.Attrs) != 1 || ref.Attrs[0].Name.Space != "" || ref.Attrs[0].Name.Local != "name" {
+					return nil, errors.New("ARIN returned unsupported route membership reference")
+				}
+				if err := ValidateRouteSetName(ref.Attrs[0].Value); err != nil {
+					return nil, fmt.Errorf("ARIN returned invalid route membership: %w", err)
+				}
+			}
 		}
 	}
 	values, err := decodeFields(root, routeFields)
@@ -123,6 +142,9 @@ func decodeIRRRoute(body []byte, id string) (*IRRRoute, error) {
 	}
 	for _, v := range values["remarks"].([]any) {
 		r.Remarks = append(r.Remarks, v.(string))
+	}
+	for _, v := range values["member_of"].([]any) {
+		r.MemberOf = append(r.MemberOf, v.(string))
 	}
 	for _, v := range values["poc_links"].([]any) {
 		p := v.(map[string]any)

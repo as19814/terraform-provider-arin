@@ -5,6 +5,7 @@ resource "arin_irr_route" "example" {
   org_handle  = "EXAMPLE-1"
   description = ["Example IPv4 route"]
   remarks     = ["Managed with Terraform"]
+  member_of   = [arin_irr_route_set.example.name]
 }
 
 resource "arin_irr_route" "example_v6" {
@@ -12,4 +13,12 @@ resource "arin_irr_route" "example_v6" {
   origin_as   = "AS64496"
   org_handle  = "EXAMPLE-1"
   description = ["Example IPv6 route"]
+}
+
+# Authorize this organization's routes to join a route set by reference.
+resource "arin_irr_route_set" "example" {
+  name           = "RS-EXAMPLE"
+  org_handle     = "EXAMPLE-1"
+  description    = ["Example routes"]
+  members_by_ref = ["MNT-EXAMPLE-1"]
 }

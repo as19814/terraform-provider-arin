@@ -131,7 +131,9 @@ authentication and server errors never cause state removal.
 
 `arin_irr_route` manages simple IPv4 and IPv6 IRR route objects. Configure a
 canonical `prefix`, `origin_as` (such as `AS64496`), `org_handle`, and ordered
-`description` lines. Optional `remarks` default to empty. POC links, network
+`description` lines. Optional `remarks` and `member_of` default to empty.
+`member_of` manages route-set membership; the target set must authorize the
+route maintainer through `members_by_ref` for membership by reference. POC links, network
 handle, and timestamps are computed by ARIN. Prefix, origin ASN, and organization
 changes require replacement. Removing the resource deletes the IRR object.
 
@@ -144,8 +146,7 @@ terraform import arin_irr_route.example_v6 '2001:db8::/48,AS64496'
 
 Import existing objects before managing them. ROA-linked routes are rejected,
 including a fresh check before update or delete, because their lifecycle belongs
-to RPKI. Advanced RPSL objects and routes with `memberOf` associations are not
-supported. Unsupported XML fields fail reads rather than permitting a partial
+to RPKI. Advanced RPSL objects are not supported. Unsupported XML fields fail reads rather than permitting a partial
 replacement payload. HTTP 404 removes missing objects from state; other errors
 preserve state. Mutations are not automatically retried.
 
@@ -247,7 +248,9 @@ The route test selects a random IPv4 /32 and IPv6 /128 within OT&E registrations
 held by the organization, confirms parent registration ownership, and confirms
 each prefix/origin pair is absent. It uses the documentation ASN AS64496. It then
 creates, updates, imports, verifies a clean plan, deletes, and checks absence for
-both families. Prefixes are printed for recovery if cleanup fails.
+both families. It also creates two disposable route sets, tests multiple memberships,
+changes and clears membership, and confirms helper-set cleanup. Prefixes are
+printed for recovery if cleanup fails. See [route evidence](docs/reference/irr-routes.md).
 The route-set test exercises IPv4/IPv6 membership, MNT references, prefix ranges,
 and collection clearing. The aut-num test discovers an ASN registered to the
 organization with no existing IRR aut-num, creates a disposable helper AS set,

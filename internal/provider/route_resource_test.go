@@ -147,3 +147,42 @@ func TestAccIRRRouteInvalid(t *testing.T) {
 		Steps:                    []resource.TestStep{{Config: routeConfig("192.0.2.1/24", "AS64496", `[]`), ExpectError: regexp.MustCompile("without host bits")}},
 	})
 }
+
+func TestAccIRRRouteMembership(t *testing.T) {
+	for _, prefix := range []string{"192.0.2.0/24", "2001:db8::/48"} {
+		t.Run(prefix, func(t *testing.T) {
+			f := setupRouteFake(t)
+			base := routeConfig(prefix, "AS64496", `[]`)
+			config := func(members string) string {
+				return strings.Replace(base, "remarks = []", "remarks = []\n member_of = "+members, 1)
+			}
+			initial := config(`["RS-ONE", "AS64496:RS-TWO"]`)
+			updated := config(`["RS-THREE"]`)
+			resource.Test(t, resource.TestCase{
+				ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("test")())},
+				Steps: []resource.TestStep{
+					{Config: initial, Check: resource.TestCheckResourceAttr("arin_irr_route.test", "member_of.#", "2")},
+					{ResourceName: "arin_irr_route.test", ImportState: true, ImportStateVerify: true},
+					{Config: config(`["AS64496:RS-TWO", "RS-ONE"]`), PlanOnly: true},
+					{Config: updated, Check: resource.TestCheckTypeSetElemAttr("arin_irr_route.test", "member_of.*", "RS-THREE")},
+					{Config: updated, PreConfig: func() {
+						f.mu.Lock()
+						defer f.mu.Unlock()
+						id := prefix + ",AS64496"
+						f.objects[id] = strings.ReplaceAll(f.objects[id], "RS-THREE", "RS-DRIFT")
+					}},
+					{Config: base, Check: resource.TestCheckResourceAttr("arin_irr_route.test", "member_of.#", "0")},
+					{Config: base, PlanOnly: true},
+				},
+				CheckDestroy: func(_ *terraform.State) error {
+					f.mu.Lock()
+					defer f.mu.Unlock()
+					if len(f.objects) != 0 || f.writes["POST"] != 1 || f.writes["PUT"] != 3 || f.writes["DELETE"] != 1 {
+						return fmt.Errorf("unexpected lifecycle writes: %v", f.writes)
+					}
+					return nil
+				},
+			})
+		})
+	}
+}

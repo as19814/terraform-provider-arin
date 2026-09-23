@@ -70,7 +70,7 @@ func TestAccRegistrationCatalog(t *testing.T) {
 	}
 	routes := map[string][]byte{}
 	config := "provider \"arin\" {}\n"
-	var checks []resource.TestCheckFunc
+	checks := []resource.TestCheckFunc{resource.TestCheckResourceAttr("data.arin_irr_route.test", "member_of.0", "RS-EXAMPLE")}
 	for _, spec := range arin.RegistrationReads() {
 		p := fixtureParams(spec)
 		root := spec.Root

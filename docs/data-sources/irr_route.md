@@ -35,6 +35,7 @@ data "arin_irr_route" "example" {
 - `creation_date` (String) creation date returned by ARIN.
 - `description` (List of String) Ordered lines of description.
 - `last_modified_date` (String) last modified date returned by ARIN.
+- `member_of` (List of String) member of returned by ARIN.
 - `net_handle` (String) net handle returned by ARIN.
 - `org_handle` (String) org handle returned by ARIN.
 - `origin_as` (String) origin as returned by ARIN.

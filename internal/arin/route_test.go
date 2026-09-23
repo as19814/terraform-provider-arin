@@ -2,9 +2,11 @@ package arin
 
 import (
 	"context"
+	"encoding/xml"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -27,7 +29,7 @@ func TestIRRRouteIdentity(t *testing.T) {
 	if err != nil || r.Prefix != "192.0.2.0/24" {
 		t.Fatalf("address normalization: %v", err)
 	}
-	for _, body := range []string{`<route/>`, routeFixture("192.0.3.0/24", "AS64496", ""), routeFixture("192.0.2.0/24", "AS64497", ""), routeFixture("192.0.2.0/24", "AS64496", "<futureField/>"), routeFixture("192.0.2.0/24", "AS64496", `<memberOf><routeSetRef name="RS-EXAMPLE"/></memberOf>`)} {
+	for _, body := range []string{`<route/>`, routeFixture("192.0.3.0/24", "AS64496", ""), routeFixture("192.0.2.0/24", "AS64497", ""), routeFixture("192.0.2.0/24", "AS64496", "<futureField/>"), routeFixture("192.0.2.0/24", "AS64496", `<memberOf><routeSetRef name="AS-INVALID"/></memberOf>`)} {
 		if _, err := decodeIRRRoute([]byte(body), "192.0.2.0/24,AS64496"); err == nil {
 			t.Fatal("accepted unsupported response")
 		}
@@ -125,5 +127,42 @@ func TestIRRRouteFailedWritesNotRetried(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestIRRRouteMembership(t *testing.T) {
+	input := IRRRoute{Prefix: "192.0.2.0/24", OriginAS: "AS64496", OrgHandle: "EXAMPLE-1", Description: []string{"Example"}, MemberOf: []string{"RS-EXAMPLE", "AS64496:RS-SECOND"}}
+	body, err := input.marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	// Verify the nested reference attributes, not just an echo of the body.
+	var payload struct {
+		Refs []struct {
+			Name string `xml:"name,attr"`
+		} `xml:"memberOf>routeSetRef"`
+	}
+	if err := xml.Unmarshal(body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	for _, ref := range payload.Refs {
+		names = append(names, ref.Name)
+	}
+	if !reflect.DeepEqual(names, input.MemberOf) {
+		t.Fatal("incorrect membership payload")
+	}
+	decoded, err := decodeIRRRoute([]byte(routeFixture(input.Prefix, input.OriginAS, `<memberOf><routeSetRef name="RS-EXAMPLE"/><routeSetRef name="AS64496:RS-SECOND"/></memberOf>`)), input.ID())
+	if err != nil || !reflect.DeepEqual(decoded.MemberOf, []string{"AS64496:RS-SECOND", "RS-EXAMPLE"}) {
+		t.Fatalf("membership round trip: %v", err)
+	}
+	for _, extra := range []string{`<memberOf name="RS-EXAMPLE"/>`, `<memberOf><routeSetRef/></memberOf>`, `<memberOf><routeSetRef name="RS-EXAMPLE" extra="lost"/></memberOf>`, `<memberOf><futureField/></memberOf>`} {
+		if _, err := decodeIRRRoute([]byte(routeFixture(input.Prefix, input.OriginAS, extra)), input.ID()); err == nil {
+			t.Fatal("accepted lossy membership representation")
+		}
+	}
+	input.MemberOf = []string{"AS-BAD"}
+	if _, err := input.marshal(); err == nil {
+		t.Fatal("accepted invalid route set")
 	}
 }

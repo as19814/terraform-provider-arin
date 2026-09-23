@@ -3,10 +3,12 @@ package provider
 import (
 	"context"
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"net/netip"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -91,6 +93,44 @@ func TestOTEIRRRouteLifecycle(t *testing.T) {
 			if prefix == "" {
 				t.Fatalf("no unused %s test prefix found in OT&E organization registrations", family)
 			}
+
+			// Disposable route sets authorize this organization's routes by reference.
+			suffix := make([]byte, 8)
+			if _, err := rand.Read(suffix); err != nil {
+				t.Fatal(err)
+			}
+			names := []string{"RS-TF-OTE-" + strings.ToUpper(hex.EncodeToString(suffix)) + "-A", "RS-TF-OTE-" + strings.ToUpper(hex.EncodeToString(suffix)) + "-B"}
+			for _, name := range names {
+				if _, err := client.GetRouteSet(ctx, name); !arin.IsNotFound(err) {
+					t.Fatalf("route-set absence not confirmed: %v", err)
+				}
+				t.Cleanup(func() {
+					cleanup, cancel := context.WithTimeout(context.Background(), time.Minute)
+					defer cancel()
+					current, err := client.GetRouteSet(cleanup, name)
+					if arin.IsNotFound(err) {
+						return
+					}
+					if err != nil {
+						t.Errorf("route-set cleanup read: %v", err)
+						return
+					}
+					if current.OrgHandle != org {
+						t.Error("route-set cleanup ownership mismatch")
+						return
+					}
+					if err := client.DeleteRouteSet(cleanup, name); err != nil {
+						t.Errorf("route-set cleanup: %v", err)
+						return
+					}
+					if _, err := client.GetRouteSet(cleanup, name); !arin.IsNotFound(err) {
+						t.Errorf("route-set cleanup unconfirmed: %v", err)
+					}
+				})
+				if _, err := client.CreateRouteSet(ctx, arin.RouteSet{Name: name, OrgHandle: org, Description: []string{"Disposable route membership test"}, MembersByRef: []string{"MNT-" + org}}); err != nil {
+					t.Fatal(err)
+				}
+			}
 			id := prefix + ",AS64496"
 			t.Logf("Disposable OT&E route: %s", id)
 			t.Cleanup(func() {
@@ -116,7 +156,7 @@ func TestOTEIRRRouteLifecycle(t *testing.T) {
 					t.Errorf("route cleanup not confirmed for %s: %v", id, err)
 				}
 			})
-			config := func(description, remarks string) string {
+			config := func(description, remarks, members string) string {
 				return fmt.Sprintf(`provider "arin" {
  base_url = "https://reg.ote.arin.net"
  rdap_base_url = "https://rdap.ote.arin.net"
@@ -127,9 +167,11 @@ resource "arin_irr_route" "test" {
  org_handle = %q
  description = [%q]
  remarks = %s
-}`, prefix, org, description, remarks)
+ member_of = %s
+}`, prefix, org, description, remarks, members)
 			}
-			updated := config("Updated disposable Terraform OT&E route", `[]`)
+			updated := config("Updated disposable Terraform OT&E route", `[]`, fmt.Sprintf("[%q]", names[1]))
+			cleared := config("Updated disposable Terraform OT&E route", `[]`, `[]`)
 			resource.Test(t, resource.TestCase{
 				ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("ote-test")())},
 				CheckDestroy: func(_ *terraform.State) error {
@@ -141,10 +183,12 @@ resource "arin_irr_route" "test" {
 					return nil
 				},
 				Steps: []resource.TestStep{
-					{Config: config("Disposable Terraform OT&E route", `["Disposable test remark"]`), Check: resource.TestCheckResourceAttr("arin_irr_route.test", "id", id)},
-					{Config: updated, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_irr_route.test", "description.0", "Updated disposable Terraform OT&E route"), resource.TestCheckResourceAttr("arin_irr_route.test", "remarks.#", "0"))},
+					{Config: config("Disposable Terraform OT&E route", `["Disposable test remark"]`, fmt.Sprintf("[%q,%q]", names[0], names[1])), Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_irr_route.test", "id", id), resource.TestCheckResourceAttr("arin_irr_route.test", "member_of.#", "2"))},
+					{Config: updated, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_irr_route.test", "description.0", "Updated disposable Terraform OT&E route"), resource.TestCheckResourceAttr("arin_irr_route.test", "remarks.#", "0"), resource.TestCheckTypeSetElemAttr("arin_irr_route.test", "member_of.*", names[1]))},
 					{ResourceName: "arin_irr_route.test", ImportState: true, ImportStateVerify: true},
 					{Config: updated, PlanOnly: true, ExpectNonEmptyPlan: false},
+					{Config: cleared, Check: resource.TestCheckResourceAttr("arin_irr_route.test", "member_of.#", "0")},
+					{Config: cleared, PlanOnly: true},
 				},
 			})
 		})
