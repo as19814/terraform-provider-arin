@@ -707,3 +707,24 @@ The existing private Issue method remains protocol-only. Provider integration
 must use the complete validation flow after allocation matching is implemented.
 The repository resolver, pending-operation recovery and native delegated
 verification are also still unfinished.
+
+## Issued allocation matching
+
+The resource-path issuance entry point now compares resolved certificate
+resources with the signed resource class, bounded by each echoed request set.
+Omitted requests select the whole family allocation; explicit empty requests
+select none. Supplied request ranges are intersected with the allocated ranges.
+Equivalent adjacent ranges and IP prefix/range representations are normalized
+before exact comparison. This follows the request semantics in
+[RFC 6492 section 3.4.1](https://datatracker.ietf.org/doc/html/rfc6492#section-3.4.1).
+
+Comparison runs after path/resource resolution and before manifest history is
+committed. Overclaims, missing expected resources and unresolved inheritance
+fail. AS/IPv4/IPv6 tests cover empty/omitted requests, intersections, gaps,
+adjacent ranges and address-space boundaries. Signed fake-server tests verify
+that allocation/request mismatches retain the pending issue operation, prevent
+automatic resubmission and leave manifest history unchanged.
+
+Repository retrieval, uncertain-outcome recovery, anchor rotation, native
+interoperability and Terraform integration remain unfinished. The protocol-only
+private Issue helper does not perform these resource-path/allocation checks.

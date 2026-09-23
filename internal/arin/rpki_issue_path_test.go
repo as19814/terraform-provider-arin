@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -24,14 +26,24 @@ func TestRPKIIssueWithResourcePath(t *testing.T) {
 	}
 	input := rpkiIssueRequest{Class: "class", CSRDER: csr}
 	reply := upDownTestReply("issue_response", fmt.Sprintf(`<class class_name="class" cert_url="rsync://repo.example/module/issuer.cer" resource_set_as="64500-64510" resource_set_ipv4="" resource_set_ipv6="" resource_set_notafter="%s"><certificate cert_url="%s">%s</certificate><issuer>%s</issuer></class>`, cmsTrustNow().Add(time.Hour).Format("2006-01-02T15:04:05Z"), pubs[0].ChildURI, base64.StdEncoding.EncodeToString(f.certs[0].Raw), base64.StdEncoding.EncodeToString(f.certs[1].Raw)))
-	for _, mode := range []string{"valid", "retrieval_failure", "wrong_certificate", "wrong_issuer", "wrong_location", "missing_publication", "invalid_configuration", "resolver_mutation"} {
+	for _, mode := range []string{"valid", "retrieval_failure", "wrong_certificate", "wrong_issuer", "wrong_location", "missing_publication", "invalid_configuration", "resolver_mutation", "allocation_mismatch", "request_mismatch"} {
 		t.Run(mode, func(t *testing.T) {
+			request := input
+			response := reply
+			if mode == "allocation_mismatch" {
+				response = strings.Replace(response, `resource_set_as="64500-64510"`, `resource_set_as="64500-64509"`, 1)
+			}
+			if mode == "request_mismatch" {
+				subset := "64500"
+				request.RequestedASN = &subset
+				response = strings.Replace(response, "<certificate ", `<certificate req_resource_set_as="64500" `, 1)
+			}
 			local, _ := cmsSigningFixture(t)
 			remote, _ := cmsSigningFixture(t)
 			var calls, resolves atomic.Int32
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				calls.Add(1)
-				signed, err := signRPKICMS([]byte(reply), remote, cmsTrustNow(), time.Time{})
+				signed, err := signRPKICMS([]byte(response), remote, cmsTrustNow(), time.Time{})
 				if err != nil {
 					t.Error(err)
 					return
@@ -67,9 +79,15 @@ func TestRPKIIssueWithResourcePath(t *testing.T) {
 			}
 			valid := mode == "valid" || mode == "resolver_mutation"
 			for i := 0; i < 2; i++ {
-				got, err := client.IssueWithResourcePath(context.Background(), input, validation)
+				got, err := client.IssueWithResourcePath(context.Background(), request, validation)
 				if (err == nil) != valid || (got != nil) != valid {
 					t.Fatalf("valid=%v result=%v err=%v", valid, got != nil, err)
+				}
+			}
+			if mode == "allocation_mismatch" || mode == "request_mismatch" {
+				histories, err := filepath.Glob(filepath.Join(validation.Directory, "rpki-manifests-*.json"))
+				if err != nil || len(histories) != 0 {
+					t.Fatal("allocation mismatch committed history")
 				}
 			}
 			scope, _ := json.Marshal([]string{"child", "parent"})

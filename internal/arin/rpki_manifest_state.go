@@ -35,7 +35,12 @@ func rpkiManifestDigest(data []byte) string {
 // Verify and atomically remember all manifest versions under a per-anchor
 // filesystem lock. A crash leaves the lock for explicit recovery. The private
 // directory must persist across runs; deleting it discards rollback protection.
-func verifyAndRecordRPKIManifestPath(directory string, path []*x509.Certificate, anchor *x509.Certificate, publications []rpkiPathPublication, now time.Time) (resources *rpkiCertificateResources, err error) {
+func verifyAndRecordRPKIManifestPath(directory string, path []*x509.Certificate, anchor *x509.Certificate, publications []rpkiPathPublication, now time.Time) (*rpkiCertificateResources, error) {
+	return verifyAndRecordRPKIManifestPathWithCheck(directory, path, anchor, publications, now, nil)
+}
+
+// The extra check runs on resolved resources before any history is committed.
+func verifyAndRecordRPKIManifestPathWithCheck(directory string, path []*x509.Certificate, anchor *x509.Certificate, publications []rpkiPathPublication, now time.Time, check func(*rpkiCertificateResources) error) (resources *rpkiCertificateResources, err error) {
 	if !filepath.IsAbs(directory) || anchor == nil || len(anchor.Raw) == 0 || len(anchor.Raw) > 512000 {
 		return nil, errRPKIManifestState
 	}
@@ -65,6 +70,11 @@ func verifyAndRecordRPKIManifestPath(directory string, path []*x509.Certificate,
 	resources, e = verifyRPKIManifestPath(path, anchor, publications, now)
 	if e != nil {
 		return nil, e
+	}
+	if check != nil {
+		if e := check(resources); e != nil {
+			return nil, e
+		}
 	}
 	for i, p := range publications {
 		issuer, e := x509.ParseCertificate(path[i+1].Raw)

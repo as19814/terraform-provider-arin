@@ -26,7 +26,7 @@ type rpkiIssuePathValidation struct {
 
 // IssueWithResourcePath holds the exchange pending until the returned
 // certificate is present in a manifest-backed path and history is persisted.
-// This is private plumbing, not yet complete allocation/request matching.
+// Resolved resources must match the allocation bounded by the echoed request.
 func (c rpkiUpDownClient) IssueWithResourcePath(ctx context.Context, input rpkiIssueRequest, v rpkiIssuePathValidation) (*rpkiResourceClass, error) {
 	if v.Anchor == nil || len(v.Anchor.Raw) == 0 || len(v.Anchor.Raw) > 512000 || v.Resolve == nil || !filepath.IsAbs(v.Directory) {
 		return nil, errRPKIUpDown
@@ -87,6 +87,6 @@ func validateIssuedResourcePath(class *rpkiResourceClass, path rpkiIssuePath, v 
 	if !bytes.Equal(issued.DER, path.Certificates[0].Raw) || !bytes.Equal(class.IssuerDER, path.Certificates[1].Raw) || !slices.Contains(strings.Split(issued.URLs, ","), path.Publications[0].ChildURI) {
 		return errRPKIUpDown
 	}
-	_, err := verifyAndRecordRPKIManifestPath(v.Directory, path.Certificates, v.Anchor, path.Publications, now)
+	_, err := verifyAndRecordRPKIManifestPathWithCheck(v.Directory, path.Certificates, v.Anchor, path.Publications, now, func(resources *rpkiCertificateResources) error { return validateIssuedResources(class, resources) })
 	return err
 }

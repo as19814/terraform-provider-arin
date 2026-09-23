@@ -18,7 +18,7 @@ type rpkiIssueRequest struct {
 }
 
 // Issue performs protocol validation only. Provider resources must use the
-// resource-path entry point once allocation matching is integrated.
+// resource-path entry point for certificate and allocation validation.
 func (c rpkiUpDownClient) Issue(ctx context.Context, input rpkiIssueRequest) (*rpkiResourceClass, error) {
 	return c.issue(ctx, input, nil)
 }
