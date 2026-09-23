@@ -208,7 +208,7 @@ Start with the [API index](docs/reference/arin-api/README.md), [provider notes](
 
 ## OT&E write validation
 
-The managed resources and network client have a separate opt-in sandbox test command:
+The managed resources and API clients have a separate opt-in sandbox test command:
 
 ```sh
 ARIN_TEST_ORG_HANDLE=FT-684 make testote
@@ -239,7 +239,13 @@ reassignment, organization reassignment, and reallocation. They verify updates,
 import, clean plans and deletion, and remove their disposable customer records.
 Metadata tests edit only disposable child NETs. The direct-allocation test
 sends an unchanged metadata payload to an owned parent and verifies identical
-before-and-after values. Normal tests and CI skip these sandbox tests.
+before-and-after values. DNS client tests use an existing delegation on an owned
+direct allocation in each address family. They write a mode-0600 recovery copy
+outside the repository, exercise nameservers and DS records, restore the original
+configuration and verify equality. Failed restoration retains the recovery copy
+and prevents overwriting it on a later run. See the
+[DNS lifecycle notes](docs/reference/delegations.md).
+Normal tests and CI skip these sandbox tests.
 
 OT&E account data and API keys are refreshed from production monthly. If the
 preflight rejects a recently created production key, generate a key in

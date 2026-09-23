@@ -21,7 +21,7 @@ again before declaring full coverage.
 | Customers | Individual data source and managed recipient resource; mock and OT&E lifecycle pass | Network reassignment integration |
 | Organizations | Individual data source | Creation, update, deletion and POC associations; ticket semantics |
 | POCs | Individual and organization references data sources | Creation, update, deletion; phone/email suboperations |
-| DNS delegations | Individual and NET delegation list data sources | Full delegation management, nameserver addition/update/removal, DNSSEC |
+| DNS delegations | Read data sources; client full update, per-NS operations, DNSSEC and TTLs pass IPv4/IPv6 OT&E with verified restoration | Terraform resources, import, drift and destroy semantics; see [evidence](delegations.md) |
 | Hosted ROAs | Individual and organization list data sources | Transactional create/delete/replacement, import, IRR auto-link support |
 | Hosted ASPAs | Individual and organization list data sources | Transactional create/delete/replacement and import |
 | Tickets | Detail, summary, list, summaries, message and attachment data sources | Message submission, status/update, asynchronous workflow reconciliation |
@@ -62,6 +62,10 @@ again before declaring full coverage.
   OT&E accepts T, N and AB POC roles, and rejects R and D despite their presence
   in the generic payload table. The direct-allocation metadata test submits
   unchanged values and verifies the complete record remains identical.
+- Delegation writes require the immutable name and TTL namespace on DS TTL
+  elements. Nameserver TTL omission resets inheritance; existing DS TTL omission
+  preserves the old value. New DS records may inherit TTL. All client operations
+  pass IPv4/IPv6 sandbox tests with exact restoration of prior configuration.
 - OT&E keys may differ from production because snapshots refresh monthly.
 
 ## Verification commands
