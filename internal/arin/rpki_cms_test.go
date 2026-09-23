@@ -58,6 +58,10 @@ func cmsTestValue(t testing.TB, v any) asn1.RawValue {
 	return asn1.RawValue{FullBytes: cmsTestDER(t, v)}
 }
 func cmsTestFixture(t testing.TB) (cmsTestSignedData, *rsa.PrivateKey) {
+	sd, key, _ := cmsTrustFixture(t)
+	return sd, key
+}
+func cmsTrustFixture(t testing.TB) (cmsTestSignedData, *rsa.PrivateKey, *x509.Certificate) {
 	t.Helper()
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -87,7 +91,7 @@ func cmsTestFixture(t testing.TB) (cmsTestSignedData, *rsa.PrivateKey) {
 	attrs := []cmsTestAttribute{{cmsContentTypeOID, []asn1.RawValue{cmsTestValue(t, cmsXMLOID)}}, {cmsDigestOID, []asn1.RawValue{cmsTestValue(t, digest[:])}}, {cmsSigningTimeOID, []asn1.RawValue{cmsTestValue(t, now)}}}
 	signer := cmsTestSigner{Version: 3, SID: asn1.RawValue{Class: 2, Tag: 0, Bytes: ee.SubjectKeyId}, Digest: pkix.AlgorithmIdentifier{Algorithm: cmsSHA256OID}, Attrs: attrs, Algorithm: pkix.AlgorithmIdentifier{Algorithm: cmsRSAOID, Parameters: asn1.NullRawValue}}
 	sd := cmsTestSignedData{Version: 3, Digests: []pkix.AlgorithmIdentifier{{Algorithm: cmsSHA256OID}}, Encap: cmsTestEncap{cmsXMLOID, content}, Certs: asn1.RawValue{Class: 2, Tag: 0, IsCompound: true, Bytes: eeDER}, CRLs: asn1.RawValue{Class: 2, Tag: 1, IsCompound: true, Bytes: crl}, Signers: []cmsTestSigner{signer}}
-	return sd, key
+	return sd, key, ca
 }
 func cmsTestEncode(t testing.TB, sd cmsTestSignedData, key *rsa.PrivateKey) []byte {
 	t.Helper()

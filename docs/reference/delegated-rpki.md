@@ -135,5 +135,36 @@ No live protocol request, identity enrollment or signing-key persistence occurre
 The inspected [digitorus PKCS7 signing implementation](https://github.com/digitorus/pkcs7/blob/master/sign.go)
 uses issuer-and-serial signer identifiers. The provider's profile decoder uses
 Go standard-library ASN.1, X.509 and RSA primitives instead of introducing that
-library and rewriting its signer representation. It remains internal until the
-complete authentication layer is implemented and tested.
+library and rewriting its signer representation. It remains internal; the trust-validation layer below is also not yet connected
+to a protocol client.
+
+## BPKI trust and revocation validation
+
+The private `verifyRPKICMS` wrapper now authenticates a decoded envelope against
+one explicit BPKI trust anchor. It uses a fresh certificate pool, with no system
+roots or automatically trusted embedded certificates. Embedded and explicitly
+configured intermediates may complete the path. Go X.509 checks current path
+validity; the wrapper checks signing key usage and rejects resource extensions
+anywhere in the BPKI chain.
+
+Every non-root certificate requires a signed, issuer-matching CRL with matching
+key identity. The wrapper selects the highest supplied CRL number, rejects number/
+time conflicts and conflicting contents at the same number, checks freshness,
+and rejects listed serials. Scoped, indirect, delta and unknown critical CRL
+semantics are unsupported and cause rejection. Expired newer CRLs cannot cause
+fallback to older current lists. No CRL URL is fetched.
+
+Signing time must be at least the caller's last accepted time. A provider policy
+also rejects times more than five minutes ahead of the supplied current clock.
+Equal times are allowed; this is a monotonic-time check, not complete replay
+prevention. Current certificate validity is checked independently of signing time.
+The caller must authenticate the setup exchange, validate XML message identities
+and response semantics, then persist the accepted timestamp per peer before later
+exchanges. Durable timestamp and CRL-number history are not implemented yet.
+
+Tests cover direct and intermediate chains, configured intermediates, missing
+intermediate CRLs, revoked EEs/intermediates, wrong roots, expired anchors and EEs,
+key usage, resource extensions, bad CRL signatures, freshness, conflicting CRLs,
+unsupported scope/entry semantics, signing-time ordering and future skew. All are
+synthetic tests; no native delegated RPKI exchange has occurred. Signed-message
+creation, HTTP protocol clients and their stateful recovery remain outstanding.
