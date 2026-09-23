@@ -218,6 +218,8 @@ before retrying a failed apply.
 
 [`arin_report_request`](docs/resources/report_request.md) submits an associations, reassignment or WhoWas report and retains its ticket receipt. Refresh and ticket expiry never resubmit it; destroy only forgets the receipt. WhoWas requires account access. See [report lifecycle and recovery](docs/reference/reports-tickets.md).
 
+[`arin_ticket_status`](docs/resources/ticket_status.md) closes an existing resolved ticket, imports by ticket number, and avoids rewriting already closed tickets. Destroy leaves the server ticket intact. Open tickets cannot be closed through this operation.
+
 ## Next steps
 
 Extend managed-resource support to additional IRR objects, organizations, contacts, and hosted RPKI, with explicit lifecycle semantics and OT&E validation. Network and reverse DNS management are implemented. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.

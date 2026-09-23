@@ -56,6 +56,38 @@ that saved ticket instead of creating another report. A second live run verified
 this import-only path and observed the completed ticket as CLOSED. An empty ticket
 identity in that file blocks another run until the first submission is reconciled.
 
+## Terraform ticket status
+
+`arin_ticket_status` manages `status="CLOSED"` on an existing ticket. Its
+`ticket_number` is the import identity and changing it requires replacement.
+Creation reads the current ticket first and refuses unresolved tickets before
+any write. A resolved ticket is closed and verified through a fresh summary.
+An already closed ticket needs no PUT. The `resolution`, `ticket_type` and
+`closed_date` fields remain server-owned.
+
+Closure recovery retains the existing ticket identity after an uncertain write.
+Refresh can discover that the transition succeeded. If Terraform tainted the
+failed creation, replacement observes the already closed ticket and does not
+send another PUT. Read failures preserve state. A 404 for a previously observed
+ticket sets `ticket_available=false` and preserves its last known status; this
+resource never creates tickets. Import requires an available ticket. Destroy
+forgets local management without reopening or deleting the server ticket.
+
+Mock Terraform coverage includes closure, import, clean plans, switching to
+another existing ticket, drift to RESOLVED, ticket expiry, invalid desired
+statuses, and an accepted closure whose response is lost. Unit tests also verify
+that open tickets are not mutated, read errors preserve state, and ignored writes
+retain identity with an error.
+
+The OT&E Terraform lifecycle uses the disposable report saved by the report
+resource test, verifies configuration/import/refresh/destroy, and confirms zero
+writes when it starts CLOSED. Its transport is pinned to OT&E and rejects report
+submission and unrelated mutations. A separate native probe against the client's
+disposable report confirms that sending PUT to an already closed ticket returns
+HTTP 400 `E_BAD_REQUEST` and leaves its metadata unchanged. The normal client
+avoids that rejected request. A successful live RESOLVED-to-CLOSED transition is
+still unverified because these disposable reports close automatically.
+
 ## Client coverage
 
 `ReportRequest` supports four types:
@@ -109,7 +141,7 @@ With the current OT&E account:
   stating that the account lacks WhoWas access. These are account-access limits,
   not evidence that the endpoints are unavailable. Client paths and payloads have
   mock coverage; native successful generation remains unverified.
-- An explicit RESOLVED-to-CLOSED write has not yet been observed live because the
+- A successful RESOLVED-to-CLOSED write has not yet been observed live because the
   report tickets closed automatically. Existing unrelated tickets are not closed
   merely to exercise this operation.
 
@@ -140,8 +172,9 @@ selected in ARIN Online. The API does not expose that retention setting.
 
 Native successful WhoWas generation requires account access. Report attachment
 access exists through ticket data sources and still needs its final integration
-audit. Message submission, full-ticket modification and native explicit closure
-still need lifecycle decisions, implementation and sandbox evidence. See the
+audit. Message submission and full-ticket modification still need lifecycle decisions,
+implementation and sandbox evidence. Successful native closure from RESOLVED also
+remains to be verified. See the
 [coverage inventory](implementation-status.md).
 
 References: [ARIN Reg-RWS methods](https://www.arin.net/resources/manage/regrws/methods/)
