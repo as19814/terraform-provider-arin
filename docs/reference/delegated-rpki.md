@@ -644,3 +644,23 @@ The result is checked against a supplied issuer, not an independently trusted
 anchor. The caller still needs to authenticate that issuer's full resource path,
 resolve its inherited resources and enforce persistent manifest rollback checks.
 This helper is not yet connected to issuance or Terraform operations.
+
+## Manifest-backed resource path checks
+
+The private path verifier now accepts one publication snapshot for each
+non-anchor CA certificate and walks from the configured anchor toward the leaf.
+An issuer's exact path is verified before its manifest can authorize the next
+child. The child must be present in the manifest at its supplied publication URI
+with byte-identical certificate DER, and its CRLDP must match the selected CRL.
+Existing PKIX, profile, revocation and resource-containment checks then verify
+that extended path. Each step resolves resources before proceeding downward.
+
+Signed three-level tests exercise valid inherited resources, wrong anchors,
+missing/swapped manifests, wrong locations, altered or unlisted child files,
+revoked children, resource overclaims and forged parsed certificate fields.
+The aggregate publication input is bounded to 128 MiB; existing per-object,
+manifest, path-length and file-count limits still apply.
+
+This connects supplied publication snapshots to an explicit resource anchor.
+It does not fetch repositories, persist manifest rollback history, perform
+uncertain-outcome recovery or connect validation to issuance/Terraform yet.
