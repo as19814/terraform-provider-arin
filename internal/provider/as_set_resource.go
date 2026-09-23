@@ -39,11 +39,12 @@ type asSetModel struct {
 	LastModifiedDate types.String `tfsdk:"last_modified_date"`
 }
 type irrPOCModel struct {
-	Handle   types.String `tfsdk:"handle"`
-	Function types.String `tfsdk:"function"`
+	Description types.String `tfsdk:"description"`
+	Handle      types.String `tfsdk:"handle"`
+	Function    types.String `tfsdk:"function"`
 }
 
-var irrPOCType = types.ObjectType{AttrTypes: map[string]attr.Type{"handle": types.StringType, "function": types.StringType}}
+var irrPOCType = types.ObjectType{AttrTypes: map[string]attr.Type{"handle": types.StringType, "function": types.StringType, "description": types.StringType}}
 
 // IRR POC links are computed records; writable org/NET links use irrPOCModel.
 type irrPOCResponseModel struct {

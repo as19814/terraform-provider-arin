@@ -27,6 +27,7 @@ var (
 	_ resource.ResourceWithConfigure      = &orgResource{}
 	_ resource.ResourceWithImportState    = &orgResource{}
 	_ resource.ResourceWithValidateConfig = &orgResource{}
+	_ resource.ResourceWithModifyPlan     = &orgResource{}
 )
 
 type orgResource struct{ client *arin.Client }
@@ -81,8 +82,9 @@ func (r *orgResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 		"comments":             schema.ListAttribute{Optional: true, Computed: true, Sensitive: true, ElementType: types.StringType, Default: listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})), MarkdownDescription: "Ordered operational comments. Omission clears comments."},
 		"accept_reassignments": schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(true), MarkdownDescription: "Accept incoming reassignments and reallocations. Defaults to true."},
 		"poc_links": schema.SetNestedAttribute{Required: true, MarkdownDescription: "Complete POC collection: exactly one AD (Admin), at least one T (Tech), and one AB (Abuse). N, R and D are also supported. Keep a POC linked to the API account to preserve management access.", NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
-			"handle":   schema.StringAttribute{Required: true, MarkdownDescription: "Existing POC handle."},
-			"function": schema.StringAttribute{Required: true, MarkdownDescription: "AD, T, AB, N, R or D."},
+			"handle":      schema.StringAttribute{Required: true, MarkdownDescription: "Existing POC handle."},
+			"function":    schema.StringAttribute{Required: true, MarkdownDescription: "AD, T, AB, N, R or D."},
+			"description": schema.StringAttribute{Computed: true, MarkdownDescription: "POC role description returned by ARIN."},
 		}}},
 		"registration_date": schema.StringAttribute{Computed: true, MarkdownDescription: "Generated registration date, preserved during updates."},
 		"pending_operation": schema.StringAttribute{Computed: true, MarkdownDescription: "Empty when complete, otherwise create, update or delete requiring reconciliation."},
@@ -148,7 +150,7 @@ func orgState(ctx context.Context, o *arin.RegisteredOrganization) (orgModel, di
 	d.Append(next...)
 	pocs := []irrPOCModel{}
 	for _, p := range o.POCs {
-		pocs = append(pocs, irrPOCModel{Handle: types.StringValue(p.Handle), Function: types.StringValue(p.Function)})
+		pocs = append(pocs, irrPOCModel{Handle: types.StringValue(p.Handle), Function: types.StringValue(p.Function), Description: types.StringValue(p.Description)})
 	}
 	m.POCs, next = types.SetValueFrom(ctx, irrPOCType, pocs)
 	d.Append(next...)
@@ -180,6 +182,7 @@ func pendingOrg(m orgModel, op string, result *arin.OrganizationWriteResult) org
 			*value = types.StringValue("")
 		}
 	}
+	m.POCs = pendingPOCLinks(m.POCs)
 	if m.Date.IsUnknown() || m.Date.IsNull() {
 		m.Date = types.StringValue("")
 	}
@@ -293,7 +296,7 @@ func (r *orgResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	resp.Diagnostics.Append(resp.State.Set(ctx, &actual)...)
 }
 func orgWritableEqual(a, b orgModel) bool {
-	return a.Name.Equal(b.Name) && a.DBAName.Equal(b.DBAName) && a.CountryCode.Equal(b.CountryCode) && a.City.Equal(b.City) && a.Subdivision.Equal(b.Subdivision) && a.PostalCode.Equal(b.PostalCode) && a.TaxID.Equal(b.TaxID) && a.RWhoisURL.Equal(b.RWhoisURL) && a.Accept.Equal(b.Accept) && a.Street.Equal(b.Street) && a.Comments.Equal(b.Comments) && a.POCs.Equal(b.POCs)
+	return a.Name.Equal(b.Name) && a.DBAName.Equal(b.DBAName) && a.CountryCode.Equal(b.CountryCode) && a.City.Equal(b.City) && a.Subdivision.Equal(b.Subdivision) && a.PostalCode.Equal(b.PostalCode) && a.TaxID.Equal(b.TaxID) && a.RWhoisURL.Equal(b.RWhoisURL) && a.Accept.Equal(b.Accept) && a.Street.Equal(b.Street) && a.Comments.Equal(b.Comments) && pocLinksWritableEqual(a.POCs, b.POCs)
 }
 func (r *orgResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var m, old orgModel
@@ -386,4 +389,20 @@ func (r *orgResource) ImportState(ctx context.Context, req resource.ImportStateR
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("handle"), req.ID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("pending_operation"), "")...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("pending_ticket"), "")...)
+}
+
+// A write can refresh ARIN's role labels without changing link identity.
+func (r *orgResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+	var prior, plan orgModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !orgWritableEqual(prior, plan) {
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("poc_links"), unknownPOCLinkDescriptions(plan.POCs))...)
+	}
 }

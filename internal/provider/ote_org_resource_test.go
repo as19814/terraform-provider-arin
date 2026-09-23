@@ -62,6 +62,15 @@ func TestOTEOrgResourceRecovery(t *testing.T) {
 	if current.Handle.ValueString() != handle || current.Name.ValueString() == "" || current.POCs.IsNull() || current.CountryCode3.ValueString() == "" || current.CountryCallingCode.ValueString() == "" {
 		t.Fatal("resource refresh did not populate complete organization state")
 	}
+	var links []irrPOCModel
+	if d := current.POCs.ElementsAs(ctx, &links, false); d.HasError() {
+		t.Fatal(d)
+	}
+	for _, link := range links {
+		if link.Description.ValueString() == "" {
+			t.Fatal("organization refresh omitted POC role description")
+		}
+	}
 	cache, err := os.UserCacheDir()
 	if err != nil {
 		t.Fatal(err)

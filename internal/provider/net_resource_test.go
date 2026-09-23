@@ -74,7 +74,7 @@ func (f *fakeNetAPI) serve(w http.ResponseWriter, r *http.Request) {
 		}
 	case "PUT":
 		b, _ := io.ReadAll(r.Body)
-		body := strings.ReplaceAll(string(b), "<originAS>AS", "<originAS>")
+		body := fakePOCDescriptions(strings.ReplaceAll(string(b), "<originAS>AS", "<originAS>"))
 		var identity struct {
 			Handle string `xml:"handle"`
 			Date   string `xml:"registrationDate"`

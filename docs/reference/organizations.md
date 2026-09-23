@@ -10,6 +10,11 @@ that could be needed for a subsequent full-record update.
 Creation clears server-generated identity. Updates read the current record,
 preserve its registration date, and reject changes to immutable legal and DBA
 names. The complete POC collection is authoritative, including the Admin contact.
+Each link exposes the server-generated `description` in resource state.
+Descriptions are excluded from write payloads and uncertain-update comparisons,
+so a label change cannot prevent recovery of an otherwise confirmed update.
+Mock acceptance covers description-only drift followed by an organization update;
+OT&E read-only recovery verifies descriptions on the existing organization.
 `UpdateOrganization` and `DeleteOrganization` share the per-organization mutation
 lock with individual association operations. Callers must avoid overlapping
 ownership of full collections and individual associations.

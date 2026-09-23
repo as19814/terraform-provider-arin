@@ -43,8 +43,9 @@ func (r *netMetadataResource) Schema(_ context.Context, _ resource.SchemaRequest
 		"name":     schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Network name. Omission preserves the current value."},
 		"comments": schema.ListAttribute{Optional: true, Computed: true, ElementType: types.StringType, MarkdownDescription: "Ordered operational comments. Omission preserves current comments; an empty list clears them."},
 		"poc_links": schema.SetNestedAttribute{Optional: true, Computed: true, MarkdownDescription: "Explicit NET POC associations. Omission preserves existing associations; an empty set clears them. Organization-inherited contacts are separate. NETs accept Tech, NOC and Abuse POCs only.", NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
-			"handle":   schema.StringAttribute{Required: true, MarkdownDescription: "POC handle."},
-			"function": schema.StringAttribute{Required: true, MarkdownDescription: "One of AB (Abuse), N (NOC) or T (Tech)."},
+			"handle":      schema.StringAttribute{Required: true, MarkdownDescription: "POC handle."},
+			"function":    schema.StringAttribute{Required: true, MarkdownDescription: "One of AB (Abuse), N (NOC) or T (Tech)."},
+			"description": schema.StringAttribute{Computed: true, MarkdownDescription: "POC role description returned by ARIN."},
 		}}},
 	}}
 }
@@ -110,7 +111,7 @@ func netMetadataState(ctx context.Context, n *arin.RegisteredNet) (netMetadataMo
 	d.Append(next...)
 	pocs := []irrPOCModel{}
 	for _, p := range n.POCs {
-		pocs = append(pocs, irrPOCModel{Handle: types.StringValue(p.Handle), Function: types.StringValue(p.Function)})
+		pocs = append(pocs, irrPOCModel{Handle: types.StringValue(p.Handle), Function: types.StringValue(p.Function), Description: types.StringValue(p.Description)})
 	}
 	m.POCs, next = types.SetValueFrom(ctx, irrPOCType, pocs)
 	d.Append(next...)
@@ -234,7 +235,9 @@ func (r *netMetadataResource) ModifyPlan(ctx context.Context, req resource.Modif
 	}
 	if (!config.Name.IsNull() && !plan.Name.Equal(prior.Name)) ||
 		(!config.Comments.IsNull() && !plan.Comments.Equal(prior.Comments)) ||
-		(!config.POCs.IsNull() && !plan.POCs.Equal(prior.POCs)) {
+		(!config.POCs.IsNull() && !pocLinksWritableEqual(plan.POCs, prior.POCs)) {
+		// A write can return refreshed server labels, even on unchanged links.
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("poc_links"), unknownPOCLinkDescriptions(plan.POCs))...)
 		return
 	}
 	if config.Name.IsNull() {
@@ -243,8 +246,8 @@ func (r *netMetadataResource) ModifyPlan(ctx context.Context, req resource.Modif
 	if config.Comments.IsNull() {
 		plan.Comments = prior.Comments
 	}
-	if config.POCs.IsNull() {
-		plan.POCs = prior.POCs
-	}
+	// All configured fields are unchanged. Retain the refreshed link metadata
+	// too, since computed descriptions may still be unknown in the plan.
+	plan.POCs = prior.POCs
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &plan)...)
 }

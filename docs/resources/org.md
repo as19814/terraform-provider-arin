@@ -71,6 +71,10 @@ Required:
 - `function` (String) AD, T, AB, N, R or D.
 - `handle` (String) Existing POC handle.
 
+Read-Only:
+
+- `description` (String) POC role description returned by ARIN.
+
 ## Import
 
 Import is supported using the following syntax:

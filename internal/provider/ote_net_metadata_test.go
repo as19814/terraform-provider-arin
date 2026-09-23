@@ -137,7 +137,7 @@ poc_links = [{handle = %q, function = "T"}]`, poc))
 					return nil
 				},
 				Steps: []resource.TestStep{
-					{Config: first, Check: resource.TestCheckResourceAttr("arin_net_metadata.test", "poc_links.#", "1")},
+					{Config: first, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_net_metadata.test", "poc_links.#", "1"), resource.TestCheckResourceAttrSet("arin_net_metadata.test", "poc_links.0.description"))},
 					{ResourceName: "arin_net_metadata.test", ImportState: true, ImportStateVerify: true},
 					{Config: all, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_net_metadata.test", "poc_links.#", "3"), resource.TestCheckResourceAttr("arin_net_metadata.test", "comments.0", "Disposable metadata test"))},
 					{Config: config(""), Check: resource.TestCheckResourceAttr("arin_net_metadata.test", "poc_links.#", "3")},

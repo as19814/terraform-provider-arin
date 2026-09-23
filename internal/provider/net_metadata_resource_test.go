@@ -51,8 +51,13 @@ poc_links = []`)
 			return nil
 		},
 		Steps: []resource.TestStep{
-			{Config: base, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_net_metadata.test", "id", "NET-192-0-2-0-2"), resource.TestCheckResourceAttr("arin_net_metadata.test", "poc_links.#", "1"))},
+			{Config: base, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_net_metadata.test", "poc_links.0.description", "Tech"), resource.TestCheckResourceAttr("arin_net_metadata.test", "id", "NET-192-0-2-0-2"), resource.TestCheckResourceAttr("arin_net_metadata.test", "poc_links.#", "1"))},
 			{ResourceName: "arin_net_metadata.test", ImportState: true, ImportStateVerify: true},
+			{PreConfig: func() {
+				f.mu.Lock()
+				defer f.mu.Unlock()
+				f.objects["NET-192-0-2-0-2"] = strings.Replace(f.objects["NET-192-0-2-0-2"], `description="Tech"`, `description="Technical role"`, 1)
+			}, Config: base, Check: resource.TestCheckResourceAttr("arin_net_metadata.test", "poc_links.0.description", "Technical role")},
 			{PreConfig: func() {
 				f.mu.Lock()
 				defer f.mu.Unlock()

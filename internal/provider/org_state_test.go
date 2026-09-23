@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/as19814/terraform-provider-arin/internal/arin"
@@ -171,6 +172,21 @@ func TestOrgUncertainUpdateKeepsStateUntilDesiredValuesAppear(t *testing.T) {
 	r.Read(ctx, resource.ReadRequest{State: update.State}, &read)
 	if !read.Diagnostics.HasError() || !read.State.Raw.Equal(update.State.Raw) {
 		t.Fatal("uncertain update state lost")
+	}
+	// A later server read confirms the requested fields and supplies role labels.
+	// Response-only descriptions must not prevent recovery of the uncertain PUT.
+	f.body = strings.Replace(f.body, "<city>Original</city>", "<city>Changed</city>", 1)
+	recovered := resource.ReadResponse{State: update.State}
+	r.Read(ctx, resource.ReadRequest{State: update.State}, &recovered)
+	if recovered.Diagnostics.HasError() {
+		t.Fatal(recovered.Diagnostics)
+	}
+	var actual orgModel
+	if d := recovered.State.Get(ctx, &actual); d.HasError() {
+		t.Fatal(d)
+	}
+	if actual.PendingOperation.ValueString() != "" || actual.City.ValueString() != "Changed" || f.updates != 0 {
+		t.Fatal("confirmed update failed to recover without resubmission")
 	}
 }
 
