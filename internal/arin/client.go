@@ -265,9 +265,9 @@ func (c *Client) doRequest(ctx context.Context, method, origin, path, accept str
 						emptyResults = false
 					}
 				}
-				apiErr.rdapNotFound = resp.StatusCode == http.StatusNotFound && notFoundCode && emptyResults && checkRDAPCompleteness(body) == nil
-				apiErr.rdapEmptyDomains = resp.StatusCode == http.StatusNotFound && emptyResults && (rdapError.ErrorCode == nil || notFoundCode) && rdapError.Domains != nil && len(*rdapError.Domains) == 0 && checkRDAPCompleteness(body) == nil
-				apiErr.rdapEmptyNetworks = resp.StatusCode == http.StatusNotFound && emptyResults && (rdapError.ErrorCode == nil || notFoundCode) && rdapError.Networks != nil && len(*rdapError.Networks) == 0 && checkRDAPCompleteness(body) == nil
+				apiErr.rdapNotFound = resp.StatusCode == http.StatusNotFound && notFoundCode && emptyResults && checkRDAPErrorCompleteness(body) == nil
+				apiErr.rdapEmptyDomains = resp.StatusCode == http.StatusNotFound && emptyResults && (rdapError.ErrorCode == nil || notFoundCode) && rdapError.Domains != nil && len(*rdapError.Domains) == 0 && checkRDAPErrorCompleteness(body) == nil
+				apiErr.rdapEmptyNetworks = resp.StatusCode == http.StatusNotFound && emptyResults && (rdapError.ErrorCode == nil || notFoundCode) && rdapError.Networks != nil && len(*rdapError.Networks) == 0 && checkRDAPErrorCompleteness(body) == nil
 			}
 		}
 		return nil, apiErr

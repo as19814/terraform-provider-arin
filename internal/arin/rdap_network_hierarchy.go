@@ -96,11 +96,7 @@ func (c *Client) searchRDAPNetworkHierarchy(ctx context.Context, query, relation
 			return nil, errors.New("ARIN returned duplicate network hierarchy handles")
 		}
 		seen[handle] = true
-		compact, err := json.Marshal(raw)
-		if err != nil {
-			return nil, errors.New("ARIN returned invalid network hierarchy record JSON")
-		}
-		record["rdap_json"] = string(compact)
+
 		records = append(records, record)
 	}
 	slices.SortFunc(records, func(a, b any) int {

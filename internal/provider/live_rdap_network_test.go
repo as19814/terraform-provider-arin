@@ -46,6 +46,7 @@ func TestLiveRDAPNetwork(t *testing.T) {
 			}
 			config := fmt.Sprintf("provider \"arin\" { rdap_base_url=%q }\n", origin)
 			checks := []resource.TestCheckFunc{}
+			previous := ""
 			for _, family := range []string{"v4", "v6"} {
 				found := false
 				for _, network := range networks {
@@ -59,7 +60,12 @@ func TestLiveRDAPNetwork(t *testing.T) {
 							t.Fatal(err)
 						}
 						name := fmt.Sprintf("%s_%d", family, i)
-						config += fmt.Sprintf("data \"arin_rdap_network\" %q { query=%q }\n", name, query)
+						config += fmt.Sprintf("data \"arin_rdap_network\" %q {\n query=%q\n", name, query)
+						if previous != "" {
+							config += " depends_on=[data.arin_rdap_network." + previous + "]\n"
+						}
+						config += "}\n"
+						previous = name
 						checks = append(checks, resource.TestCheckResourceAttr("data.arin_rdap_network."+name, "handle", expected["handle"].(string)), resource.TestCheckResourceAttr("data.arin_rdap_network."+name, "ip_version", family))
 					}
 					found = true

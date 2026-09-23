@@ -60,6 +60,6 @@ func TestAccNetworksTruncation(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("test")())},
 		Steps: []resource.TestStep{{Config: `provider "arin" {}
-data "arin_networks" "test" { org_handle = "EXAMPLE-1" }`, ExpectError: regexp.MustCompile("truncated the network search")}},
+data "arin_networks" "test" { org_handle = "EXAMPLE-1" }`, ExpectError: regexp.MustCompile("truncated the RDAP response; refusing a partial result")}},
 	})
 }

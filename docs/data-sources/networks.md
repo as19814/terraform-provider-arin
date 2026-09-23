@@ -49,5 +49,6 @@ Read-Only:
 - `end_address` (String) Last IP address in canonical form.
 - `ip_version` (String) Address family: `v4` or `v6`.
 - `name` (String) Registered network name.
+- `rdap_json` (String) Complete RDAP network JSON, including nested entities and extensions. No links are followed.
 - `registration_type` (String) Registration type returned by ARIN, such as `DIRECT ALLOCATION` or `ASSIGNMENT`.
 - `start_address` (String) First IP address in canonical form.

@@ -35,12 +35,14 @@ data "arin_asns" "example" {
 
 Read-Only:
 
+- `asn_type` (String) asn type returned by ARIN.
 - `country` (String) country returned by ARIN.
 - `end_asn` (Number) end asn returned by ARIN.
 - `events` (Attributes List) events returned by ARIN. (see [below for nested schema](#nestedatt--asns--events))
 - `handle` (String) handle returned by ARIN.
 - `name` (String) name returned by ARIN.
 - `org_handles` (List of String) org handles returned by ARIN.
+- `rdap_json` (String) Complete RDAP registration JSON, including nested entities, links, notices, remarks and extensions. No links are followed.
 - `start_asn` (Number) start asn returned by ARIN.
 - `status` (List of String) status returned by ARIN.
 

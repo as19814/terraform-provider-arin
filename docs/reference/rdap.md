@@ -10,7 +10,7 @@ not followed. Production access in the tests below is read-only.
 `arin_rdap_network` accepts a canonical IPv4 or IPv6 address or network prefix in
 `query`. Prefixes must have zero host bits. It requests `/registry/ip/QUERY` and
 returns the registration handle, name, type, address range, IP version, optional
-parent/country, CIDRs, direct registrant handles, status and events.
+parent/country, CIDRs, direct registrant handles, status, events and complete `rdap_json`.
 
 The result may be a containing registration rather than an exact prefix match.
 The client verifies that both ends of the requested range are contained in the
@@ -277,35 +277,92 @@ No ASN hierarchy data source is exposed for these unsupported operations.
 ASN lookup, inventories, registration-field searches and entity reverse searches
 remain available through their existing data sources.
 
-## Remaining endpoint audit
+## Service metadata and nameserver-to-domain searches
 
-| Family | Current coverage | Remaining work |
+`arin_rdap_help` reads `/registry/help` with no inputs. It exposes sorted
+conformance identifiers, sorted reverse-search property combinations, and complete
+help JSON (including notices and service contacts). This endpoint is defined in
+[RFC 9082 section 3.1.6](https://www.rfc-editor.org/rfc/rfc9082.html#section-3.1.6);
+property discovery follows [RFC 9536 section 4](https://www.rfc-editor.org/rfc/rfc9536.html#section-4).
+OT&E advertises entity handle, fn, email and role reverse searches for both ips
+and autnums. Advertisements describe the server; they do not override actual
+HTTP 501 responses for unsupported queries.
+
+`arin_rdap_domains_by_nameserver` requests
+`/registry/domains?nsLdhName=HOSTNAME`. It accepts an exact ASCII hostname and
+normalizes case and one optional trailing dot. It returns domain registrations,
+including DNSSEC, nameservers and complete raw JSON, sorted by domain name. Each
+result must include the requested nameserver. Wildcards are rejected locally:
+OT&E returned 501 for `ns1.arin.n*`. The raw API also returned no matches for
+`ns1.arin.net.` while `ns1.arin.net` returned 31 records, which is why the provider
+removes the trailing dot. Complete RDAP 404 errors or documented empty collections
+produce an empty list; other errors remain errors. This search does not query DNS.
+
+## Registration field audit
+
+The current ARIN guide was rechecked on 2026-09-23 against the local reference,
+RFC 9082 lookup/search paths, RFC 9083 response objects, RFC 9536 reverse search,
+and the native OT&E help response. The following projections cover registration
+fields. Optional fields remain absent/null when ARIN does not publish them;
+JSON retains extensions and nested structures without floating-point conversion.
+
+| Object | Typed fields | Additional fields available through JSON |
 | --- | --- | --- |
-| IP network lookup | `arin_rdap_network`, native IPv4/IPv6 evidence | Final field/endpoint audit |
-| IP network searches | `arin_networks` direct registrant inventory; `arin_rdap_networks` handle/name and entity reverse searches with supported role filters; `arin_rdap_network_hierarchy` for four relations and active top/up | Final field/endpoint audit |
-| ASN lookup | `arin_asn` | Final field audit |
-| ASN searches | `arin_asns` direct registrant inventory; `arin_rdap_asns` handle/name and entity reverse searches with supported role filters | Final field/endpoint audit; RFC 9910 ASN hierarchy endpoints return native 501 |
-| Entity lookup | `arin_rdap_entity` exposes contact fields and complete JSON; native organization/POC reads verified | Final endpoint audit |
-| Entity searches | `arin_rdap_entities` covers handle/name searches, exact/trailing-wildcard queries, no matches and partial-result rejection | Final endpoint audit |
-| Reverse domain lookup/search | `arin_rdap_domain` plus `arin_rdap_domains` for all four hierarchy relations and supported active filters | Final field/endpoint audit |
-| Standalone nameserver lookup | Unsupported by ARIN RDAP | No data source for an unimplemented operation |
+| Network | Handle, name, type, family, first/last address, parent, country, CIDRs, registrant handles, status, events | All returned entities, notices, remarks, links, conformance, port43 and extension members |
+| ASN | Handle, name, `asn_type`, first/last ASN, country, registrant handles, status, events | All returned contacts, notices, remarks, links, conformance, port43 and extension members |
+| Entity | Handle, names, kind, email, phone, address labels, roles, status, contact references, events | Complete jCard, structured addresses, public IDs, embedded networks/ASNs/entities and other members |
+| Domain | Name, handle, Unicode name, nameservers/glue, DNSSEC booleans/lifetime/DS/DNSKEY, registrant and embedded-network handles, status, events | Full embedded registrations, DS/key events and links, public IDs and other members |
+| Help | Conformance and advertised reverse-search property triples | Notices, service contacts, links and all extensions |
 
-The standalone nameserver endpoint was checked in OT&E on 2026-09-23:
-`GET /registry/nameserver/ns1.arin.net` returned HTTP 501, RDAP `errorCode=501`,
-`title=NOT IMPLEMENTED`. ARIN's guide explicitly says standalone nameserver queries
-are unsupported for its registration data. This does not affect nameservers
-embedded in domain responses or authenticated delegation management.
+`arin_networks` retains its original map keyed by handle and compact typed schema,
+with new per-network `rdap_json`; `arin_rdap_network` and network searches provide
+the expanded typed view. `arin_asn`, `arin_asns` and `arin_rdap_asns` share the
+same ASN fields, including optional `asn_type` and complete per-record JSON.
+Native ASN 19814 omits `type`; the optional typed field is exercised with fixtures.
+`arin_org_pocs` remains a handle/role projection of an organization's entity;
+`arin_rdap_entity` exposes that entire entity when more fields are needed.
 
-Reproduce that read-only capability probe without credentials or redirects:
+The original inventories now use the same strict decoders as standalone lookups
+and searches. They reject nested truncation/pagination, incomplete CIDR coverage,
+case-insensitive duplicate owned handles and HTTP-success RDAP error payloads.
+Contact projections reject duplicate handles. Nested entities, networks and ASNs
+are checked recursively. Inventory 404 handling requires a complete structured
+RDAP no-match response and a successful identity-checked entity lookup; a proxy
+404 can no longer become an empty inventory.
 
-```sh
-curl --max-time 30 -H 'Accept: application/rdap+json' \
-  https://rdap.ote.arin.net/registry/nameserver/ns1.arin.net
-```
+Unit and Terraform tests verify JSON field preservation, large integer precision,
+refreshes, sorting, empty results and rejection of malformed/partial responses.
+`TestLiveRDAPAudit` verifies help, IPv4/IPv6 network reads/inventories and ASN
+reads/inventories in actual Terraform state on OT&E and production, with no key
+and a clean subsequent plan. `TestLiveRDAPDomainsByNameserver` verifies exact
+nameserver search, normalization, an independently looked-up result, no matches,
+and clean plans on both origins. DNSKEY data remains fixture-tested because a
+native published keyData record has not been established; DS data has native
+evidence as recorded above.
 
-Run the native lookup test with:
+## Endpoint reconciliation
 
-```sh
-ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
-  go test ./internal/provider -run '^TestLiveRDAPNetwork$' -count=1 -v
-```
+All lookup/search headings in the current ARIN guide map to provider operations
+below. Standard queries outside those headings were also probed, revealing the
+help endpoint and exact nameserver-to-domain search. No cross-registry bootstrap,
+redirect or response link is followed. HTTP HEAD checks do not provide additional
+registration data beyond the GET operations implemented here.
+
+| Endpoint family | Provider coverage / native evidence |
+| --- | --- |
+| IP address/prefix lookup | `arin_rdap_network`; IPv4/IPv6 OT&E and production |
+| IP handle/name and entity handle/name/email/role searches | `arin_rdap_networks`; `arin_networks` filters direct registrants |
+| IP top/up/down/bottom and active top/up | `arin_rdap_network_hierarchy`; IPv4/IPv6 evidence, unsupported filters rejected |
+| ASN lookup and handle/name/entity searches | `arin_asn`, `arin_rdap_asns`, `arin_asns`; ASN hierarchy returns 501 |
+| Entity lookup and handle/name searches | `arin_rdap_entity`, `arin_rdap_entities`; `arin_org_pocs` projects contacts |
+| Reverse-domain lookup and top/up/down/bottom | `arin_rdap_domain`, `arin_rdap_domains`; active top/up supported |
+| Domains by exact nameserver hostname | `arin_rdap_domains_by_nameserver`; `/domains?nsLdhName=ns1.arin.net` returns 31 OT&E records |
+| RDAP service help | `arin_rdap_help`; `/help` returns conformance and reverse-search properties |
+| Standalone nameserver lookup | `/nameserver/ns1.arin.net` returns HTTP/RDAP 501 |
+| Nameserver name/IP searches | `/nameservers?name=ns1.arin.net` and `?ip=199.43.132.53` return HTTP/RDAP 501 |
+| Domain name/IP searches | `/domains?name=120.189.23.in-addr.arpa.` and `?nsIp=199.43.132.53` return HTTP/RDAP 501 |
+
+The unsupported-query probes above were run against OT&E on 2026-09-23, without
+credentials. They remain errors rather than empty results. The table establishes
+RDAP operation coverage, not completion of Reg-RWS, Whois-RWS, downloads or RPKI
+protocol coverage tracked in the overall inventory.

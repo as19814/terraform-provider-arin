@@ -27,6 +27,10 @@ func TestPublicReads(t *testing.T) {
 			t.Error("public read sent credentials or used wrong method")
 		}
 		switch r.URL.RequestURI() {
+		case "/registry/domains?nsLdhName=ns1.arin.net":
+			fmt.Fprint(w, `{"domainSearchResults":[]}`)
+		case "/registry/help":
+			fmt.Fprint(w, `{"rdapConformance":["rdap_level_0"]}`)
 		case "/registry/entities?handle=EXAMPLE-1":
 			fmt.Fprintf(w, `{"entitySearchResults":[%s]}`, entity)
 		case "/registry/domains/rirSearch1/rdap-up/2.0.192.in-addr.arpa.":
@@ -56,7 +60,7 @@ func TestPublicReads(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, s := range PublicReads() {
-		params := map[string]string{"role": "any", "relation": "up", "active_only": "false", "name": "2.0.192.in-addr.arpa.", "handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"}
+		params := map[string]string{"nameserver": "ns1.arin.net", "role": "any", "relation": "up", "active_only": "false", "name": "2.0.192.in-addr.arpa.", "handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"}
 		if s.Name == "rdap_entities" {
 			params["search_by"] = "handle"
 			params["query"] = "EXAMPLE-1"

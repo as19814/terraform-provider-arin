@@ -148,6 +148,9 @@ func outputFields(spec arin.ReadSpec) []arin.Field {
 		if spec.Name == "rdap_network_hierarchy" {
 			description = "Related network records ordered by handle. Top/up return a one-element list. Confirmed no matches produce an empty list; other failures remain errors. Bottom can include overlapping enclosing and child registrations."
 		}
+		if spec.Name == "rdap_domains_by_nameserver" {
+			description = "Related domain records ordered by name. Confirmed no matches produce an empty list; other failures remain errors."
+		}
 		if spec.Name == "rdap_domains" {
 			description = "Related domain records ordered by name. Single-object relations return a one-element list. Confirmed no matches produce an empty list; other failures remain errors."
 		}

@@ -52,7 +52,7 @@ Read-Only:
 - `network_type` (String) network type returned by ARIN.
 - `org_handles` (List of String) org handles returned by ARIN.
 - `parent_handle` (String) parent handle returned by ARIN.
-- `rdap_json` (String) Complete JSON for this returned registration, including nested entities and extensions. No links are followed.
+- `rdap_json` (String) Complete RDAP registration JSON, including nested entities, links, notices, remarks and extensions. No links are followed.
 - `start_address` (String) start address returned by ARIN.
 - `status` (List of String) status returned by ARIN.
 

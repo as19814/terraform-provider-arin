@@ -24,6 +24,7 @@ type networkModel struct {
 	StartAddress types.String `tfsdk:"start_address"`
 	EndAddress   types.String `tfsdk:"end_address"`
 	CIDRs        types.List   `tfsdk:"cidrs"`
+	RDAPJSON     types.String `tfsdk:"rdap_json"`
 }
 
 func NewNetworksDataSource() datasource.DataSource { return &networksDataSource{} }
@@ -36,6 +37,7 @@ func (d *networksDataSource) Schema(_ context.Context, _ datasource.SchemaReques
 		Attributes: map[string]schema.Attribute{
 			"org_handle": schema.StringAttribute{Required: true, MarkdownDescription: "ARIN organization handle, for example `FT-684`."},
 			"networks": schema.MapNestedAttribute{Computed: true, MarkdownDescription: "Networks keyed by ARIN network handle. Includes more-specific registrations held by the same organization, so address ranges can overlap. This does not recursively include networks reassigned to other organizations.", NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
+				"rdap_json":         schema.StringAttribute{Computed: true, MarkdownDescription: "Complete RDAP network JSON, including nested entities and extensions. No links are followed."},
 				"name":              schema.StringAttribute{Computed: true, MarkdownDescription: "Registered network name."},
 				"ip_version":        schema.StringAttribute{Computed: true, MarkdownDescription: "Address family: `v4` or `v6`."},
 				"registration_type": schema.StringAttribute{Computed: true, MarkdownDescription: "Registration type returned by ARIN, such as `DIRECT ALLOCATION` or `ASSIGNMENT`."},
@@ -76,7 +78,7 @@ func (d *networksDataSource) Read(ctx context.Context, req datasource.ReadReques
 	for _, network := range networks {
 		cidrs, diags := types.ListValueFrom(ctx, types.StringType, network.CIDRs)
 		resp.Diagnostics.Append(diags...)
-		data.Networks[network.Handle] = networkModel{Name: types.StringValue(network.Name), IPVersion: types.StringValue(network.IPVersion), Type: types.StringValue(network.Type), StartAddress: types.StringValue(network.StartAddress), EndAddress: types.StringValue(network.EndAddress), CIDRs: cidrs}
+		data.Networks[network.Handle] = networkModel{Name: types.StringValue(network.Name), IPVersion: types.StringValue(network.IPVersion), Type: types.StringValue(network.Type), StartAddress: types.StringValue(network.StartAddress), EndAddress: types.StringValue(network.EndAddress), CIDRs: cidrs, RDAPJSON: types.StringValue(network.RDAPJSON)}
 	}
 	if resp.Diagnostics.HasError() {
 		return

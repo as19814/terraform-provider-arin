@@ -36,11 +36,13 @@ func validateEntityTree(body json.RawMessage, depth int) error {
 	}
 	var node struct {
 		Entities []json.RawMessage `json:"entities"`
+		Networks []json.RawMessage `json:"networks"`
+		ASNs     []json.RawMessage `json:"autnums"`
 	}
 	if json.Unmarshal(body, &node) != nil {
 		return errors.New("ARIN returned invalid nested entities")
 	}
-	for _, child := range node.Entities {
+	for _, child := range slices.Concat(node.Entities, node.Networks, node.ASNs) {
 		if err := validateEntityTree(child, depth+1); err != nil {
 			return err
 		}

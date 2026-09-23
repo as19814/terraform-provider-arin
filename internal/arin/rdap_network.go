@@ -10,7 +10,10 @@ import (
 	"strings"
 )
 
+var rdapJSONField = Field{Name: "rdap_json", Kind: StringKind, Description: "Complete RDAP registration JSON, including nested entities, links, notices, remarks and extensions. No links are followed."}
+
 var rdapNetworkFields = []Field{
+	rdapJSONField,
 	required(text("handle", "")), text("name", ""), text("network_type", ""), required(text("ip_version", "")), required(text("start_address", "")), required(text("end_address", "")), text("parent_handle", ""), text("country", ""), stringsField("cidrs", ""), stringsField("org_handles", ""), stringsField("status", ""), objects("events", "", text("action", ""), text("date", "")),
 }
 
@@ -133,5 +136,9 @@ func decodeRDAPNetwork(body []byte) (map[string]any, error) {
 	if n.Country != nil {
 		country = *n.Country
 	}
-	return map[string]any{"handle": n.Handle, "name": n.Name, "network_type": n.Type, "ip_version": n.IPVersion, "start_address": start.String(), "end_address": end.String(), "parent_handle": parent, "country": country, "cidrs": anyStrings(cidrs), "org_handles": anyStrings(orgs), "status": anyStrings(n.Status), "events": events}, nil
+	compact, err := json.Marshal(json.RawMessage(body))
+	if err != nil {
+		return nil, errors.New("ARIN returned invalid network JSON")
+	}
+	return map[string]any{"rdap_json": string(compact), "handle": n.Handle, "name": n.Name, "network_type": n.Type, "ip_version": n.IPVersion, "start_address": start.String(), "end_address": end.String(), "parent_handle": parent, "country": country, "cidrs": anyStrings(cidrs), "org_handles": anyStrings(orgs), "status": anyStrings(n.Status), "events": events}, nil
 }

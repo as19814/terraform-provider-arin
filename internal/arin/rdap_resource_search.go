@@ -14,7 +14,7 @@ func rdapResourceSearchSpec(name, output string, fields []Field) ReadSpec {
 		input("search_by", "name", "entity_handle", "Search field: handle, name, entity_handle, entity_name, or entity_email."),
 		input("query", "rdap_search", "FT-684", "Exact search term or term ending with one wildcard (*). ARIN applies name/email matching semantics."),
 		optional(input("role", "name", "any", "Entity role filter: any (omit filter), abuse, noc, or technical. Only entity searches support a role filter."), "any"),
-	}, Fields: joinFields(fields, []Field{{Name: "rdap_json", Kind: StringKind, Description: "Complete JSON for this returned registration, including nested entities and extensions. No links are followed."}})}
+	}, Fields: fields}
 }
 func validateRDAPResourceSearch(by, query, role string) error {
 	if !slices.Contains([]string{"handle", "name", "entity_handle", "entity_name", "entity_email"}, by) {
@@ -109,11 +109,7 @@ func (c *Client) searchRDAPResources(ctx context.Context, spec, by, query, role 
 				return nil, errors.New("ARIN returned a registration outside the requested handle search")
 			}
 		}
-		compact, err := json.Marshal(raw)
-		if err != nil {
-			return nil, errors.New("ARIN returned invalid resource JSON")
-		}
-		record["rdap_json"] = string(compact)
+
 		records = append(records, record)
 	}
 	slices.SortFunc(records, func(a, b any) int {
@@ -130,5 +126,14 @@ func decodeRDAPASN(body []byte) (map[string]any, error) {
 	if json.Unmarshal(body, &asn) != nil {
 		return nil, errors.New("ARIN returned invalid ASN JSON")
 	}
-	return asn.record()
+	record, err := asn.record()
+	if err != nil {
+		return nil, err
+	}
+	compact, err := json.Marshal(json.RawMessage(body))
+	if err != nil {
+		return nil, errors.New("ARIN returned invalid ASN JSON")
+	}
+	record["rdap_json"] = string(compact)
+	return record, nil
 }

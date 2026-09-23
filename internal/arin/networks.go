@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/netip"
 	"net/url"
 	"slices"
@@ -20,6 +19,7 @@ type Network struct {
 	StartAddress string
 	EndAddress   string
 	CIDRs        []string
+	RDAPJSON     string
 }
 
 type rdapNotice struct {
@@ -70,89 +70,54 @@ func (c *Client) ListOrganizationNetworks(ctx context.Context, handle string) ([
 	}
 	query := url.Values{"handle": []string{handle}}
 	body, err := c.get(ctx, c.rdapBaseURL, "/registry/ips/reverse_search/entity?"+query.Encode(), "application/rdap+json", false)
-	if IsNotFound(err) {
-		// A reverse search with no matches returns 404. Confirm the entity exists
-		// before treating it as an organization with an empty network inventory.
-		entityBody, entityErr := c.get(ctx, c.rdapBaseURL, "/registry/entity/"+url.PathEscape(handle), "application/rdap+json", false)
-		if entityErr != nil {
+	var apiErr *APIError
+	if errors.As(err, &apiErr) && apiErr.rdapNotFound {
+		// Confirm an entity exists before accepting its empty inventory.
+		if _, entityErr := c.rdapEntity(ctx, handle); entityErr != nil {
 			return nil, entityErr
-		}
-		var entity struct {
-			Handle          string `json:"handle"`
-			ObjectClassName string `json:"objectClassName"`
-		}
-		if json.Unmarshal(entityBody, &entity) != nil || !strings.EqualFold(entity.Handle, handle) || entity.ObjectClassName != "entity" {
-			return nil, errors.New("ARIN returned an invalid RDAP entity response")
 		}
 		return []Network{}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	var result struct {
-		Networks *[]rdapNetwork `json:"ipSearchResults"`
-		Notices  []rdapNotice   `json:"notices"`
-		Links    []struct {
-			Rel string `json:"rel"`
-		} `json:"links"`
+	if err := checkRDAPCompleteness(body); err != nil {
+		return nil, err
 	}
-	if err := json.Unmarshal(body, &result); err != nil || result.Networks == nil {
+	var result struct {
+		Networks *[]json.RawMessage `json:"ipSearchResults"`
+	}
+	if json.Unmarshal(body, &result) != nil || result.Networks == nil {
 		return nil, errors.New("ARIN returned an invalid or unexpected RDAP search response")
 	}
-	if incompleteNotices(result.Notices) {
-		return nil, errors.New("ARIN truncated the network search; refusing to return an incomplete inventory")
-	}
-	for _, link := range result.Links {
-		if strings.EqualFold(link.Rel, "next") {
-			return nil, errors.New("ARIN returned a paginated network search; pagination is not supported, so no partial inventory was returned")
-		}
-	}
 	networks := make([]Network, 0, len(*result.Networks))
-	seen := make(map[string]bool)
-	for _, n := range *result.Networks {
-		if incompleteNotices(n.Notices) || incompleteNotices(n.Remarks) {
-			return nil, errors.New("ARIN returned a truncated network object; refusing to return an incomplete inventory")
+	seen := map[string]bool{}
+	for _, raw := range *result.Networks {
+		record, err := decodeRDAPNetwork(raw)
+		if err != nil {
+			return nil, err
 		}
-		registrant := false
-		for _, entity := range n.Entities {
-			if strings.EqualFold(entity.Handle, handle) && slices.Contains(entity.Roles, "registrant") {
-				registrant = true
-				break
+		belongs := false
+		for _, org := range record["org_handles"].([]any) {
+			if strings.EqualFold(org.(string), handle) {
+				belongs = true
 			}
 		}
-		if !registrant {
+		if !belongs {
 			continue
 		}
-		start, e1 := netip.ParseAddr(n.StartAddress)
-		end, e2 := netip.ParseAddr(n.EndAddress)
-		if n.Handle == "" || n.Name == "" || n.ObjectClassName != "ip network" || e1 != nil || e2 != nil || start.BitLen() != end.BitLen() || start.Compare(end) > 0 ||
-			(n.IPVersion != "v4" && n.IPVersion != "v6") || (n.IPVersion == "v4") != start.Is4() {
-			return nil, errors.New("ARIN returned an invalid network registration")
-		}
-		if seen[n.Handle] {
+		key := strings.ToUpper(record["handle"].(string))
+		if seen[key] {
 			return nil, errors.New("ARIN returned duplicate network handles")
 		}
-		seen[n.Handle] = true
-		network := Network{Handle: n.Handle, Name: n.Name, IPVersion: n.IPVersion, Type: n.Type, StartAddress: start.String(), EndAddress: end.String(), CIDRs: []string{}}
-		for _, block := range n.CIDRs {
-			address := block.V4Prefix
-			if n.IPVersion == "v6" {
-				address = block.V6Prefix
-			}
-			if block.Length == nil {
-				return nil, errors.New("ARIN returned a CIDR without a prefix length")
-			}
-			prefix, err := netip.ParsePrefix(fmt.Sprintf("%s/%d", address, *block.Length))
-			if err != nil || prefix.Addr().BitLen() != start.BitLen() || prefix != prefix.Masked() || prefix.Addr().Compare(start) < 0 || prefix.Addr().Compare(end) > 0 || prefixLastAddress(prefix).Compare(end) > 0 {
-				return nil, errors.New("ARIN returned an invalid network CIDR")
-			}
-			network.CIDRs = append(network.CIDRs, prefix.String())
+		seen[key] = true
+		cidrs := []string{}
+		for _, cidr := range record["cidrs"].([]any) {
+			cidrs = append(cidrs, cidr.(string))
 		}
-		slices.Sort(network.CIDRs)
-		network.CIDRs = slices.Compact(network.CIDRs)
-		networks = append(networks, network)
+		networks = append(networks, Network{Handle: record["handle"].(string), Name: record["name"].(string), IPVersion: record["ip_version"].(string), Type: record["network_type"].(string), StartAddress: record["start_address"].(string), EndAddress: record["end_address"].(string), CIDRs: cidrs, RDAPJSON: record["rdap_json"].(string)})
 	}
-	slices.SortFunc(networks, func(a, b Network) int { return strings.Compare(a.Handle, b.Handle) })
+	slices.SortFunc(networks, func(a, b Network) int { return strings.Compare(strings.ToUpper(a.Handle), strings.ToUpper(b.Handle)) })
 	return networks, nil
 }
 
