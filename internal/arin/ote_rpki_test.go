@@ -473,6 +473,64 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 		}
 		t.Logf("ROA delete autoLink=%t verified for IPv4 and IPv6 IRR routes", deleteLinked)
 	}
+	// Linked route metadata and deletion are scoped to the exact current ROA.
+	probeRequest := request
+	probeRequest.AutoLink = true
+	probeResult, err := c.ApplyRPKITransaction(ctx, org, RPKITransaction{AddROAs: []ROARequest{probeRequest}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range routeIDs {
+		route, err := c.GetIRRRoute(ctx, id)
+		if err != nil || route.AutoLinkedROAHandle != probeResult.ROAs[0].Handle {
+			t.Fatalf("linked route setup failed: %v", err)
+		}
+		want := *route
+		want.Description = []string{"Disposable linked route metadata probe"}
+		want.Remarks = []string{"Disposable linked route remark"}
+		updated, err := c.UpdateLinkedIRRRoute(ctx, want, route.AutoLinkedROAHandle)
+		if err != nil {
+			t.Fatal(err)
+		}
+		remarks, err := LinkedRouteUserRemarks(*updated)
+		if err != nil || !slices.Equal(remarks, want.Remarks) {
+			t.Fatalf("linked route user remarks did not round-trip: %v", err)
+		}
+		want.Remarks = nil
+		if _, err := c.UpdateLinkedIRRRoute(ctx, want, route.AutoLinkedROAHandle); err != nil {
+			t.Fatal(err)
+		}
+		if err := c.DeleteLinkedIRRRoute(ctx, id, org, route.AutoLinkedROAHandle); err != nil {
+			t.Fatal(err)
+		}
+		t.Log("linked route description/remarks update, remark clearing and independent deletion passed")
+	}
+	probeInventory, err := c.ListROAs(ctx, org)
+	if err != nil {
+		t.Fatal(err)
+	}
+	foundProbe := false
+	for _, roa := range probeInventory {
+		if roa.Handle != probeResult.ROAs[0].Handle {
+			continue
+		}
+		foundProbe = true
+		if roa.Name != probeRequest.Name || roa.ASN != probeRequest.ASN || len(roa.Resources) != len(probeRequest.Resources) {
+			t.Fatal("route deletion changed ROA authorization")
+		}
+		for _, resource := range roa.Resources {
+			if resource.AutoLinked {
+				t.Fatal("deleted linked route remains marked linked on its ROA")
+			}
+		}
+	}
+	if !foundProbe {
+		t.Fatal("linked route deletion removed its ROA")
+	}
+	if _, err := c.ApplyRPKITransaction(ctx, org, RPKITransaction{DeleteROAs: []ROADelete{{Handle: probeResult.ROAs[0].Handle}}}); err != nil {
+		t.Fatal(err)
+	}
+	t.Log("independent linked-route deletion preserved the ROA and cleared its per-prefix links")
 	manualRoutes := map[string]*IRRRoute{}
 	for _, resource := range resources {
 		manual, err := c.CreateIRRRoute(ctx, IRRRoute{Prefix: resource.Prefix, OriginAS: fmt.Sprintf("AS%d", original.CustomerASN), OrgHandle: org, Description: []string{"Disposable manual route description"}, Remarks: []string{"Disposable manual route remark"}})

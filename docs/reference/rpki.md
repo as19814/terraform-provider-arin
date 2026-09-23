@@ -202,8 +202,10 @@ policy-only updates, drift, missing members and uncertain-write recovery. Native
 Terraform create/import, combined changes, IRR links, member removal and destroy
 pass OT&E with both inventory baselines restored.
 
-Coordinated ownership of ROA-linked IRR routes with separately managed IRR
-resources remains in the implementation inventory. Bundles and standalone ROAs
+Scoped linked-route metadata updates and independent deletion now pass IPv4/IPv6
+OT&E client tests, including user-remark clearing and preserved ROA identity.
+Coordinated Terraform ownership remains in the implementation inventory; see
+[linked-route evidence and requirements](irr-route-metadata.md). Bundles and standalone ROAs
 currently own their links, and `arin_irr_route` rejects linked objects.
 
 Reference: [ARIN RPKI RESTful API guide](https://www.arin.net/resources/manage/rpki/rpki-restful/)
