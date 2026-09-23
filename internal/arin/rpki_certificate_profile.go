@@ -11,9 +11,18 @@ import (
 	"strings"
 )
 
-// CA-only profile for the original resource-extension OIDs. Signature/path,
-// manifest and resource-allocation validation remain separate requirements.
+// Original resource-extension profiles. Signature/path, revocation and
+// resource-allocation validation remain separate requirements.
 func validateRPKICAProfile(cert *x509.Certificate) error {
+	return validateRPKICertificateProfile(cert, false)
+}
+
+func validateRPKIManifestEEProfile(cert *x509.Certificate) error {
+	return validateRPKICertificateProfile(cert, true)
+}
+
+// Callers must supply certificates freshly parsed from DER.
+func validateRPKICertificateProfile(cert *x509.Certificate, manifestEE bool) error {
 	if err := validateRPKICertificateNamesAndTimes(cert); err != nil {
 		return err
 	}
@@ -50,12 +59,19 @@ func validateRPKICAProfile(cert *x509.Certificate) error {
 		seen[oid] = true
 		switch oid {
 		case "2.5.29.19":
+			if manifestEE {
+				return errRPKIUpDown
+			}
 			var bc struct{ CA bool }
 			if !e.Critical || !rpkiCSRDER(e.Value, &bc) || !bc.CA {
 				return errRPKIUpDown
 			}
 		case "2.5.29.15":
-			if !e.Critical || !bytes.Equal(e.Value, []byte{3, 2, 1, 6}) {
+			usage := []byte{3, 2, 1, 6}
+			if manifestEE {
+				usage = []byte{3, 2, 7, 0x80}
+			}
+			if !e.Critical || !bytes.Equal(e.Value, usage) {
 				return errRPKIUpDown
 			}
 		case "2.5.29.14":
@@ -89,20 +105,36 @@ func validateRPKICAProfile(cert *x509.Certificate) error {
 			return errRPKIUpDown
 		}
 	}
-	for _, oid := range []string{"2.5.29.19", "2.5.29.15", "2.5.29.14", "2.5.29.32", "1.3.6.1.5.5.7.1.11"} {
+	required := []string{"2.5.29.15", "2.5.29.14", "2.5.29.32", "1.3.6.1.5.5.7.1.11"}
+	if !manifestEE {
+		required = append(required, "2.5.29.19")
+	}
+	for _, oid := range required {
 		if !seen[oid] {
 			return errRPKIUpDown
 		}
 	}
-	if !selfSigned && (!seen["2.5.29.35"] || !seen["2.5.29.31"] || !seen["1.3.6.1.5.5.7.1.1"]) {
+	if (manifestEE || !selfSigned) && (!seen["2.5.29.35"] || !seen["2.5.29.31"] || !seen["1.3.6.1.5.5.7.1.1"]) {
 		return errRPKIUpDown
 	}
-	if _, err := rpkiCASIA(cert.Extensions); err != nil {
+	if manifestEE {
+		if cert.IsCA {
+			return errRPKIUpDown
+		}
+		if _, err := rpkiEESIA(cert.Extensions); err != nil {
+			return err
+		}
+	} else if _, err := rpkiCASIA(cert.Extensions); err != nil {
 		return err
 	}
-	if _, err := parseRPKICertificateResources(cert.Extensions); err != nil {
+	resources, err := parseRPKICertificateResources(cert.Extensions)
+	if err != nil {
 		return err
 	}
+	if manifestEE && ((resources.ASN != nil && !resources.ASN.Inherit) || (resources.IPv4 != nil && !resources.IPv4.Inherit) || (resources.IPv6 != nil && !resources.IPv6.Inherit)) {
+		return errRPKIUpDown
+	}
+
 	return nil
 }
 

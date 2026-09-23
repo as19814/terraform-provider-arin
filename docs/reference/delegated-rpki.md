@@ -600,3 +600,25 @@ The decoder returns an explicitly untrusted manifest: a valid signature alone
 does not authenticate the EE or its issuer. EE extension/path validation, SIA
 binding, revocation, persistent rollback protection and provider integration
 remain required before these objects can authorize issuance or repository use.
+
+## Manifest EE certificate profile
+
+Manifest decoding now requires an EE certificate that conforms to the original
+resource-extension profile before returning its untrusted contents. Shared
+certificate checks cover names, DER times, algorithms, identifiers, policies,
+and issuer references. The EE profile forbids Basic Constraints and EKU,
+requires digitalSignature as the only key usage, and requires every present
+AS/IPv4/IPv6 resource family to use inheritance. EE SIA accepts only the
+signedObject access method, including an rsync object URI; it preserves ordered
+alternate locations for later binding to the retrieved manifest URI.
+
+Signed tests cover valid inherited AS and IP resources, invalid EE extensions,
+explicit resource sets, missing issuer references, wrong key identifiers and
+SIA forms. Invalid signed EE certificates are rejected both directly and
+through the CMS manifest decoder. CA profile tests and OpenSSL CMS verification
+remain part of the regression coverage.
+
+This implements the certificate profile, not an authenticated resource path.
+Issuer trust, inheritance resolution against that issuer, revocation, exact
+publication-location binding, persistent rollback checks and provider/native
+integration remain unfinished. No native delegated requests were sent.

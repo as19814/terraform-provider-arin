@@ -128,7 +128,7 @@ func (m *rpkiManifestContent) checkFiles(now time.Time, files map[string][]byte)
 }
 
 // untrustedRPKIManifest has a valid CMS signature and parsed content, but no
-// authenticated signer. EE profile/path, revocation, SIA binding and persistent
+// authenticated signer. EE path, revocation, SIA binding and persistent
 // rollback checks must succeed before its file set authorizes repository use.
 type untrustedRPKIManifest struct {
 	Content *rpkiManifestContent
@@ -138,6 +138,9 @@ type untrustedRPKIManifest struct {
 func decodeRPKIManifest(der []byte) (*untrustedRPKIManifest, error) {
 	cms, err := decodeRPKICMSProfile(der, true)
 	if err != nil {
+		return nil, err
+	}
+	if err := validateRPKIManifestEEProfile(cms.Signer); err != nil {
 		return nil, err
 	}
 	content, err := parseRPKIManifestContent(cms.Content)

@@ -12,9 +12,14 @@ import (
 	"time"
 )
 
-func manifestCMSFixture(t testing.TB) (cmsTestSignedData, *rsa.PrivateKey) {
+func manifestCMSFixture(t *testing.T) (cmsTestSignedData, *rsa.PrivateKey) {
 	t.Helper()
-	sd, key := cmsTestFixture(t)
+	sd, _ := cmsTestFixture(t)
+	f := resourceCertificateFixture(t)
+	ee := signManifestEE(t, manifestEETemplate(t, f), f)
+	key := f.keys[0]
+	sd.Certs = asn1.RawValue{Class: 2, Tag: 0, IsCompound: true, Bytes: ee.Raw}
+	sd.Signers[0].SID = asn1.RawValue{Class: 2, Tag: 0, Bytes: ee.SubjectKeyId}
 	sd.Encap.Type = cmsManifestOID
 	sd.Encap.Content = cmsTestDER(t, manifestContentFixture())
 	digest := sha256.Sum256(sd.Encap.Content)
@@ -54,7 +59,7 @@ func TestRPKIManifestCMS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Signer.SerialNumber.Int64() != 2 || got.Content.Number.Sign() != 0 || len(got.Content.Files) != 1 {
+	if got.Signer.SerialNumber.Int64() != 3 || got.Content.Number.Sign() != 0 || len(got.Content.Files) != 1 {
 		t.Fatal("decoded content mismatch")
 	}
 	if _, err := decodeRPKICMS(der); err == nil {

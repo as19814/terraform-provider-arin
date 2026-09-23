@@ -82,3 +82,47 @@ func rpkiCASIA(extensions []pkix.Extension) ([]byte, error) {
 	}
 	return bytes.Clone(value), nil
 }
+
+// EE SIA references only the signed object, never a CA repository. Return the
+// ordered locations so a caller can bind them to the retrieved manifest URI.
+func rpkiEESIA(extensions []pkix.Extension) ([]string, error) {
+	var value []byte
+	for _, ext := range extensions {
+		if ext.Id.Equal(oidRPKISIA) {
+			if value != nil || ext.Critical || len(ext.Value) == 0 || len(ext.Value) > 512000 {
+				return nil, errRPKIUpDown
+			}
+			value = ext.Value
+		}
+	}
+	var descriptions []rpkiAccessDescription
+	if !rpkiCSRDER(value, &descriptions) || len(descriptions) == 0 {
+		return nil, errRPKIUpDown
+	}
+	var locations []string
+	rsync := false
+	for _, d := range descriptions {
+		if !d.Method.Equal(asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 48, 11}) || d.Location.Class != 2 || d.Location.Tag != 6 || d.Location.IsCompound {
+			return nil, errRPKIUpDown
+		}
+		uri := string(d.Location.Bytes)
+		if !validRPKIProfileURI(uri) {
+			return nil, errRPKIUpDown
+		}
+		u, err := url.Parse(uri)
+		if err != nil || u.User != nil || strings.Contains(uri, "#") {
+			return nil, errRPKIUpDown
+		}
+		if u.Scheme == "rsync" {
+			if !publicationURI(uri) || strings.HasSuffix(uri, "/") {
+				return nil, errRPKIUpDown
+			}
+			rsync = true
+		}
+		locations = append(locations, uri)
+	}
+	if !rsync {
+		return nil, errRPKIUpDown
+	}
+	return locations, nil
+}
