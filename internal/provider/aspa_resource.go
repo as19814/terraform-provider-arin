@@ -127,8 +127,8 @@ func (r *aspaResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 	m.identity()
-	_, err = r.client.ApplyRPKITransaction(ctx, m.Org.ValueString(), arin.RPKITransaction{AddASPAs: []arin.ASPA{a}})
-	if netDefinitiveFailure(err) {
+	result, err := r.client.ApplyRPKITransaction(ctx, m.Org.ValueString(), arin.RPKITransaction{AddASPAs: []arin.ASPA{a}})
+	if result == nil && netDefinitiveFailure(err) {
 		resp.Diagnostics.AddError("Could not create ASPA", err.Error())
 		return
 	}

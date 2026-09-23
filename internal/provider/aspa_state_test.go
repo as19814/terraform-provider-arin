@@ -91,3 +91,23 @@ func TestASPAUnconfirmedDeletionPreservesState(t *testing.T) {
 		t.Fatal("unconfirmed deletion lost state")
 	}
 }
+func TestASPAVerificationForbiddenRetainsIdentity(t *testing.T) {
+	f, r, state, plan := aspaStateFixture(t)
+	f.afterWriteReadStatus = 403
+	ctx := context.Background()
+	created := resource.CreateResponse{State: tfsdk.State{Schema: state.Schema}}
+	r.Create(ctx, resource.CreateRequest{Plan: plan}, &created)
+	var m aspaModel
+	if d := created.State.Get(ctx, &m); d.HasError() {
+		t.Fatal(d)
+	}
+	if !created.Diagnostics.HasError() || m.ID.ValueString() != "EXAMPLE-1/64496" {
+		t.Fatal("verification 403 discarded an accepted ASPA")
+	}
+	f.readStatus = 0
+	read := resource.ReadResponse{State: created.State}
+	r.Read(ctx, resource.ReadRequest{State: created.State}, &read)
+	if read.Diagnostics.HasError() {
+		t.Fatal(read.Diagnostics)
+	}
+}

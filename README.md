@@ -214,6 +214,8 @@ before retrying a failed apply.
 
 [`arin_aspa`](docs/resources/aspa.md) manages one hosted ASPA with atomic provider-set changes. Import existing ASPAs by `ORG-HANDLE/CUSTOMER-ASN`. It supports `[0]` as the sole-provider set and preserves unrelated ASPAs and ROAs. See the [hosted RPKI evidence](docs/reference/rpki.md).
 
+[`arin_roa`](docs/resources/roa.md) manages hosted ROAs with IPv4/IPv6 prefixes, maximum lengths, AS0, and optional IRR links. Updates atomically replace the generated handle. Import by `ORG-HANDLE/ROA-HANDLE`. Linked routes are preserved on destroy unless `delete_linked_routes = true`. Uncertain writes retain a recovery journal and block repeat submission.
+
 ## Next steps
 
 Extend managed-resource support to additional IRR objects, organizations, contacts, and hosted RPKI, with explicit lifecycle semantics and OT&E validation. Network and reverse DNS management are implemented. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.

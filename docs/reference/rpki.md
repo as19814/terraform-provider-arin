@@ -32,6 +32,54 @@ canonical and maximum lengths must fit their address families. The transaction
 client exposes creation and deletion autoLink flags. Sandbox evidence below
 confirms their effects on disposable IPv4 and IPv6 IRR routes.
 
+## ROA resource
+
+`arin_roa` imports as `ORG-HANDLE/ROA-HANDLE`. Its `prefixes` map contains
+canonical IPv4/IPv6 CIDRs and their maximum prefix lengths. An API record with
+omitted maxLength is read as the CIDR length. The `asn` field accepts AS0.
+Updates atomically delete the old ROA and add the new authorization, so both
+`handle` and `id` change. A matching existing authorization requires import.
+A change only to the local deletion policy does not submit a new transaction.
+
+`auto_link` controls linking at creation/replacement. `linked_prefixes` reports
+the current links individually. On read, `auto_link` is true only if every prefix
+is linked, including for imported objects. Updates always delete with
+`autoLink=false`, preserving previously linked routes after unlinking them.
+Destroy also preserves routes by default. Set `delete_linked_routes=true` to
+remove them instead. This deletion policy is local and imports default to false.
+ARIN can adopt existing routes when auto-linking. Avoid managing those same
+objects through `arin_irr_route`; shared-route ownership still needs further audit.
+
+An uncertain create or update stores `recovery_data`, including the requested
+authorization, the pre-write handles, and the previous handle for updates.
+Refresh accepts exactly one new matching authorization and requires the previous
+handle to be absent. Zero matches, multiple matches, or a surviving previous
+handle retain state and produce a recovery error. Reads never treat an unresolved
+write as a missing resource; updates and destroy must reconcile it first.
+Transactions are not replayed. A successful POST followed by a failed verification
+GET retains recovery state even when that GET returns HTTP 403 or another 4xx.
+ASPA creation likewise retains its natural identity in this situation.
+
+If reconciliation cannot establish a unique result, preserve a state backup and
+inspect the organization's ROAs. Once the correct handle is established, remove
+only the pending Terraform state entry and import that handle. Do not rerun
+creation or delete possible matches blindly. `recovery_data` is marked sensitive
+to keep the journal out of ordinary plan output, but Terraform state still
+contains it and must be protected.
+
+Terraform mock tests cover create/import, atomic updates, drift repair,
+missing-object recreation, deletion-policy-only changes, and sibling preservation.
+A real Terraform recovery test confirms a second apply cannot resubmit an
+unresolved creation, then exercises late inventory discovery and an accepted
+update with a lost response. Unit tests additionally cover ambiguous discovery,
+read failures, verification failures and unconfirmed deletion.
+
+The Terraform OT&E lifecycle passes IPv4/IPv6 creation and import, AS0 origin
+updates, IRR linking, unlinking while preserving routes, re-adopting those routes,
+and destroy with linked-route deletion. Cleanup verifies every disposable route
+is absent and both original RPKI inventories are unchanged. Its private recovery
+snapshot records the disposable name and route IDs before mutation.
+
 ## ASPA resource
 
 `arin_aspa` imports as `ORG-HANDLE/CUSTOMER-ASN`. It owns the complete nonempty
@@ -101,8 +149,8 @@ All test origins are pinned to OT&E; normal CI uses fake servers only.
 
 ## Remaining work
 
-The Terraform ROA resource and import, ownership of pre-existing or shared linked
-IRR routes, AS0 auto-link behavior and the final endpoint audit remain in the
+Shared IRR link ownership, AS0 auto-link behavior and the final endpoint audit
+remain in the
 [implementation inventory](implementation-status.md). The shared transaction
 client already supports combined operations, while the ASPA resource manages a
 single customer identity. Any need for a declarative multi-object transaction

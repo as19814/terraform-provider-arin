@@ -29,6 +29,7 @@ type testASPATransactionXML struct {
 	Add     []testASPAXML `xml:"aspaAdd>aspa"`
 }
 type aspaFake struct {
+	afterWriteReadStatus                         int
 	mu                                           sync.Mutex
 	objects                                      map[int64][]int64
 	readStatus, writeStatus, posts, replacements int
@@ -89,6 +90,9 @@ func (f *aspaFake) handler(w http.ResponseWriter, r *http.Request) {
 	if f.writeStatus != 0 {
 		w.WriteHeader(f.writeStatus)
 		return
+	}
+	if f.afterWriteReadStatus != 0 {
+		f.readStatus = f.afterWriteReadStatus
 	}
 	b, _ := xml.Marshal(p)
 	w.Write(b)
