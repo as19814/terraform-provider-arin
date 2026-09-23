@@ -33,6 +33,7 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 | [arin_org_pocs](../data-sources/org_pocs.md) | Public RDAP | List public contact handles and roles linked directly to an ARIN organization. Use arin_poc to read contact details through Reg-RWS. No API key is needed. |
 | [arin_parent_net](../data-sources/parent_net.md) | Reg-RWS | Find the parent network for an IP address range using ARIN's parentNet lookup. |
 | [arin_poc](../data-sources/poc.md) | Reg-RWS | Read a point of contact, including names, addresses, email addresses, and telephone numbers. Contact details are stored in Terraform state. |
+| [arin_rdap_network](../data-sources/rdap_network.md) | Public RDAP | Look up the public ARIN network registration containing an IPv4/IPv6 address or canonical prefix. No API key is sent. Returns registration data, not proof of authority to modify the network. Referrals and partial results are rejected. |
 | [arin_roa](../data-sources/roa.md) | Hosted RPKI | Read one hosted ROA by handle from an organization's ROA collection. |
 | [arin_roas](../data-sources/roas.md) | Hosted RPKI | List hosted RPKI ROAs for an organization. Omitted max_length values remain null, rather than inventing a maximum prefix length. |
 | [arin_ticket](../data-sources/ticket.md) | Reg-RWS | Read an existing ticket and its message references. No ticket is created. Ticket content is sensitive and stored in Terraform state. |
@@ -60,6 +61,8 @@ Mock acceptance tests cover every catalog entry through real Terraform, includin
 The opt-in live suite follows existing records from the selected organization. Network, contact, ASN, IRR, ROA, and ASPA reads were exercised against FT-684. Live customer, individual aut-num/route-set, and ticket-content reads require suitable existing records; mock coverage does not imply live verification of those cases.
 
 Advanced RPSL reads passed native Terraform tests for all five object types using disposable sandbox fixtures, alongside managed-resource lifecycles. Fake-server coverage also checks refresh and mismatched identities; see [RPSL evidence](irr-rpsl.md).
+
+Public network lookups by IPv4/IPv6 address and prefix passed native Terraform tests on OT&E and production, without credentials. They validate the entire query range and CIDR coverage, reject partial results, and do not follow referrals; see [RDAP audit](rdap.md).
 
 The ASPA endpoint requires Content-Type: application/xml even on GET. The client supplies it for authenticated reads.
 

@@ -77,6 +77,8 @@ The opt-in live suite follows existing records from the selected organization. N
 
 Advanced RPSL reads passed native Terraform tests for all five object types using disposable sandbox fixtures, alongside managed-resource lifecycles. Fake-server coverage also checks refresh and mismatched identities; see [RPSL evidence](irr-rpsl.md).
 
+Public network lookups by IPv4/IPv6 address and prefix passed native Terraform tests on OT&E and production, without credentials. They validate the entire query range and CIDR coverage, reject partial results, and do not follow referrals; see [RDAP audit](rdap.md).
+
 The ASPA endpoint requires Content-Type: application/xml even on GET. The client supplies it for authenticated reads.
 
 ARIN's current "Get Ticket Payload List" header-auth example repeats the single-ticket summary URL. The implemented listing path uses the matrix-filter endpoint documented in the adjacent URL-auth example, with authentication moved to the header. No key is placed in the URL. Both filtered ticket-list endpoints were also checked live and returned valid empty collections for open QUESTION tickets.

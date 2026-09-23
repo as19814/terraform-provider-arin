@@ -17,6 +17,7 @@ var asnFields = []Field{
 
 func PublicReads() []ReadSpec {
 	return []ReadSpec{
+		{Name: "rdap_network", Public: true, Description: "Look up the public ARIN network registration containing an IPv4/IPv6 address or canonical prefix. No API key is sent. Returns registration data, not proof of authority to modify the network. Referrals and partial results are rejected.", Inputs: []Input{input("query", "ip_network", "192.0.2.1", "Canonical IPv4/IPv6 address or network prefix without host bits.")}, Fields: rdapNetworkFields},
 		{Name: "asn", Public: true, Description: "Read an ASN registration through public ARIN RDAP. No API key is sent. This is distinct from an IRR aut-num object.", Inputs: []Input{input("asn", "asn", "19814", "Autonomous system number.")}, Fields: asnFields},
 		{Name: "asns", Public: true, Collection: true, Output: "asns", Description: "List ASN registrations where an organization is the direct registrant using public RDAP. No API key is needed. Incomplete results are rejected.", Inputs: []Input{orgInput}, Fields: asnFields},
 		{Name: "org_pocs", Public: true, Collection: true, Output: "pocs", Description: "List public contact handles and roles linked directly to an ARIN organization. Use arin_poc to read contact details through Reg-RWS. No API key is needed.", Inputs: []Input{orgInput}, Fields: []Field{required(text("handle", "")), stringsField("roles", "")}},
@@ -128,6 +129,9 @@ func (c *Client) rdapEntity(ctx context.Context, handle string) ([]rdapEntityRef
 func (c *Client) readPublic(ctx context.Context, spec ReadSpec, p map[string]string) (map[string]any, error) {
 	if c.rdapBaseURL == "" {
 		return nil, errors.New("rdap_base_url is required for public reads when base_url is a custom origin")
+	}
+	if spec.Name == "rdap_network" {
+		return c.readRDAPNetwork(ctx, p["query"])
 	}
 	if spec.Name == "org_pocs" {
 		entities, err := c.rdapEntity(ctx, p["org_handle"])

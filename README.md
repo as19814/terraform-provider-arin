@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 33 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Nineteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs and ASPAs, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes, and advanced RPSL objects, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 34 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Nineteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs and ASPAs, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes, and advanced RPSL objects, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -128,6 +128,8 @@ Updates and deletes retain state on errors. Only a 404 means the object is absen
 authentication and server errors never cause state removal.
 
 Advanced objects created through RPSL can be read with [`arin_irr_rpsl`](docs/data-sources/irr_rpsl.md), which returns the full policy text for routes, route6, AS sets, route sets and aut-num. [`arin_irr_rpsl`](docs/resources/irr_rpsl.md) also manages those advanced objects with CRUD, import, drift detection and uncertain-write recovery. See [RPSL evidence](docs/reference/irr-rpsl.md).
+
+[`arin_rdap_network`](docs/data-sources/rdap_network.md) looks up a public network registration by IPv4/IPv6 address or prefix without an API key. It verifies that the registration contains the entire query range. See the [RDAP coverage audit](docs/reference/rdap.md).
 
 ## Managed IRR routes
 

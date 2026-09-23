@@ -18,11 +18,17 @@ func TestPublicReads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	network, err := os.ReadFile("testdata/rdap_network.json")
+	if err != nil {
+		t.Fatal(err)
+	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "" || r.Method != "GET" {
 			t.Error("public read sent credentials or used wrong method")
 		}
 		switch r.URL.RequestURI() {
+		case "/registry/ip/192.0.2.1":
+			_, _ = w.Write(network)
 		case "/registry/autnum/64496":
 			_, _ = w.Write(asn)
 		case "/registry/autnums/reverse_search/entity?handle=EXAMPLE-1":
@@ -40,11 +46,15 @@ func TestPublicReads(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, s := range PublicReads() {
-		result, err := c.ReadRegistration(context.Background(), s, map[string]string{"org_handle": "EXAMPLE-1", "asn": "64496"})
+		result, err := c.ReadRegistration(context.Background(), s, map[string]string{"org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"})
 		if err != nil {
 			t.Fatal(err)
 		}
 		switch s.Name {
+		case "rdap_network":
+			if result["handle"] != "NET-192-0-2-0-1" {
+				t.Fatal("incorrect network")
+			}
 		case "asn":
 			if result["start_asn"] != int64(64496) {
 				t.Fatal("incorrect ASN")

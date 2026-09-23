@@ -268,6 +268,9 @@ func (s ReadSpec) Validate(params map[string]string) error {
 		case "cidr":
 			prefix, err := netip.ParsePrefix(value)
 			valid = err == nil && prefix == prefix.Masked() && !prefix.Addr().Is4In6()
+		case "ip_network":
+			_, _, err := rdapNetworkQuery(value)
+			valid = err == nil
 		case "ip":
 			addr, err := netip.ParseAddr(value)
 			valid = err == nil && !addr.Is4In6() && addr.Zone() == ""
