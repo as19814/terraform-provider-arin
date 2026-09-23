@@ -926,3 +926,22 @@ an injected reader. They complement protocol tests rather than claiming native
 ARIN interoperability. Native verification remains blocked by absent delegated
 sandbox enrollment and BPKI credentials. Pending recovery and managed delegated
 resources remain unfinished.
+
+
+## Terraform provisioning inventory
+
+`arin_rpki_provisioning` now exposes RFC 6492 list requests with the same existing
+file-backed BPKI identity and persistent journals as publication inventory.
+Child and parent handles scope the exchange. Classes are sorted by name, and
+certificates by publication URLs then DER hash. Outputs include resource sets,
+allocation expiry, issuer PEM, issued certificate PEM and hashes, publication
+URLs and echoed requests. Omitted request attributes remain null; explicitly
+empty requests remain empty strings.
+
+The parent BPKI response and protocol structure are verified. This inventory
+read does not validate the returned resource certificates against an RPKI trust
+anchor and does not issue or revoke certificates. Signed client tests cover
+request authentication, refresh and absent/empty output distinctions. Terraform
+acceptance tests cover configuration mapping, nested state, empty inventories,
+refresh and errors through an injected reader. Native delegated verification,
+managed resources and pending-operation recovery remain unfinished.
