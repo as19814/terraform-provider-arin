@@ -330,3 +330,34 @@ disposable report tickets closed automatically. See the
 References: [ARIN Reg-RWS methods](https://www.arin.net/resources/manage/regrws/methods/)
 and [payloads](https://www.arin.net/resources/manage/regrws/payloads/), with local
 copies in [the API documentation index](arin-api/README.md).
+
+## Prepared native ticket-message submission
+
+`TestOTETicketMessageSubmitLifecycle` is disabled by the code-level
+`oteTicketAppendApproved = false` gate. It is excluded from `make testote` and
+requires its own `ARIN_OTE_TICKET_APPEND_TESTS=1` opt-in in addition to the existing
+OT&E settings. No approval for this separate correspondence has been received.
+Previously approved NET-removal messages do not authorize it.
+
+The prepared target is the existing ticket-only disposable organization creation
+receipt for FT-684, which must still be `PENDING_REVIEW`. The exact proposed message
+is subject `Terraform provider OT&E ticket-message test`, text
+`Verifying ticket-message submission for our disposable sandbox organization request. No additional registry changes are requested.`,
+category `NONE`, with `evidence.txt` containing the seven bytes `evidence`.
+The message will remain on the ARIN ticket after the test.
+
+The transport restricts reads to the saved sandbox ticket and permits one POST
+with the exact serialized payload. Before dispatch it exclusively creates a
+mode-0600 intent receipt and syncs both file and directory. Existing evidence,
+changed content, wrong origin/ticket/query and uncertain results prevent replay,
+including after reopening the guard. Intent receipts use the private cache prefix
+`ote-ticket-append-20260923-<org-hash>.json`; successful state-only destruction
+retains a separate `.confirmed.json` receipt with the returned message identity.
+Do not remove these receipts. After an authorized send, disable the code gate
+again, including if the response is lost.
+
+The identical Terraform test passes against the fake server: submission, receipt
+state, import with attachment retrieval and state verification, refresh, clean
+plans and state-only destroy. It asserts exactly one submission and a retained
+server message. Native submission remains unverified pending separate approval
+and execution. No new correspondence was sent while preparing these tests.
