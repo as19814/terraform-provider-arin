@@ -284,6 +284,11 @@ func (s ReadSpec) Validate(params map[string]string) error {
 			return fmt.Errorf("%s is not a valid %s", input.Name, input.Kind)
 		}
 	}
+	if s.Name == "rdap_domains" {
+		if err := validateRDAPDomainRelation(params["relation"], params["active_only"] == "true"); err != nil {
+			return err
+		}
+	}
 	if s.Name == "rdap_entities" {
 		if err := validateRDAPEntitySearch(params["search_by"], params["query"]); err != nil {
 			return err

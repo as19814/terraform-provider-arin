@@ -108,9 +108,11 @@ type APIError struct {
 	// True only for a complete, structured RDAP 404 response. Search callers
 	// can distinguish no matches from a proxy or wrong-origin HTTP 404.
 	rdapNotFound bool
-	StatusCode   int
-	Code         string
-	Message      string
+	// Some hierarchy searches express no matches as an empty array on HTTP 404.
+	rdapEmptyDomains bool
+	StatusCode       int
+	Code             string
+	Message          string
 }
 
 func (e *APIError) Error() string {
@@ -245,13 +247,16 @@ func (c *Client) doRequest(ctx context.Context, method, origin, path, accept str
 		}
 		if accept == "application/rdap+json" {
 			var rdapError struct {
-				ErrorCode   int      `json:"errorCode"`
-				Title       string   `json:"title"`
-				Description []string `json:"description"`
+				ErrorCode   *int               `json:"errorCode"`
+				Domains     *[]json.RawMessage `json:"domainSearchResults"`
+				Title       string             `json:"title"`
+				Description []string           `json:"description"`
 			}
 			if json.Unmarshal(body, &rdapError) == nil {
 				apiErr.Message = c.redact(strings.Join(append([]string{rdapError.Title}, rdapError.Description...), " "))
-				apiErr.rdapNotFound = resp.StatusCode == http.StatusNotFound && rdapError.ErrorCode == http.StatusNotFound && checkRDAPCompleteness(body) == nil
+				notFoundCode := rdapError.ErrorCode != nil && *rdapError.ErrorCode == http.StatusNotFound
+				apiErr.rdapNotFound = resp.StatusCode == http.StatusNotFound && notFoundCode && (rdapError.Domains == nil || len(*rdapError.Domains) == 0) && checkRDAPCompleteness(body) == nil
+				apiErr.rdapEmptyDomains = resp.StatusCode == http.StatusNotFound && (rdapError.ErrorCode == nil || notFoundCode) && rdapError.Domains != nil && len(*rdapError.Domains) == 0 && checkRDAPCompleteness(body) == nil
 			}
 		}
 		return nil, apiErr

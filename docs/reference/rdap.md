@@ -133,6 +133,46 @@ ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
   go test ./internal/provider -run '^TestLiveRDAPDomain$' -count=1 -v
 ```
 
+## Implemented reverse-domain hierarchy searches
+
+`arin_rdap_domains` requests `/registry/domains/rirSearch1/rdap-RELATION/NAME`.
+The `relation` values are `top`, `up`, `down` and `bottom`. It returns a `domains`
+list using the same fields as `arin_rdap_domain`. A single-object response becomes
+a one-element list; multi-object results are sorted by normalized domain name.
+`up` follows registered parents, which can skip DNS labels. `bottom` can contain
+an enclosing domain alongside more-specific domains. The provider preserves these
+results instead of assuming that the returned domains are disjoint.
+
+ARIN's guide and [RFC 9910](https://www.rfc-editor.org/rfc/rfc9910.html) describe
+these relations. Native OT&E probes on 2026-09-23 confirmed all four operations.
+The optional `active_only=true` sends `status=active` for `top` and `up` only.
+OT&E returned HTTP 501 for active filtering on `down`/`bottom` and for inactive
+filtering on `top`/`up`, so those combinations are not exposed. The service applies
+the filter; a domain's existence or its configured nameservers are not interpreted
+as proof of active status. Filtered ancestor queries for the tested owned domains
+returned structured no-match responses.
+
+Complete RDAP 404 error responses become empty lists. For multi-object relations,
+a complete HTTP 404 containing an empty `domainSearchResults` array is also
+accepted. Plain HTTP errors, malformed or contradictory responses, duplicate
+domains, unrelated results, referrals, pagination and truncation are rejected.
+Response-provided links are never followed. Every returned domain receives the
+same nested completeness checks as direct lookup.
+
+Client and fake Terraform tests cover all relations, status filtering, both
+no-match response forms, overlapping enclosing/child results, sorting, nested
+DNSSEC fields, refresh, clean plans and invalid/partial results. Native tests
+exercise IPv4/IPv6 ancestors and bottom results, empty child results, active
+filters, a complete child collection from ARIN's documented reference hierarchy,
+and rejection of a broad IPv6 child search when ARIN truncates it. These native
+Terraform tests passed on OT&E and production on 2026-09-23, including clean
+plans. Queries are serialized and use no credentials.
+
+```sh
+ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
+  go test ./internal/provider -run '^TestLiveRDAPDomains$' -count=1 -v
+```
+
 ## Remaining endpoint audit
 
 | Family | Current coverage | Remaining work |
@@ -140,10 +180,10 @@ ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
 | IP network lookup | `arin_rdap_network`, native IPv4/IPv6 evidence | Final field/endpoint audit |
 | IP network searches | `arin_networks` handles direct registrant inventory | Handle/name search, hierarchy relations, other entity reverse-search filters |
 | ASN lookup | `arin_asn` | Final field audit |
-| ASN searches | `arin_asns` handles direct registrant inventory | Handle/name search and other entity reverse-search filters |
+| ASN searches | `arin_asns` handles direct registrant inventory | Handle/name search, other entity reverse-search filters, and capability audit for RFC 9910 ASN hierarchy searches |
 | Entity lookup | `arin_rdap_entity` exposes contact fields and complete JSON; native organization/POC reads verified | Final endpoint audit |
 | Entity searches | `arin_rdap_entities` covers handle/name searches, exact/trailing-wildcard queries, no matches and partial-result rejection | Final endpoint audit |
-| Reverse domain lookup/search | `arin_rdap_domain` passes native IPv4/IPv6 and signed-zone reads; authenticated DNS data sources also exist | Public hierarchy searches and final field audit |
+| Reverse domain lookup/search | `arin_rdap_domain` plus `arin_rdap_domains` for all four hierarchy relations and supported active filters | Final field/endpoint audit |
 | Standalone nameserver lookup | Unsupported by ARIN RDAP | No data source for an unimplemented operation |
 
 The standalone nameserver endpoint was checked in OT&E on 2026-09-23:
