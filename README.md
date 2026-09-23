@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 69 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Nineteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs and ASPAs, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes, and advanced RPSL objects, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 69 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-three managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, report requests, ticket messages and closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -238,6 +238,8 @@ metadata resource when Terraform also manages the owning ROA or bundle.
 [`arin_report_request`](docs/resources/report_request.md) submits an associations, reassignment or WhoWas report and retains its ticket receipt. Refresh and ticket expiry never resubmit it; destroy only forgets the receipt. WhoWas requires account access. See [report lifecycle and recovery](docs/reference/reports-tickets.md).
 
 [`arin_ticket_status`](docs/resources/ticket_status.md) closes an existing resolved ticket, imports by ticket number, and avoids rewriting already closed tickets. Destroy leaves the server ticket intact. Open tickets cannot be closed through this operation.
+
+[`arin_ticket_message`](docs/resources/ticket_message.md) appends correspondence and attachments to an existing ticket. Changes submit a new message; refresh and destroy never alter server correspondence. Import uses `TICKET/MESSAGE`. Uncertain responses block retries until reconciliation and import. Terraform lifecycle and recovery pass mocks; native correspondence remains unverified.
 
 ## Next steps
 

@@ -112,8 +112,7 @@ already closed ticket as a no-op, and verifies a fresh summary after writing.
 It cannot withdraw open requests or reopen tickets. Mock tests cover premature
 closure, mismatched response identities, ignored updates, lost responses and
 verification failures. Full-ticket PUT remains separate implementation work. The append-only message
-client is implemented as described below; its Terraform receipt resource remains
-to be added.
+client and Terraform receipt resource are implemented as described below.
 
 ## Append-only message client
 
@@ -137,9 +136,41 @@ Mock tests cover XML escaping, numbered lines, base64 attachments, payload limit
 invalid identities, closed tickets, rejected requests, lost responses, redirects,
 partial response recovery, read failures and changed read-back content. No live
 message has been submitted for this implementation. Native correspondence needs
-explicit approval. Terraform creation/import/refresh/destroy and persisted
-uncertain-submission handling still need implementation; there is no server-side
-message update or delete operation in the documented methods.
+explicit approval. There is no server-side message update or delete operation in
+the documented methods.
+
+## Terraform message receipts
+
+`arin_ticket_message` appends one message with an immutable ticket, subject,
+ordered text, category and filename-to-base64 attachment map. Content fields are
+sensitive. Changing any submission input replaces the resource and sends another
+message. Refresh only reads the existing message. An expired message sets
+`message_available=false` and retains the receipt without another POST. Destroy
+forgets local management and leaves the correspondence in ARIN.
+
+Import uses `TICKET/MESSAGE` and reads the message plus each attachment through
+its authenticated endpoint. Duplicate attachment filenames cannot be represented
+by the map and cause import to fail. Import requires all attachments to be readable
+within the client's response limit. Configuration must match the imported message
+to avoid deliberately submitting new correspondence on the next apply.
+
+An uncertain response persists a temporary receipt or the trustworthy returned
+message identity, with `pending_submission=true`. Refresh and destroy reject this
+state, including when Terraform taints a failed creation and plans replacement.
+Back up state, identify the accepted message in ARIN, remove only the pending
+receipt with `terraform state rm`, then import `TICKET/MESSAGE`. Neither text
+matching nor an empty result is used to guess that a POST should be retried.
+Definite HTTP rejection responses leave no pending receipt. As with other
+Terraform resources, a process crash before the provider returns state requires
+external reconciliation; the resource cannot guarantee durable state before its
+POST. Preserve external records of message intent for that failure mode.
+
+Fake-server Terraform tests verify create, attachment import, clean plans, input
+replacement, expiry and state-only destroy. Partial and lost responses are tested
+through failed creation, a blocked second apply with `create_before_destroy`,
+manual import recovery and clean plans, with exactly one POST. State tests also
+verify pending read/delete guards, returned-ID preservation and definite rejection
+without pending state. No live correspondence was sent for these tests.
 
 ## Preventing report replay
 
@@ -199,8 +230,8 @@ selected in ARIN Online. The API does not expose that retention setting.
 
 Native successful WhoWas generation requires account access. Report attachment
 access exists through ticket data sources and still needs its final integration
-audit. Message submission has client and mock coverage; its Terraform receipt lifecycle
-and native evidence remain. Full-ticket modification still needs implementation
+audit. Message submission and its Terraform receipt lifecycle pass mocks; native
+correspondence evidence remains. Full-ticket modification still needs implementation
 and sandbox evidence. Successful native closure from RESOLVED also
 remains to be verified. See the
 [coverage inventory](implementation-status.md).
