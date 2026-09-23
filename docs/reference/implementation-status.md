@@ -7,6 +7,9 @@ not establish coverage of another. Production mutations are outside testing scop
 The inventory starts with the official snapshots in `arin-api/README.md`. Each
 family requires schemas, validated client behavior, Terraform lifecycle/import
 where applicable, generated examples/docs, mock tests, and sandbox evidence.
+The [Reg-RWS operation reconciliation](reg-rws-coverage.md) maps all 56 documented
+operation sections to the current Terraform surface, implementation and evidence.
+It distinguishes implemented operations from native verification still needed.
 Unsupported operations need documented, reproducible OT&E evidence rather than
 being assumed out of scope. Reconcile this inventory against live documentation
 again before declaring full coverage.
