@@ -25,6 +25,8 @@ type rpkiHTTPExchange struct {
 	Transport                                 http.RoundTripper
 	Timeout                                   time.Duration
 	Clock                                     func() time.Time
+	RecoveryOf                                string
+	MinimumSent, MinimumReceived              time.Time
 }
 
 var errRPKIHTTPExchange = errors.New("RPKI exchange failed; inspect the pending journal before retrying")
@@ -45,12 +47,16 @@ func (c rpkiHTTPExchange) peerID() (string, error) {
 	if c.Identity.Anchor == nil || c.PeerAnchor == nil || len(c.Identity.Anchor.Raw) == 0 || len(c.PeerAnchor.Raw) == 0 {
 		return "", errors.New("RPKI exchange requires local and peer trust anchors")
 	}
+	if c.RecoveryOf != "" && (c.MediaType != "application/rpki-publication" || !exchangeDigest.MatchString(c.RecoveryOf)) {
+		return "", errors.New("invalid RPKI recovery scope")
+	}
 	// Bind history to the protocol, endpoint, configured peer handles and stable
 	// CA identities. EE certificate renewal does not create a new journal.
 	key, _ := json.Marshal(struct {
 		Endpoint, Media, Scope string
 		Local, Peer            [32]byte
-	}{c.Endpoint, c.MediaType, c.PeerScope, sha256.Sum256(c.Identity.Anchor.Raw), sha256.Sum256(c.PeerAnchor.Raw)})
+		RecoveryOf             string `json:",omitempty"`
+	}{c.Endpoint, c.MediaType, c.PeerScope, sha256.Sum256(c.Identity.Anchor.Raw), sha256.Sum256(c.PeerAnchor.Raw), c.RecoveryOf})
 	return fmt.Sprintf("%x", sha256.Sum256(key)), nil
 }
 
@@ -67,6 +73,9 @@ func (c rpkiHTTPExchange) exchange(ctx context.Context, operation string, reques
 	peerID, err := c.peerID()
 	if err != nil {
 		return nil, err
+	}
+	if !validExchangeTime(c.MinimumSent) || !validExchangeTime(c.MinimumReceived) {
+		return nil, errRPKIExchangeState
 	}
 	timeout := c.Timeout
 	if timeout == 0 {
@@ -102,7 +111,11 @@ func (c rpkiHTTPExchange) exchange(ctx context.Context, operation string, reques
 	}
 	requestXML = bytes.Clone(requestXML)
 	now := clock()
-	signed, err := signRPKICMS(requestXML, c.Identity, now, state.LastSent)
+	lastSent := state.LastSent
+	if c.MinimumSent.After(lastSent) {
+		lastSent = c.MinimumSent
+	}
+	signed, err := signRPKICMS(requestXML, c.Identity, now, lastSent)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +148,11 @@ func (c rpkiHTTPExchange) exchange(ctx context.Context, operation string, reques
 	if err != nil || len(body) > 4<<20 {
 		return nil, errRPKIHTTPExchange
 	}
-	verified, err := verifyRPKICMS(body, rpkiCMSTrust{Anchor: c.PeerAnchor, Intermediates: c.PeerIntermediates, Now: clock(), LastSigningTime: state.LastReceived})
+	lastReceived := state.LastReceived
+	if c.MinimumReceived.After(lastReceived) {
+		lastReceived = c.MinimumReceived
+	}
+	verified, err := verifyRPKICMS(body, rpkiCMSTrust{Anchor: c.PeerAnchor, Intermediates: c.PeerIntermediates, Now: clock(), LastSigningTime: lastReceived})
 	if err != nil {
 		return nil, errRPKIHTTPExchange
 	}

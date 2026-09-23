@@ -1114,3 +1114,29 @@ comparison leave the pending journal unchanged.
 An authenticated recovery inventory exchange and durable reconciliation decision
 are still required before uncertain mutations can be cleared. This comparison
 helper alone does not authorize completion, abandonment or retry.
+
+## Authenticated recovery inventory reads
+
+The private recovery reader now holds the original publication peer's lock while
+sending a signed list request through a separate journal scoped to the pending
+mutation digest. Ordinary peer IDs remain unchanged. Different mutation digests
+produce different recovery journals without changing the remote endpoint or
+publisher identity.
+
+The recovery request must use a newer signing second than the original request.
+Response verification enforces both the original peer's receive-time watermark
+and the recovery journal's own watermark. The list reply still requires the
+configured peer BPKI chain, CRLs and protocol validation. A failed recovery read
+remains pending in its separate journal and blocks automatic retry. The existing
+explicit read-only recovery mechanism can abandon that list operation; it cannot
+abandon the original mutation.
+
+Successful reads return the inventory comparison and durable probe timestamps.
+They leave the original journal and request evidence unchanged. Tests verify the
+original lock remains held during HTTP, only a list request is sent, before/after
+and conflict results are distinguished, stale replies and wrong signers fail,
+failed probes are not retried, and recovery receive history cannot roll back.
+
+This is still an internal observation operation. Committing a reconciliation
+decision, exposing recovery to the CLI/provider, and native delegated verification
+remain unfinished. A successful observation does not itself clear a mutation.
