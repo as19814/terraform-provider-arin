@@ -152,3 +152,21 @@ func TestNetRemovalMessageInvalidApply(t *testing.T) {
 		t.Fatal("invalid apply-time message allowed update")
 	}
 }
+
+func TestAccNetProposedOTERemovalMessage(t *testing.T) {
+	f, _ := setupNetFake(t)
+	base := netConfig(`customer_handle = "C123"`)
+	configured := netConfig(`customer_handle = "C123"` + "\n" + terraformRemovalMessageConfig)
+	tfresource.Test(t, tfresource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("test")())}, CheckDestroy: func(_ *terraform.State) error {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		if len(f.objects) != 0 || f.writes["remove"] != 1 || f.writes["update"] != 0 || f.writes["delete"] != 0 {
+			return fmt.Errorf("unexpected proposed removal lifecycle: %v", f.writes)
+		}
+		return validateApprovedRemovalMessage([]byte(f.removalPayload))
+	}, Steps: []tfresource.TestStep{
+		{Config: base},
+		{Config: configured, Check: tfresource.TestCheckResourceAttr("arin_net.test", "removal_messages.0.subject", approvedRemovalMessage().Subject)},
+		{Config: configured, PlanOnly: true},
+	}})
+}

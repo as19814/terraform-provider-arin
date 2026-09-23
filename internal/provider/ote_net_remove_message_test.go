@@ -54,7 +54,7 @@ func TestOTENetRemoveMessageLifecycle(t *testing.T) {
 	if os.Getenv("ARIN_OTE_MESSAGE_TESTS") != "1" {
 		t.Skip("requires the explicit approved-message test opt-in")
 	}
-	testOTECustomerNetGraph(t, true, true)
+	testOTECustomerNetGraph(t, true, true, false)
 }
 
 func TestApprovedRemovalMessageGuard(t *testing.T) {
@@ -109,4 +109,22 @@ func TestApprovedRemovalMessageGuard(t *testing.T) {
 			}
 		})
 	}
+}
+
+const terraformRemovalMessageConfig = `removal_messages = [{
+ subject = "Terraform provider OT&E removal test"
+ text = ["Removing a disposable sandbox network for provider verification."]
+ category = "NONE"
+ attachments = { "evidence.txt" = base64encode("Disposable OT&E test evidence.") }
+}]`
+
+// No new correspondence has been authorized. Enabling the environment variable
+// alone must not reuse the two consumed client-test approvals.
+const terraformRemovalMessagesApproved = false
+
+func TestOTENetTerraformRemovalMessages(t *testing.T) {
+	if !terraformRemovalMessagesApproved || os.Getenv("ARIN_OTE_TERRAFORM_MESSAGE_TESTS") != "1" {
+		t.Skip("requires separate approval for two additional Terraform removal messages")
+	}
+	testOTECustomerNetGraph(t, true, true, true)
 }

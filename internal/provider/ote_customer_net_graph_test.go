@@ -227,9 +227,12 @@ func (p *customerNetOTEProvider) Configure(_ context.Context, _ frameworkprovide
 	resp.DataSourceData = p.client
 }
 
-func TestOTECustomerNetGraphLifecycle(t *testing.T) { testOTECustomerNetGraph(t, false, false) }
-func TestOTENetRemoveLifecycle(t *testing.T)        { testOTECustomerNetGraph(t, true, false) }
-func testOTECustomerNetGraph(t *testing.T, removeOnly, withMessage bool) {
+func TestOTECustomerNetGraphLifecycle(t *testing.T) { testOTECustomerNetGraph(t, false, false, false) }
+func TestOTENetRemoveLifecycle(t *testing.T)        { testOTECustomerNetGraph(t, true, false, false) }
+func testOTECustomerNetGraph(t *testing.T, removeOnly, withMessage, terraformMessage bool) {
+	if terraformMessage && (!terraformRemovalMessagesApproved || !removeOnly || !withMessage) {
+		t.Skip("Terraform correspondence requires its own unconsumed approval")
+	}
 	if os.Getenv("ARIN_OTE_WRITE_TESTS") != "1" || os.Getenv("TF_ACC") != "1" {
 		t.Skip("requires explicit OT&E write opt-in")
 	}
@@ -254,6 +257,9 @@ func testOTECustomerNetGraph(t *testing.T, removeOnly, withMessage bool) {
 			}
 			if withMessage {
 				receiptPrefix = "ote-net-remove-approved-20260923"
+			}
+			if terraformMessage {
+				receiptPrefix = "ote-net-remove-terraform-20260923"
 			}
 			path := filepath.Join(cache, "terraform-provider-arin", fmt.Sprintf("%s-%x-%s.json", receiptPrefix, hash[:8], family))
 			if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
@@ -283,7 +289,9 @@ func testOTECustomerNetGraph(t *testing.T, removeOnly, withMessage bool) {
 				}
 				// Both authorized sends completed on 2026-09-23. A missing
 				// receipt, including on another machine, is not new approval.
-				t.Fatal("one-time message approval consumed; missing receipt cannot authorize another send")
+				if !terraformMessage {
+					t.Fatal("one-time message approval consumed; missing receipt cannot authorize another send")
+				}
 			}
 			if _, err := os.Stat(path); err == nil {
 				t.Fatalf("existing graph receipt must be reconciled first: %s", path)
@@ -362,6 +370,31 @@ func testOTECustomerNetGraph(t *testing.T, removeOnly, withMessage bool) {
 					t.Error(err)
 				}
 			})
+			if terraformMessage {
+				p := &customerNetOTEProvider{ARINProvider: &ARINProvider{version: "ote-test"}, client: client}
+				base := customerNetGraphConfig(parent, prefix, g.receipt.Name, 1, false)
+				configured := strings.Replace(base, `resource "arin_net" "assignment" {`, `resource "arin_net" "assignment" {`+"\n"+terraformRemovalMessageConfig, 1)
+				resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(p)}, CheckDestroy: func(_ *terraform.State) error {
+					if len(g.receipt.Nets) != 1 || len(g.receipt.Customers) != 1 || !g.receipt.MessageAttempted || g.receipt.Pending != "" {
+						return errors.New("unexpected Terraform removal correspondence lifecycle")
+					}
+					ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+					defer cancel()
+					if _, err := client.GetRegisteredNet(ctx, g.receipt.Nets[0]); !arin.IsNotFound(err) {
+						return errors.New("Terraform NET removal not confirmed")
+					}
+					if _, err := client.GetCustomer(ctx, g.receipt.Customers[0]); !arin.IsNotFound(err) {
+						return errors.New("Terraform customer removal not confirmed")
+					}
+					g.receipt.MessageConfirmed = true
+					return g.save()
+				}, Steps: []resource.TestStep{
+					{Config: base},
+					{Config: configured, Check: resource.TestCheckResourceAttr("arin_net.assignment", "removal_messages.0.subject", approvedRemovalMessage().Subject)},
+					{Config: configured, PlanOnly: true},
+				}})
+				return
+			}
 			if removeOnly {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 				defer cancel()

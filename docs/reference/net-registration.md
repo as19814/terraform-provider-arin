@@ -220,3 +220,30 @@ in 0.57 seconds, confirming absence with read-only GETs and skipping both sends.
 This authorization is consumed and does not cover further messages or production
 writes. Guard unit tests cover changed, missing and duplicate messages, lost
 responses, and attempted replay.
+
+### Prepared Terraform correspondence verification
+
+`TestOTENetTerraformRemovalMessages` prepares one disposable customer/NET graph
+per IP family, adds the removal policy without a metadata write, verifies a clean
+plan, and destroys through Terraform. The proposed message is the same fixed
+payload previously used by the client tests: subject `Terraform provider OT&E
+removal test`, one text line `Removing a disposable sandbox network for provider
+verification.`, category `NONE`, and `evidence.txt` containing `Disposable OT&E
+test evidence.`
+
+This would send two additional messages. The original two approvals were consumed
+by the client tests and do not authorize this run. The new test remains disabled
+by `terraformRemovalMessagesApproved = false`, even if its dedicated environment
+opt-in is set. It is excluded from `make testote`.
+
+The prepared run uses separate private `ote-net-remove-terraform-20260923-*`
+receipts. An existing incomplete receipt prevents new writes; completed receipts
+permit only cleanup verification. The transport validates the exact correspondence
+and saves dispatch intent before sending. Uncertain writes stop cleanup for manual
+reconciliation. After a successful authorized run, the code approval gate must be
+returned to false so a missing receipt on another machine cannot authorize a send.
+
+The exact proposed payload passes fake-server Terraform create, policy update,
+clean-plan and destroy checks. Guard and recovery tests verify altered-message
+rejection and no replay. Native Terraform correspondence remains unverified until
+separate approval and successful execution.
