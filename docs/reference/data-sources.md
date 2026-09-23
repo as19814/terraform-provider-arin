@@ -9,6 +9,7 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 | Data source | API | Purpose |
 | --- | --- | --- |
 | [arin_networks](../data-sources/networks.md) | Public RDAP | Discover networks directly registered to an organization. |
+| [arin_irr_rpsl](../data-sources/irr_rpsl.md) | IRR RPSL | Read the complete text of an advanced route, route6, AS set, route set or aut-num object. |
 | [arin_asn](../data-sources/asn.md) | Public RDAP | Read an ASN registration through public ARIN RDAP. No API key is sent. This is distinct from an IRR aut-num object. |
 | [arin_asns](../data-sources/asns.md) | Public RDAP | List ASN registrations where an organization is the direct registrant using public RDAP. No API key is needed. Incomplete results are rejected. |
 | [arin_aspa](../data-sources/aspa.md) | Hosted RPKI | Read one hosted ASPA by customer ASN from an organization's ASPA collection. |
@@ -22,7 +23,7 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 | [arin_irr_route](../data-sources/irr_route.md) | IRR | Read one IRR route or route6 object by canonical CIDR and origin ASN. Both families use ARIN's route endpoint. |
 | [arin_irr_route_set](../data-sources/irr_route_set.md) | IRR | Read an IRR route set and its IPv4, multiprotocol, and by-reference membership. |
 | [arin_irr_route_sets](../data-sources/irr_route_sets.md) | IRR | List IRR route set references maintained by an organization. |
-| [arin_irr_routes](../data-sources/irr_routes.md) | IRR | List IRR route references for an organization. Entry types and references are returned directly; individual objects can be read with arin_irr_route. |
+| [arin_irr_routes](../data-sources/irr_routes.md) | IRR | List IRR route references for an organization. Entry types and references are returned directly; simple objects use arin_irr_route; advanced objects use arin_irr_rpsl. |
 | [arin_most_specific_net](../data-sources/most_specific_net.md) | Reg-RWS | Find the most specific network registration covering an IP range. |
 | [arin_net](../data-sources/net.md) | Reg-RWS | Read the full registration details of an existing IPv4 or IPv6 network by handle. |
 | [arin_net_delegations](../data-sources/net_delegations.md) | Reg-RWS | List the reverse DNS delegations attached to a network. |
@@ -57,6 +58,8 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 Mock acceptance tests cover every catalog entry through real Terraform, including typed nested values, identity checks, errors, empty inventories, and refresh. Fixtures use documentation address ranges and synthetic contact/customer/ticket data.
 
 The opt-in live suite follows existing records from the selected organization. Network, contact, ASN, IRR, ROA, and ASPA reads were exercised against FT-684. Live customer, individual aut-num/route-set, and ticket-content reads require suitable existing records; mock coverage does not imply live verification of those cases.
+
+Advanced RPSL AS-set and route-set reads passed native Terraform tests using disposable sandbox fixtures. The RPSL data source has fake-server Terraform coverage for all five object types. Native RPSL route/route6 and aut-num coverage remains pending; see [RPSL evidence](irr-rpsl.md).
 
 The ASPA endpoint requires Content-Type: application/xml even on GET. The client supplies it for authenticated reads.
 

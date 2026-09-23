@@ -59,7 +59,7 @@ func RegistrationReads() []ReadSpec {
 			prefix, _ := netip.ParsePrefix(p["prefix"])
 			return "/rest/irr/route/" + url.PathEscape(prefix.Addr().String()) + "/" + strconv.Itoa(prefix.Bits()) + "/AS" + segment(p, "asn")
 		}},
-		{Name: "irr_routes", Description: "List IRR route references for an organization. Entry types and references are returned directly; individual objects can be read with arin_irr_route.", Item: "routeRef", Output: "routes", Collection: true, Inputs: []Input{orgInput}, Fields: routeRefFields, Path: byInput("/rest/org/", "org_handle", "/routes")},
+		{Name: "irr_routes", Description: "List IRR route references for an organization. Entry types and references are returned directly; simple objects use arin_irr_route; advanced objects use arin_irr_rpsl.", Item: "routeRef", Output: "routes", Collection: true, Inputs: []Input{orgInput}, Fields: routeRefFields, Path: byInput("/rest/org/", "org_handle", "/routes")},
 		{Name: "net_routes", Description: "List IRR route references for a network, optionally including reassignments.", Item: "routeRef", Output: "routes", Collection: true, Inputs: []Input{netInput, optional(input("include_reassignments", "bool", "false", "Include routes for reassignments of the network."), "false")}, Fields: routeRefFields, Path: func(p map[string]string) string {
 			return "/rest/net/" + segment(p, "net_handle") + "/routes?reassignments=" + p["include_reassignments"]
 		}},

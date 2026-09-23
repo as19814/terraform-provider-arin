@@ -3,12 +3,12 @@
 page_title: "arin_irr_routes Data Source - arin"
 subcategory: ""
 description: |-
-  List IRR route references for an organization. Entry types and references are returned directly; individual objects can be read with arin_irr_route.
+  List IRR route references for an organization. Entry types and references are returned directly; simple objects use arin_irr_route; advanced objects use arin_irr_rpsl.
 ---
 
 # arin_irr_routes (Data Source)
 
-List IRR route references for an organization. Entry types and references are returned directly; individual objects can be read with arin_irr_route.
+List IRR route references for an organization. Entry types and references are returned directly; simple objects use arin_irr_route; advanced objects use arin_irr_rpsl.
 
 ## Example Usage
 

@@ -25,6 +25,7 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 | Data source | API | Purpose |
 | --- | --- | --- |
 | [arin_networks](../data-sources/networks.md) | Public RDAP | Discover networks directly registered to an organization. |
+| [arin_irr_rpsl](../data-sources/irr_rpsl.md) | IRR RPSL | Read the complete text of an advanced route, route6, AS set, route set or aut-num object. |
 `
 	for _, spec := range specs {
 		dir := filepath.Join("examples", "data-sources", "arin_"+spec.Name)
@@ -73,6 +74,8 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 Mock acceptance tests cover every catalog entry through real Terraform, including typed nested values, identity checks, errors, empty inventories, and refresh. Fixtures use documentation address ranges and synthetic contact/customer/ticket data.
 
 The opt-in live suite follows existing records from the selected organization. Network, contact, ASN, IRR, ROA, and ASPA reads were exercised against FT-684. Live customer, individual aut-num/route-set, and ticket-content reads require suitable existing records; mock coverage does not imply live verification of those cases.
+
+Advanced RPSL AS-set and route-set reads passed native Terraform tests using disposable sandbox fixtures. The RPSL data source has fake-server Terraform coverage for all five object types. Native RPSL route/route6 and aut-num coverage remains pending; see [RPSL evidence](irr-rpsl.md).
 
 The ASPA endpoint requires Content-Type: application/xml even on GET. The client supplies it for authenticated reads.
 

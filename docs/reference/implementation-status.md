@@ -13,10 +13,10 @@ again before declaring full coverage.
 
 | API family | Current provider coverage | Remaining work / evidence |
 | --- | --- | --- |
-| IRR AS sets | Simple XML resource and individual/list data sources; mock and OT&E lifecycle pass | Advanced RPSL capability and any remaining membership syntax |
-| IRR route/route6 | Simple XML resource and individual/list data sources; IPv4/IPv6 OT&E lifecycle includes multiple route-set memberships, replacement and clearing; individual data source exposes member_of | Advanced RPSL; coordinated ROA-linked lifecycle; see [route evidence](irr-routes.md) |
-| IRR route sets | Simple XML resource plus individual/list data sources; mock and OT&E lifecycle pass | Advanced RPSL capability |
-| IRR aut-num | Simple XML resource plus individual/list data sources; all six policies and membership pass OT&E | Advanced RPSL capability |
+| IRR AS sets | Simple XML resource and individual/list data sources; mock and OT&E lifecycle pass | RPSL client CRUD and raw data-source reads pass OT&E for advanced AS sets; Terraform RPSL resource and remaining membership audit pending; see [RPSL evidence](irr-rpsl.md) |
+| IRR route/route6 | Simple XML resource and individual/list data sources; IPv4/IPv6 OT&E lifecycle includes multiple route-set memberships, replacement and clearing; individual data source exposes member_of | RPSL client and raw data source pass mocks, native RPSL lifecycle and resource pending; coordinated ROA-linked lifecycle; see [route evidence](irr-routes.md) |
+| IRR route sets | Simple XML resource plus individual/list data sources; mock and OT&E lifecycle pass | RPSL client CRUD and raw data-source reads pass OT&E for advanced route sets; Terraform RPSL resource pending; see [RPSL evidence](irr-rpsl.md) |
+| IRR aut-num | Simple XML resource plus individual/list data sources; all six policies and membership pass OT&E | RPSL client and raw data source pass mocks; native RPSL lifecycle and resource pending |
 | NET records | Read data sources, arin_net and arin_net_metadata; IPv4/IPv6 single/multi-block lifecycles, metadata and POC editing pass OT&E; pending recovery passes mocks | Live asynchronous ticket evidence and remove-with-message workflow; see [evidence](net-registration.md) |
 | Customers | Individual data source and managed recipient resource; mock and OT&E lifecycle pass | Network reassignment integration |
 | Organizations | Individual data source, arin_org and arin_org_poc; full Terraform CRUD/import/recovery pass mocks; no-change PUT and all non-admin association roles pass OT&E; live creation returned a pending review ticket | Await live creation review, then validate disposable mutable fields, Admin replacement and deletion; no automatic handle discovery from ticket-only responses; see [organization evidence](organizations.md) and [association evidence](org-pocs.md) |

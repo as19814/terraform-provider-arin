@@ -189,6 +189,9 @@ func (c *Client) doRequest(ctx context.Context, method, origin, path, accept str
 		req.Header.Set("Authorization", "ApiKey "+c.apiKey)
 		// ASPA reads require Content-Type even though GET has no body.
 		req.Header.Set("Content-Type", "application/xml")
+		if accept == rpslMediaType {
+			req.Header.Set("Content-Type", rpslMediaType)
+		}
 	}
 	req.Header.Set("Accept", accept)
 	req.Header.Set("User-Agent", c.userAgent)
