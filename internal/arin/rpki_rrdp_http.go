@@ -57,33 +57,9 @@ func (c rrdpHTTPClient) get(ctx context.Context, uri string, limit int64, lastMo
 	if !validRRDPURL(uri) || limit <= 0 || limit > 128<<20 {
 		return nil, time.Time{}, false, errRPKIRRDPHTTP
 	}
-	timeout := c.Timeout
-	if timeout == 0 {
-		timeout = 30 * time.Second
-	}
-	if timeout < 0 || timeout > 5*time.Minute {
-		return nil, time.Time{}, false, errRPKIRRDPHTTP
-	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
+	response, err := c.openGET(ctx, uri, lastModified)
 	if err != nil {
-		return nil, time.Time{}, false, errRPKIRRDPHTTP
-	}
-	request.Header.Set("Accept", "application/xml")
-	if !lastModified.IsZero() {
-		request.Header.Set("If-Modified-Since", lastModified.UTC().Format(http.TimeFormat))
-	}
-	client := &http.Client{Transport: c.Transport, Timeout: timeout, CheckRedirect: func(req *http.Request, via []*http.Request) error {
-		if len(via) >= 5 || !validRRDPURL(req.URL.String()) {
-			return errRPKIRRDPHTTP
-		}
-		return nil
-	}}
-	response, err := client.Do(request)
-	if err != nil {
-		if ctx.Err() != nil {
-			return nil, time.Time{}, false, ctx.Err()
-		}
-		return nil, time.Time{}, false, errRPKIRRDPHTTP
+		return nil, time.Time{}, false, err
 	}
 	defer response.Body.Close()
 	if response.StatusCode == http.StatusNotModified {
@@ -107,4 +83,56 @@ func (c rrdpHTTPClient) get(ctx context.Context, uri string, limit int64, lastMo
 		}
 	}
 	return body, modified, false, nil
+}
+
+// openGET retains the shared TLS, redirect and timeout policy for buffered and
+// streaming retrieval. Its caller owns and must close the response body.
+func (c rrdpHTTPClient) openGET(ctx context.Context, uri string, lastModified time.Time) (*http.Response, error) {
+	if !validRRDPURL(uri) {
+		return nil, errRPKIRRDPHTTP
+	}
+	timeout := c.Timeout
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+	if timeout < 0 || timeout > 5*time.Minute {
+		return nil, errRPKIRRDPHTTP
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
+	if err != nil {
+		return nil, errRPKIRRDPHTTP
+	}
+	request.Header.Set("Accept", "application/xml")
+	if !lastModified.IsZero() {
+		request.Header.Set("If-Modified-Since", lastModified.UTC().Format(http.TimeFormat))
+	}
+	client := &http.Client{Transport: c.Transport, Timeout: timeout, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 5 || !validRRDPURL(req.URL.String()) {
+			return errRPKIRRDPHTTP
+		}
+		return nil
+	}}
+	response, err := client.Do(request)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		return nil, errRPKIRRDPHTTP
+	}
+	return response, nil
+}
+
+func (c rrdpHTTPClient) FetchSnapshotSpool(ctx context.Context, directory string, n *rrdpNotification) (*rrdpSnapshotSpool, error) {
+	if n == nil || !rrdpSession.MatchString(n.Session) || !rrdpSerial.MatchString(n.Serial) {
+		return nil, errRPKIRRDP
+	}
+	response, err := c.openGET(ctx, n.Snapshot.URI, time.Time{})
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK || response.ContentLength > rrdpDiskLimits.Encoded {
+		return nil, errRPKIRRDPHTTP
+	}
+	return spoolRRDPSnapshot(ctx, directory, response.Body, n)
 }

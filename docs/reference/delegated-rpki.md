@@ -1665,3 +1665,45 @@ validation. The bootstrap test intentionally stops at the notification.
 ARIN documents the public sandbox TAL and enrollment requirements in its
 [OT&E guide](https://www.arin.net/reference/tools/testing/), reviewed again on
 2026-09-23. No signed provisioning/publication request was sent during this test.
+
+### Streaming snapshot ingestion and native root path (2026-09-23)
+
+`FetchSnapshotSpool` now streams an RRDP snapshot into a private temporary packed
+object file, retaining only the URI/offset/size/digest index in memory. The shared
+object-file parser preserves the existing snapshot/delta XML and base64 checks.
+The spool becomes available only after EOF, complete-document SHA-256, session,
+serial and duplicate-URI checks succeed. Failures close and remove staging data;
+no partial spool is returned. Object reads verify their stored SHA-256 again.
+Closing a spool removes the temporary file. It is not yet a durable cache.
+
+Bounds are 2 GiB encoded input, 1 GiB decoded objects, one million objects,
+128 MiB aggregate URI text, 4 MiB per object and 8 MiB per XML token (plus decoder
+read-ahead). Token limits apply during reads, including comments and attributes,
+so a single XML token cannot consume the full document allowance. HTTPS, normal
+TLS verification, redirect restrictions and timeout policy are shared with the
+buffered client. Existing in-memory cache paths keep their original limits.
+
+`make testoterepository` explicitly opts into downloading the complete public
+sandbox repository. On 2026-09-23 it verified 235,888 objects totaling 510,165,246
+decoded bytes in 26.23 seconds, then validated the TAL-pinned root manifest, its
+selected CRL and one published child CA path. Repeating path validation reopened
+the durable manifest history successfully. The repository data was temporary and
+removed afterwards. No delegated enrollment, API key or management request was
+used. This proves public repository/root-path interoperability, not the signed
+provisioning or publication lifecycle.
+
+Synthetic coverage includes an input above 128 MiB containing 97 MiB of decoded
+objects, more than 10,000 objects, digest mismatch after staged writes, duplicate
+URIs, truncation, trailing data, read failures, cancellation, token/byte limits,
+object tampering and private-file cleanup. TLS tests cover chunked success,
+oversized Content-Length, truncation, downgrade redirects, unexpected 304 and
+untrusted certificates. Existing snapshot/delta tests exercise the shared parser.
+
+Remaining integration: persist packed repository generations and their indexes,
+apply deltas transactionally, retain session/serial and polling safeguards across
+restarts, migrate or explicitly reject incompatible caches, and use disk-backed
+object lookup in issuance/refresh/revocation path assembly. Certificate resources
+still use the previous bounded in-memory cache and cannot yet consume this large
+native repository. The new spool must not be substituted for persistent refresh
+without that work. Protocol reference: [RFC 8182](https://www.rfc-editor.org/rfc/rfc8182.html),
+particularly complete snapshot verification and consistent repository replacement.

@@ -74,12 +74,14 @@ again before declaring full coverage.
 
 The credential-free OT&E RPKI trust anchor and RRDP notification bootstrap pass
 native tests. The advertised snapshot is about 700 MiB, exceeding the current
-128 MiB download limit. Bounded streaming ingestion/storage remains required for
-full native manifest and certificate-path verification, independently of the
-missing delegated enrollment. See [evidence](delegated-rpki.md#native-public-ote-bootstrap-and-repository-size-2026-09-23).
+128 MiB download limit. Streaming ingestion into temporary disk storage now
+passes the full native snapshot and root manifest/CRL/child-path validation.
+Persistent disk-backed refresh/delta integration with certificate resources is
+still required, independently of missing delegated enrollment. See [evidence](delegated-rpki.md#native-public-ote-bootstrap-and-repository-size-2026-09-23).
 
 ## Verification commands
 
+- `make testoterepository`: full public snapshot ingestion and root-path validation; downloads over 700 MiB.
 - `make testotepublic`: credential-free, read-only sandbox RPKI bootstrap.
 - `make check`: vet, race tests, fake-server acceptance tests and binary build.
 - `make generate`: reproducible provider documentation and examples.

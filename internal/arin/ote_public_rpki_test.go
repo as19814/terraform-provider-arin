@@ -7,6 +7,7 @@ import (
 	"encoding/asn1"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -31,6 +32,11 @@ func TestOTEPublicRPKIBootstrap(t *testing.T) {
 	if os.Getenv("ARIN_OTE_PUBLIC_TESTS") != "1" {
 		t.Skip("requires ARIN_OTE_PUBLIC_TESTS=1")
 	}
+	otePublicRPKIBootstrap(t)
+}
+
+func otePublicRPKIBootstrap(t *testing.T) (*x509.Certificate, string, *rrdpNotification) {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 	client := rrdpHTTPClient{Transport: otePublicRPKITransport{}, Timeout: time.Minute}
@@ -85,7 +91,8 @@ func TestOTEPublicRPKIBootstrap(t *testing.T) {
 	if result.Notification == nil || result.NotModified || result.Notification.Snapshot.URI == "" {
 		t.Fatal("missing initial repository snapshot")
 	}
-	t.Log("validated TAL-pinned trust anchor and parsed its RRDP notification; repository objects are not validated by this bootstrap test")
+	t.Log("validated TAL-pinned trust anchor and parsed its RRDP notification")
+	return anchor, manifestURI, result.Notification
 }
 
 func TestOTEPublicRPKITransportGuard(t *testing.T) {
@@ -110,4 +117,70 @@ func TestOTEPublicRPKITransportGuard(t *testing.T) {
 			t.Fatal("forbidden public repository request accepted")
 		}
 	}
+}
+
+// This opt-in downloads the full public repository, potentially over 700 MiB.
+// Disk staging is removed at the end; no BPKI or management API calls are made.
+func TestOTEPublicRPKIRepository(t *testing.T) {
+	if os.Getenv("ARIN_OTE_REPOSITORY_TESTS") != "1" {
+		t.Skip("requires ARIN_OTE_REPOSITORY_TESTS=1")
+	}
+	anchor, manifestURI, notification := otePublicRPKIBootstrap(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	client := rrdpHTTPClient{Transport: otePublicRPKITransport{}, Timeout: 5 * time.Minute}
+	spool, err := client.FetchSnapshotSpool(ctx, privateExchangeDir(t), notification)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer spool.Close()
+	t.Logf("verified snapshot digest: %d objects, %d decoded bytes", len(spool.entries), spool.size)
+	manifestDER, err := spool.ReadObject(manifestURI)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest, err := decodeRPKIManifest(manifestDER)
+	if err != nil {
+		t.Fatalf("root manifest: %v", err)
+	}
+	prefix := manifestURI[:strings.LastIndexByte(manifestURI, '/')+1]
+	publication := rpkiPathPublication{ManifestDER: manifestDER, ManifestURI: manifestURI, Files: map[string][]byte{}}
+	total := len(manifestDER)
+	for name := range manifest.Content.Files {
+		data, err := spool.ReadObject(prefix + name)
+		if err != nil {
+			t.Fatal("root manifest references an absent or corrupt object")
+		}
+		total += len(data)
+		if total > 128<<20 {
+			t.Fatal("root publication exceeds path validation limit")
+		}
+		publication.Files[name] = data
+	}
+	now := time.Now().UTC()
+	if _, err := checkRPKIManifestForIssuer(manifestDER, anchor.Raw, manifestURI, publication.Files, now); err != nil {
+		t.Fatalf("root manifest validation: %v", err)
+	}
+	history := privateExchangeDir(t)
+	children := 0
+	for name, data := range publication.Files {
+		if !strings.HasSuffix(name, ".cer") {
+			continue
+		}
+		child, err := x509.ParseCertificate(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		publication.ChildURI = prefix + name
+		for attempt := 0; attempt < 2; attempt++ {
+			if _, err := verifyAndRecordRPKIManifestPath(history, []*x509.Certificate{child, anchor}, anchor, []rpkiPathPublication{publication}, now); err != nil {
+				t.Fatal(fmt.Errorf("published child path validation: %w", err))
+			}
+		}
+		children++
+	}
+	if children == 0 {
+		t.Fatal("no published child CA to validate")
+	}
+	t.Logf("validated root manifest/CRL and %d child CA paths; reopened durable history", children)
 }

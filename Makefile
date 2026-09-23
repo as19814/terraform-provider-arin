@@ -36,3 +36,8 @@ testote:
 .PHONY: testotepublic
 testotepublic:
 	ARIN_OTE_PUBLIC_TESTS=1 go test ./internal/arin -run '^TestOTEPublicRPKI' -v -count=1 -timeout 3m
+
+# Downloads the complete public OT&E RRDP snapshot, potentially over 700 MiB.
+.PHONY: testoterepository
+testoterepository:
+	ARIN_OTE_REPOSITORY_TESTS=1 go test ./internal/arin -run '^TestOTEPublicRPKIRepository$$' -v -count=1 -timeout 6m
