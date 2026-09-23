@@ -430,3 +430,20 @@ establish a trust path. It handles the original extension OIDs only; newer resou
 validation profiles and unknown critical-extension handling need a separate audit
 before claiming complete certificate validation. Native interoperability remains
 unverified.
+
+## Resource containment and inheritance
+
+The private resource-path resolver now decodes a bounded leaf-to-anchor sequence
+of extension sets and resolves inheritance from the anchor downward. The anchor
+must contain explicit resources. Each child range must fit entirely within one
+issuer range, so authorization cannot bridge a gap. An absent family stays absent,
+and a later descendant cannot inherit a family that an intermediate dropped.
+The returned effective sets own their storage rather than aliasing parent ranges.
+
+Unit tests cover AS/IPv4/IPv6 inheritance, explicit subsets and equal sets, missing
+families, overclaims, authorization gaps, invalid intermediate encodings, inherited
+anchor resources and the 32-certificate path bound. These are resource-set tests,
+not authenticated certificate-path tests. The caller must separately validate
+signatures, profiles, revocation and the chosen trust anchor before using the
+result. Issuance integration, comparison with requested/advised resource sets,
+full path verification and native evidence remain unfinished.
