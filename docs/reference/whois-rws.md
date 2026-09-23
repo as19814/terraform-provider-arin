@@ -117,11 +117,11 @@ POCs are not automatically inherited by its network/ASN relationship endpoints.
 
 | Data source | Endpoint | Filter keys |
 | --- | --- | --- |
-| `arin_whois_orgs` | `/rest/orgs` | `handle`, `name`, `dba` |
-| `arin_whois_customers` | `/rest/customers` | `handle`, `name` |
-| `arin_whois_pocs` | `/rest/pocs` | `handle`, `domain`, `first`, `middle`, `last`, `company`, `city` |
-| `arin_whois_asns` | `/rest/asns` | `handle`, `name` |
-| `arin_whois_nets` | `/rest/nets` | `handle`, `name` |
+| `arin_whois_orgs` | `/rest/orgs` | `q`, `handle`, `name`, `dba` |
+| `arin_whois_customers` | `/rest/customers` | `q`, `handle`, `name` |
+| `arin_whois_pocs` | `/rest/pocs` | `q`, `handle`, `domain`, `first`, `middle`, `last`, `company`, `city` |
+| `arin_whois_asns` | `/rest/asns` | `q`, `handle`, `name` |
+| `arin_whois_nets` | `/rest/nets` | `q`, `handle`, `name` |
 
 A required `filters` map supplies one or more predicates, combined with AND.
 Values match case-insensitively and allow one trailing `*` for a prefix search.
@@ -144,6 +144,37 @@ filter. Public handle searches and combined filters also passed Terraform on bot
 origins in reference and detail modes. Prefix searches, empty results, clean plans
 and rejection of an over-limit `A*` org search passed. `TestLiveWhoisSearches`
 retains these checks; fixtures and state contain no committed live payloads.
+
+### General text search
+
+The guide's NICNAME proxy examples use the `q` matrix filter, although it is
+omitted from the earlier filter list. The provider now accepts `q` for all five
+Whois search data sources. It searches handles and names, including POC last
+names, and can be combined with the specific filters using AND. The existing
+case-insensitive and trailing-wildcard behavior applies.
+
+```hcl
+data "arin_whois_orgs" "matching_text" {
+  filters = { q = "Foundability*" }
+  show_details = true
+}
+```
+
+A bounded OT&E probe verified successful `q` handle searches for all five
+collections, no matches for impossible text, and no matches when a valid `q`
+value was combined with a contradictory handle. This establishes that the
+service honors both predicates rather than ignoring one. The implementation
+continues to reject unknown keys, null/empty values and invalid wildcards, escape
+matrix delimiters, omit credentials and reject truncated results.
+
+The shared search tests cover `q` in reference and detail modes. The expanded
+`TestLiveWhoisSearches` checks exact/prefix handle text, name text constrained by
+handle, empty text results and contradictory filters through Terraform on both
+origins, followed by a clean plan. The expanded suite passed on 2026-09-23
+(57.25 seconds total, 45.82 seconds OT&E and 11.43 seconds production), with
+credentials unset. Mock Terraform search and rejection tests also passed.
+
+### Delegation search ambiguity
 
 The guide lists `/rdns` with a "delegation name" parameter without spelling out
 a matrix key. A bounded probe, rerun on 2026-09-23, produced these results on

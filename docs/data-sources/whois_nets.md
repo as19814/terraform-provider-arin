@@ -3,12 +3,12 @@
 page_title: "arin_whois_nets Data Source - arin"
 subcategory: ""
 description: |-
-  Search public Whois-RWS nets using one or more documented filters. References are returned by default; show_details requests full records. Typed fields and complete XML are retained. No API key is sent. Partial results and referrals are errors; recognized no-results responses produce an empty list.
+  Search public Whois-RWS nets using one or more supported filters. References are returned by default; show_details requests full records. Typed fields and complete XML are retained. No API key is sent. Partial results and referrals are errors; recognized no-results responses produce an empty list.
 ---
 
 # arin_whois_nets (Data Source)
 
-Search public Whois-RWS nets using one or more documented filters. References are returned by default; show_details requests full records. Typed fields and complete XML are retained. No API key is sent. Partial results and referrals are errors; recognized no-results responses produce an empty list.
+Search public Whois-RWS nets using one or more supported filters. References are returned by default; show_details requests full records. Typed fields and complete XML are retained. No API key is sent. Partial results and referrals are errors; recognized no-results responses produce an empty list.
 
 ## Example Usage
 
@@ -25,7 +25,7 @@ data "arin_whois_nets" "example" {
 
 ### Required
 
-- `filters` (Map of String) Nonempty map of search predicates. Allowed keys: handle, name. Predicates are combined with AND. Values match case-insensitively; a single trailing * requests a prefix match. Unknown keys, empty values and other wildcard positions are rejected locally.
+- `filters` (Map of String) Nonempty map of search predicates. Allowed keys: q, handle, name. q performs a general text search across handles and names. Predicates are combined with AND. Values match case-insensitively; a single trailing * requests a prefix match. Unknown keys, empty values and other wildcard positions are rejected locally.
 
 ### Optional
 

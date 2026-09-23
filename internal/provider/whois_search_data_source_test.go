@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -31,21 +32,24 @@ func TestAccWhoisSearches(t *testing.T) {
 				handle = record.Inputs[0].Example
 			}
 		}
-		for _, details := range []bool{false, true} {
-			content := fmt.Sprintf(`<%sRef handle=%q name="Example"/>`, kind, handle)
-			path := "/rest/" + spec.Root + ";handle=" + handle
-			if details {
-				content = string(body)
-				path += "?showDetails=true"
+		for _, key := range []string{"handle", "q"} {
+			for _, details := range []bool{false, true} {
+				content := fmt.Sprintf(`<%sRef handle=%q name="Example"/>`, kind, handle)
+				path := "/rest/" + spec.Root + ";" + key + "=" + handle
+				if details {
+					content = string(body)
+					path += "?showDetails=true"
+				}
+				fixtures[path] = fmt.Sprintf(`<%s xmlns="https://www.arin.net/whoisrws/core/v1"><limitExceeded>false</limitExceeded>%s</%s>`, spec.Root, content, spec.Root)
+				label := fmt.Sprintf("%s_%t", key, details)
+				encoded, _ := json.Marshal(map[string]string{key: handle})
+				config += fmt.Sprintf("data %q %q {\n filters=%s\n show_details=%t\n}\n", "arin_"+spec.Name, label, encoded, details)
+				address := "data.arin_" + spec.Name + "." + label
+				if kind == "poc" && details {
+					checks = append(checks, whoisPOCMetadataChecks(address, "pocs.0.")...)
+				}
+				checks = append(checks, resource.TestCheckResourceAttr(address, spec.Output+".#", "1"), resource.TestCheckResourceAttr(address, spec.Output+".0.handle", handle), resource.TestCheckResourceAttrSet(address, "whois_xml"))
 			}
-			fixtures[path] = fmt.Sprintf(`<%s xmlns="https://www.arin.net/whoisrws/core/v1"><limitExceeded>false</limitExceeded>%s</%s>`, spec.Root, content, spec.Root)
-			label := fmt.Sprint(details)
-			config += fmt.Sprintf("data %q %q {\n filters=%s\n show_details=%t\n}\n", "arin_"+spec.Name, label, spec.Inputs[0].Example, details)
-			address := "data.arin_" + spec.Name + "." + label
-			if kind == "poc" && details {
-				checks = append(checks, whoisPOCMetadataChecks(address, "pocs.0.")...)
-			}
-			checks = append(checks, resource.TestCheckResourceAttr(address, spec.Output+".#", "1"), resource.TestCheckResourceAttr(address, spec.Output+".0.handle", handle), resource.TestCheckResourceAttrSet(address, "whois_xml"))
 		}
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +81,9 @@ func TestAccWhoisSearchErrors(t *testing.T) {
 		{"unknown_filter", `{invalid="value"}`, "", "unsupported Whois filter", 200, false},
 		{"empty_map", `{}`, "", "nonempty map", 200, false},
 		{"null_value", `{handle=null}`, "", "known, non-null string", 200, false},
+		{"q_invalid_wildcard", `{q="*A"}`, "", "invalid Whois filter", 200, false},
+		{"q_null", `{q=null}`, "", "known, non-null string", 200, false},
+		{"q_partial", `{q="A*"}`, `<orgs xmlns="https://www.arin.net/whoisrws/core/v1"><limitExceeded>true</limitExceeded></orgs>`, "truncated", 200, true},
 		{"invalid_wildcard", `{handle="*A"}`, "", "invalid Whois filter", 200, false},
 		{"partial", `{handle="A*"}`, `<orgs xmlns="https://www.arin.net/whoisrws/core/v1"><limitExceeded>true</limitExceeded></orgs>`, "truncated", 200, true},
 		{"plain_404", `{handle="NO-MATCH"}`, `Not found`, "404", 404, true},

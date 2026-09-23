@@ -18,11 +18,11 @@ type whoisSearchSpec struct {
 }
 
 var whoisSearches = []whoisSearchSpec{
-	{"orgs", "org", "orgs", []string{"handle", "name", "dba"}},
-	{"customers", "customer", "customers", []string{"handle", "name"}},
-	{"pocs", "poc", "pocs", []string{"handle", "domain", "first", "middle", "last", "company", "city"}},
-	{"asns", "asn", "asns", []string{"handle", "name"}},
-	{"nets", "net", "networks", []string{"handle", "name"}},
+	{"orgs", "org", "orgs", []string{"q", "handle", "name", "dba"}},
+	{"customers", "customer", "customers", []string{"q", "handle", "name"}},
+	{"pocs", "poc", "pocs", []string{"q", "handle", "domain", "first", "middle", "last", "company", "city"}},
+	{"asns", "asn", "asns", []string{"q", "handle", "name"}},
+	{"nets", "net", "networks", []string{"q", "handle", "name"}},
 }
 
 func whoisSearch(name string) (whoisSearchSpec, bool) {
@@ -48,9 +48,9 @@ func WhoisSearchReads() []ReadSpec {
 		example, _ := json.Marshal(map[string]string{"handle": record.Inputs[0].Example})
 		specs = append(specs, ReadSpec{
 			Name: "whois_" + s.endpoint, Public: true, Collection: true, Root: s.endpoint, Output: s.output, Fields: fields,
-			Inputs:         []Input{input("filters", "whois_filters", string(example), "Nonempty map of search predicates. Allowed keys: "+strings.Join(s.filters, ", ")+". Predicates are combined with AND. Values match case-insensitively; a single trailing * requests a prefix match. Unknown keys, empty values and other wildcard positions are rejected locally."), record.Inputs[1]},
+			Inputs:         []Input{input("filters", "whois_filters", string(example), "Nonempty map of search predicates. Allowed keys: "+strings.Join(s.filters, ", ")+". q performs a general text search across handles and names. Predicates are combined with AND. Values match case-insensitively; a single trailing * requests a prefix match. Unknown keys, empty values and other wildcard positions are rejected locally."), record.Inputs[1]},
 			ResponseFields: []Field{{Name: "whois_xml", Kind: StringKind, Description: "Complete search response XML. Null for a recognized Whois no-results HTTP 404. Links are not followed."}},
-			Description:    "Search public Whois-RWS " + s.endpoint + " using one or more documented filters. References are returned by default; show_details requests full records. Typed fields and complete XML are retained. No API key is sent. Partial results and referrals are errors; recognized no-results responses produce an empty list.",
+			Description:    "Search public Whois-RWS " + s.endpoint + " using one or more supported filters. References are returned by default; show_details requests full records. Typed fields and complete XML are retained. No API key is sent. Partial results and referrals are errors; recognized no-results responses produce an empty list.",
 		})
 	}
 	return specs

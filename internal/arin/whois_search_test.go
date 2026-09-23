@@ -14,31 +14,34 @@ import (
 func TestWhoisSearches(t *testing.T) {
 	for _, spec := range WhoisSearchReads() {
 		search, _ := whoisSearch(spec.Name)
-		for _, details := range []bool{false, true} {
-			t.Run(fmt.Sprintf("%s/%t", spec.Name, details), func(t *testing.T) {
-				record := whoisRecordSpec(search.target)
-				content := fmt.Sprintf(`<%sRef handle=%q name="Example"/>`, search.target, record.Inputs[0].Example)
-				if details {
-					content = whoisFixture(search.target, whoisFixtures()[search.target])
-				}
-				body := whoisFixture(search.endpoint, `<limitExceeded>false</limitExceeded>`+content)
-				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.Method != "GET" || r.Header.Get("Authorization") != "" || r.URL.Path != "/rest/"+search.endpoint+";handle="+record.Inputs[0].Example || (r.URL.Query().Get("showDetails") == "true") != details {
-						t.Error("unexpected search request")
+		for _, key := range []string{"handle", "q"} {
+			for _, details := range []bool{false, true} {
+				t.Run(fmt.Sprintf("%s/%s/%t", spec.Name, key, details), func(t *testing.T) {
+					record := whoisRecordSpec(search.target)
+					content := fmt.Sprintf(`<%sRef handle=%q name="Example"/>`, search.target, record.Inputs[0].Example)
+					if details {
+						content = whoisFixture(search.target, whoisFixtures()[search.target])
 					}
-					fmt.Fprint(w, body)
-				}))
-				defer server.Close()
-				c, _ := New(Config{WhoisBaseURL: server.URL, APIKey: "must-not-send"})
-				result, err := c.ReadRegistration(context.Background(), spec, map[string]string{"filters": spec.Inputs[0].Example, "show_details": fmt.Sprint(details)})
-				if err != nil {
-					t.Fatal(err)
-				}
-				rows := result[spec.Output].([]any)
-				if len(rows) != 1 || rows[0].(map[string]any)["handle"] != record.Inputs[0].Example || result["whois_xml"] != body {
-					t.Fatal("lost search data")
-				}
-			})
+					body := whoisFixture(search.endpoint, `<limitExceeded>false</limitExceeded>`+content)
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.Method != "GET" || r.Header.Get("Authorization") != "" || r.URL.Path != "/rest/"+search.endpoint+";"+key+"="+record.Inputs[0].Example || (r.URL.Query().Get("showDetails") == "true") != details {
+							t.Error("unexpected search request")
+						}
+						fmt.Fprint(w, body)
+					}))
+					defer server.Close()
+					c, _ := New(Config{WhoisBaseURL: server.URL, APIKey: "must-not-send"})
+					encoded, _ := json.Marshal(map[string]string{key: record.Inputs[0].Example})
+					result, err := c.ReadRegistration(context.Background(), spec, map[string]string{"filters": string(encoded), "show_details": fmt.Sprint(details)})
+					if err != nil {
+						t.Fatal(err)
+					}
+					rows := result[spec.Output].([]any)
+					if len(rows) != 1 || rows[0].(map[string]any)["handle"] != record.Inputs[0].Example || result["whois_xml"] != body {
+						t.Fatal("lost search data")
+					}
+				})
+			}
 		}
 	}
 }
@@ -52,7 +55,7 @@ func TestWhoisSearchFilters(t *testing.T) {
 			}
 		}
 	}
-	for _, filters := range []string{`null`, `{}`, `[]`, `{"handle":null}`, `{"handle":true}`, `{"invalid":"anything"}`, `{"handle":""}`, `{"handle":"  "}`, `{"handle":"A\nB"}`, `{"handle":"A*B"}`, `{"handle":"**"}`, `{"handle":"*A"}`} {
+	for _, filters := range []string{`null`, `{}`, `[]`, `{"handle":null}`, `{"handle":true}`, `{"invalid":"anything"}`, `{"handle":""}`, `{"handle":"  "}`, `{"handle":"A\nB"}`, `{"handle":"A*B"}`, `{"handle":"**"}`, `{"handle":"*A"}`, `{"q":null}`, `{"q":""}`, `{"q":"A*B"}`, `{"q":"A\nB"}`} {
 		if _, err := whoisSearchFilters("whois_orgs", filters); err == nil {
 			t.Errorf("accepted invalid filters: %s", filters)
 		}
@@ -61,8 +64,8 @@ func TestWhoisSearchFilters(t *testing.T) {
 
 func TestWhoisSearchEscaping(t *testing.T) {
 	value := "Example & café;handle=OTHER/?#%+*"
-	encoded, _ := json.Marshal(map[string]string{"name": value, "handle": "EXAMPLE*"})
-	want := "/rest/orgs;handle=EXAMPLE%2A;name=" + strings.ReplaceAll(url.QueryEscape(value), "+", "%20")
+	encoded, _ := json.Marshal(map[string]string{"q": value, "handle": "EXAMPLE*"})
+	want := "/rest/orgs;handle=EXAMPLE%2A;q=" + strings.ReplaceAll(url.QueryEscape(value), "+", "%20")
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.RequestURI() != want || r.URL.RawQuery != "" {
 			t.Errorf("query delimiter was not escaped: %s", r.URL.RequestURI())

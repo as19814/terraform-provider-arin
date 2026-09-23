@@ -228,7 +228,7 @@ func TestLiveWhoisSearches(t *testing.T) {
 				}
 				// Verify every documented secondary filter is honored, rather than silently ignored.
 				keys := map[string][]string{"org": {"name", "dba"}, "customer": {"name"}, "poc": {"domain", "first", "middle", "last", "company", "city"}, "asn": {"name"}, "net": {"name"}}[kind]
-				for _, key := range keys {
+				for _, key := range append(keys, "q") {
 					encoded, _ := json.Marshal(map[string]string{"handle": handle, key: "ZZZ-CODEX-NO-MATCH-19814"})
 					result, err := c.ReadRegistration(ctx, spec, map[string]string{"filters": string(encoded), "show_details": "false"})
 					if err != nil {
@@ -238,7 +238,7 @@ func TestLiveWhoisSearches(t *testing.T) {
 						t.Fatalf("%s %s filter was ignored", kind, key)
 					}
 				}
-				for _, mode := range []string{"exact", "prefix", "combined", "empty"} {
+				for _, mode := range []string{"exact", "prefix", "combined", "empty", "q_handle", "q_prefix", "q_name", "q_empty", "q_conflict"} {
 					filters := map[string]string{"handle": handle}
 					if mode == "prefix" {
 						filters["handle"] += "*"
@@ -248,6 +248,18 @@ func TestLiveWhoisSearches(t *testing.T) {
 					}
 					if mode == "empty" {
 						filters[nameKey] = "ZZZ-CODEX-NO-MATCH-19814"
+					}
+					switch mode {
+					case "q_handle":
+						filters = map[string]string{"q": handle}
+					case "q_prefix":
+						filters = map[string]string{"q": handle + "*"}
+					case "q_name":
+						filters["q"] = name.(string)
+					case "q_empty":
+						filters = map[string]string{"q": "ZZZ-CODEX-NO-MATCH-19814"}
+					case "q_conflict":
+						filters = map[string]string{"q": handle, "handle": "ZZZ-CODEX-NO-MATCH-19814"}
 					}
 					encoded, _ := json.Marshal(filters)
 					for _, details := range []bool{false, true} {
@@ -259,7 +271,7 @@ func TestLiveWhoisSearches(t *testing.T) {
 						}
 						config += "}\n"
 						previous = address
-						if mode == "empty" {
+						if mode == "empty" || mode == "q_empty" || mode == "q_conflict" {
 							checks = append(checks, resource.TestCheckResourceAttr(address, spec.Output+".#", "0"), resource.TestCheckNoResourceAttr(address, "whois_xml"))
 						} else {
 							checks = append(checks, resource.TestCheckResourceAttr(address, spec.Output+".#", "1"), resource.TestCheckResourceAttr(address, spec.Output+".0.handle", handle), resource.TestCheckResourceAttrSet(address, "whois_xml"))

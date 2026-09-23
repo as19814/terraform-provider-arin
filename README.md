@@ -318,8 +318,8 @@ Public Whois-RWS lookups are available as `arin_whois_org`, `arin_whois_customer
 Whois relationship data sources cover POC orgs/ASNs/networks, org POCs/ASNs/networks, ASN POCs, network POCs/parent/children/delegations, and delegation networks. Set `show_details = true` for expanded records. Reference results retain handles, available names/address ranges, and POC function codes; other detail fields remain null or empty. The complete response is available as top-level `whois_xml`.
 
 Whois searches are available as `arin_whois_orgs`, `arin_whois_customers`,
-`arin_whois_pocs`, `arin_whois_asns`, and `arin_whois_nets`. Combine documented
-filters in a map, for example:
+`arin_whois_pocs`, `arin_whois_asns`, and `arin_whois_nets`. Use `q` for a
+general handle/name search, or combine specific filters in a map, for example:
 
 ```hcl
 data "arin_whois_orgs" "matching" {
