@@ -1634,3 +1634,34 @@ binding, missing and invalid CRL evidence, durable reopen, receipt ownership,
 watermark preservation and prevention of replay after completion. State tests
 cover receipt corruption and atomic save failure; CLI tests cover mode isolation,
 configuration failures and JSON output.
+
+### Native public OT&E bootstrap and repository size (2026-09-23)
+
+`make testotepublic` requires no enrollment, API key or mutation permission.
+It retrieves the public sandbox trust anchor, matches its complete SPKI against
+`arin-api/rpki/arin_ote.tal`, verifies the current self-signed certificate profile
+and resource path, then parses the RRDP notification selected by its SIA.
+The transport restricts every request, including redirects, to credential-free
+HTTPS GETs on `rrdp.ote.arin.net`. The native test passed. It does not validate
+published manifests, CRLs or subordinate certificates.
+
+A separate bounded snapshot attempt failed at the existing retrieval limit.
+The snapshot advertised by session `f3302a8b-c9ec-4e05-a285-4bbe281a5c03`, serial
+`982`, returned HTTP 200 to HEAD with Content-Length `734113077` bytes (about
+700 MiB). Its notification hash was
+`63caeb45f94485eae691e6b12ac4bf0317a61e079c88c12f35aeece60d228e2c`.
+This exceeds the client's 128 MiB response limit before XML/object validation.
+The snapshot body was not retained or committed. Repository limits also include
+64 MiB decoded snapshot content and 10,000 objects, so raising only the HTTP
+limit would not establish compatibility.
+
+This is an implementation gap independent of delegated account enrollment.
+Full native path verification needs bounded streaming snapshot ingestion and
+repository storage sized for this service, preserving whole-document digest,
+XML, duplicate URI and transaction checks before accepting any objects. Merely
+skipping the oversized repository must not count as a successful native path
+validation. The bootstrap test intentionally stops at the notification.
+
+ARIN documents the public sandbox TAL and enrollment requirements in its
+[OT&E guide](https://www.arin.net/reference/tools/testing/), reviewed again on
+2026-09-23. No signed provisioning/publication request was sent during this test.

@@ -70,8 +70,17 @@ again before declaring full coverage.
   with exact restoration of prior configuration.
 - OT&E keys may differ from production because snapshots refresh monthly.
 
+## Native repository compatibility gap
+
+The credential-free OT&E RPKI trust anchor and RRDP notification bootstrap pass
+native tests. The advertised snapshot is about 700 MiB, exceeding the current
+128 MiB download limit. Bounded streaming ingestion/storage remains required for
+full native manifest and certificate-path verification, independently of the
+missing delegated enrollment. See [evidence](delegated-rpki.md#native-public-ote-bootstrap-and-repository-size-2026-09-23).
+
 ## Verification commands
 
+- `make testotepublic`: credential-free, read-only sandbox RPKI bootstrap.
 - `make check`: vet, race tests, fake-server acceptance tests and binary build.
 - `make generate`: reproducible provider documentation and examples.
 - `ARIN_TEST_ORG_HANDLE=... make testlive`: explicitly read-only live tests.
