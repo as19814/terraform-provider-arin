@@ -1345,3 +1345,44 @@ validated refresh through the same RRDP cache/history used by issuance. Import,
 complete uncertain-operation recovery, automatic chain discovery and native
 sandbox verification remain unfinished. The absence of delegated enrollment
 prevents native lifecycle testing at present.
+
+### Certificate import
+
+Import accepts the absolute path of an existing private regular JSON file
+(mode `0600`, no symlink, at most 16 MiB). Its keys are the configurable Terraform
+attributes for `arin_rpki_certificate`. Include every required attribute; optional
+string attributes can be omitted or null. An empty requested resource subset
+remains an explicit request for no resources. `rrdp_notifications` is an ordered
+JSON array of strings, with one URL per issuer in `issuer_chain_pem`.
+
+Required string keys:
+
+- `endpoint`, `child_handle`, `parent_handle`, `journal_directory`
+- `signing_key_file`, `signing_certificate_pem`, `signing_ca_pem`,
+  `signing_crls_pem`, `peer_ca_pem`
+- `class_name`, `csr_pem`, `resource_anchor_pem`, `issuer_chain_pem`
+- `rrdp_cache_directory`, `manifest_history_directory`
+
+Optional string keys are `signing_intermediates_pem`, `peer_intermediates_pem`,
+`requested_asn`, `requested_ipv4` and `requested_ipv6`. Encode PEM newlines as JSON
+escapes using a JSON serializer. Store only the signing key's file path, never
+private key bytes. Computed fields such as `id`, `ski` and `certificate_pem` are
+not accepted. Unknown keys, duplicates, case aliases and trailing JSON fail.
+
+```sh
+terraform import arin_rpki_certificate.example /absolute/private/certificate.json
+```
+
+Import reads signed parent inventory and validates the matching CSR key's current
+resource path, publication locations and echoed resource subsets. Missing keys,
+ambiguous matches and validation failures prevent adoption. Import does not
+issue or revoke certificates. It derives the same identity and computed fields
+as normal refresh. Keep the Terraform configuration aligned with the manifest
+and inspect a subsequent plan. The manifest does not clear a pending exchange;
+uncertain issuance still requires separate reconciliation before ordinary reads.
+
+Terraform tests verify import before and after key replacement, complete state
+agreement and clean plans. A missing-target import fails without additional
+issuance or revocation. Private-file and JSON parser tests cover permissions,
+symlinks, duplicates, missing fields, nulls, aliases and optional-value semantics.
+Native delegated import verification still requires sandbox enrollment.

@@ -103,11 +103,15 @@ func TestAccRPKICertificate(t *testing.T) {
 		return nil
 	}, Steps: []resource.TestStep{
 		{Config: config("key-one", "64500"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("arin_rpki_certificate.test", "ski", "key-one"), resource.TestCheckResourceAttr("arin_rpki_certificate.test", "certificate_pem", "certificate-1"))},
+		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, "key-one", "64500"), ImportStateVerify: true},
+		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, "missing", "64500"), ExpectError: regexp.MustCompile("Certificate import target missing")},
 		{Config: config("key-one", "64500"), PlanOnly: true},
 		{Config: config("key-one", "64500"), PlanOnly: true, PreConfig: func() { mu.Lock(); failRead = true; mu.Unlock() }, ExpectError: regexp.MustCompile("validation unavailable")},
+		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, "key-one", "64500"), ExpectError: regexp.MustCompile("validation unavailable")},
 		{Config: config("key-one", "64500"), PlanOnly: true, PreConfig: func() { mu.Lock(); failRead = false; mu.Unlock() }},
 		{Config: config("key-one", "64500-64501"), Check: resource.TestCheckResourceAttr("arin_rpki_certificate.test", "certificate_pem", "certificate-2")},
 		{Config: config("key-two", "64500"), Check: resource.TestCheckResourceAttr("arin_rpki_certificate.test", "ski", "key-two")},
+		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, "key-two", "64500"), ImportStateVerify: true},
 		{Config: config("key-two", "64500"), PlanOnly: true},
 	}})
 }

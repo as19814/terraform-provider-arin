@@ -3,12 +3,12 @@
 page_title: "arin_rpki_certificate Resource - arin"
 subcategory: ""
 description: |-
-  Manage a delegated RPKI CA certificate using an existing CSR and BPKI enrollment. Creation and refresh validate the signed parent response and the manifest-backed resource path through explicitly configured RRDP repositories. Updates request issuance for the same key; destroy revokes every certificate for that key within the class. Do not overlap ownership of a class/key with other resources. A revoked key cannot be reused: replacements require a fresh resource key and CSR. Persistent private exchange, cache and history directories must survive Terraform runs. Uncertain operations remain pending and require operator reconciliation; complete issuance/revocation recovery and import are not yet implemented. Native ARIN delegated sandbox verification remains unavailable.
+  Manage a delegated RPKI CA certificate using an existing CSR and BPKI enrollment. Creation and refresh validate the signed parent response and the manifest-backed resource path through explicitly configured RRDP repositories. Updates request issuance for the same key; destroy revokes every certificate for that key within the class. Do not overlap ownership of a class/key with other resources. A revoked key cannot be reused: replacements require a fresh resource key and CSR. Persistent private exchange, cache and history directories must survive Terraform runs. Uncertain operations remain pending and require operator reconciliation; complete issuance/revocation recovery is not yet implemented. Import accepts an absolute path to a private JSON manifest containing the resource configuration and validates the existing certificate without issuing or revoking; see the import format ../reference/delegated-rpki.md#certificate-import. Native ARIN delegated sandbox verification remains unavailable.
 ---
 
 # arin_rpki_certificate (Resource)
 
-Manage a delegated RPKI CA certificate using an existing CSR and BPKI enrollment. Creation and refresh validate the signed parent response and the manifest-backed resource path through explicitly configured RRDP repositories. Updates request issuance for the same key; destroy revokes every certificate for that key within the class. Do not overlap ownership of a class/key with other resources. A revoked key cannot be reused: replacements require a fresh resource key and CSR. Persistent private exchange, cache and history directories must survive Terraform runs. Uncertain operations remain pending and require operator reconciliation; complete issuance/revocation recovery and import are not yet implemented. Native ARIN delegated sandbox verification remains unavailable.
+Manage a delegated RPKI CA certificate using an existing CSR and BPKI enrollment. Creation and refresh validate the signed parent response and the manifest-backed resource path through explicitly configured RRDP repositories. Updates request issuance for the same key; destroy revokes every certificate for that key within the class. Do not overlap ownership of a class/key with other resources. A revoked key cannot be reused: replacements require a fresh resource key and CSR. Persistent private exchange, cache and history directories must survive Terraform runs. Uncertain operations remain pending and require operator reconciliation; complete issuance/revocation recovery is not yet implemented. Import accepts an absolute path to a private JSON manifest containing the resource configuration and validates the existing certificate without issuing or revoking; see the [import format](../reference/delegated-rpki.md#certificate-import). Native ARIN delegated sandbox verification remains unavailable.
 
 ## Example Usage
 
@@ -75,3 +75,13 @@ resource "arin_rpki_certificate" "example" {
 - `issuer_pem` (String) Immediate resource issuer certificate in PEM format.
 - `not_after` (String) Issued certificate expiry in UTC RFC 3339 format.
 - `ski` (String) RFC 5280 method-1 resource key identifier.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+terraform import arin_rpki_certificate.example /absolute/private/certificate.json
+```
