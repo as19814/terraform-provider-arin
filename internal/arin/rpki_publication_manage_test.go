@@ -25,6 +25,10 @@ func TestRPKIPublicationBundlePlan(t *testing.T) {
 	if err != nil || len(changes) != 0 {
 		t.Fatal("unchanged objects mutated")
 	}
+	changes, err = planRPKIPublicationBundle(map[string]string{a: next, b: old}, prior)
+	if err != nil || len(changes) != 2 || changes[1].URI != b || changes[1].OldSHA256 != prior[b] || string(changes[1].DER) != "old" {
+		t.Fatal("unchanged bundle member lost hash guard")
+	}
 	for _, desired := range []map[string]string{{a: ""}, {a: "not-base64"}, {"https://example.test/object": old}, {a: "b2xk\n"}, {"rsync://repo.example/module/": old}, {a: base64.StdEncoding.EncodeToString(make([]byte, (3<<20)+1))}} {
 		if _, _, err := DecodeRPKIPublicationObjects(desired); err == nil {
 			t.Fatal("invalid desired objects accepted")

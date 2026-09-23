@@ -1042,3 +1042,23 @@ Terraform tests cover initial import, import after membership updates, preserved
 IDs, clean plans and mismatch rejection. Parser tests cover malformed manifests,
 file permissions, symlinks and duplicate fields. Import cannot bypass a pending
 exchange, and uncertain-mutation recovery remains unfinished.
+
+## Concurrent changes to unchanged bundle members
+
+When any owned member changes, the publication planner now includes unchanged
+owned objects in the same batch, re-publishing their bytes with the last-observed
+hash as a precondition. This prevents a concurrent edit to an otherwise unchanged
+object from silently invalidating the newly published manifest. If any member's
+hash no longer matches, the server rejects the entire batch. A completely
+unchanged bundle still produces no mutation request.
+
+A signed fake-repository test changes an unchanged member after planning, then
+checks that both the planned replacement and unchanged-member guard are rejected
+atomically. Planner tests also verify the guard and the no-op behavior. Encoded
+request limits apply to all included objects, including these guarded members.
+
+Local verification for this correction passed the race/unit suite, vet and build.
+The broad race-enabled Terraform acceptance run reached its five-minute timeout
+in TestAccWhoisErrors without an earlier assertion failure. That test and all
+remaining Whois tests passed separately in 12.945 seconds. The preceding import
+commit ca6645a also completed self-hosted CI successfully.

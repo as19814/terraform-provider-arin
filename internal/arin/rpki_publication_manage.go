@@ -79,13 +79,19 @@ func planRPKIPublicationBundle(desired map[string]string, prior map[string]strin
 	}
 	sort.Strings(keys)
 	var changes []rpkiPublicationChange
+	changed := false
 	for _, uri := range keys {
 		data, wanted := objects[uri]
 		old, exists := prior[uri]
-		if wanted && exists && hashes[uri] == old {
-			continue
+		if !wanted || !exists || hashes[uri] != old {
+			changed = true
 		}
 		changes = append(changes, rpkiPublicationChange{URI: uri, OldSHA256: old, DER: bytes.Clone(data), Withdraw: !wanted})
+	}
+	// Re-publish unchanged owned members with their observed hash whenever the
+	// bundle changes. This guards the entire bundle against concurrent edits.
+	if !changed {
+		return nil, nil
 	}
 	// Validate aggregate wire limits before loading the private key or dispatching.
 	if len(changes) > 0 {

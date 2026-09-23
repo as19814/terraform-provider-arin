@@ -188,6 +188,30 @@ func TestRPKIPublicationBatchLifecycle(t *testing.T) {
 	if err := client.Apply(ctx, planned); err != nil {
 		t.Fatal(err)
 	}
+	// The planner must guard an unchanged member while replacing another one.
+	guard := uri + "-guard"
+	mu.Lock()
+	objects[guard] = first
+	mu.Unlock()
+	planned, err = planRPKIPublicationBundle(map[string]string{uri: base64.StdEncoding.EncodeToString(first), guard: base64.StdEncoding.EncodeToString(first)}, map[string]string{uri: digest(second), guard: digest(first)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	objects[guard] = second // Concurrent edit after the inventory refresh.
+	mu.Unlock()
+	err = client.Apply(ctx, planned)
+	var guardRejected *rpkiPublicationError
+	if !errors.As(err, &guardRejected) || guardRejected.Codes[0] != "no_object_matching_hash" {
+		t.Fatalf("concurrent edit to unchanged member accepted: %v", err)
+	}
+	mu.Lock()
+	guardAtomic := digest(objects[uri]) == digest(second) && digest(objects[guard]) == digest(second)
+	delete(objects, guard)
+	mu.Unlock()
+	if !guardAtomic {
+		t.Fatal("stale unchanged member allowed a partial bundle update")
+	}
 	// First PDU would create a new object, second has a stale hash. Neither commits.
 	err = client.Apply(ctx, []rpkiPublicationChange{{URI: uri + "2", DER: first}, {URI: uri, OldSHA256: digest(first), Withdraw: true}})
 	var rejected *rpkiPublicationError
@@ -206,7 +230,7 @@ func TestRPKIPublicationBatchLifecycle(t *testing.T) {
 	mu.Lock()
 	empty, count := len(objects) == 0, calls
 	mu.Unlock()
-	if !empty || count != 4 {
+	if !empty || count != 5 {
 		t.Fatal("incorrect lifecycle or retry")
 	}
 	peer, _ := config.peerID()
@@ -232,7 +256,7 @@ func TestRPKIPublicationBatchLifecycle(t *testing.T) {
 	mu.Lock()
 	count = calls
 	mu.Unlock()
-	if count != 5 {
+	if count != 6 {
 		t.Fatal("uncertain mutation was retried")
 	}
 	lease, err = openRPKIExchange(config.Directory, peer)
