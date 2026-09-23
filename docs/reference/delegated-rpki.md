@@ -557,3 +557,25 @@ Authenticated manifest/CRL selection, requested-resource matching, updated-profi
 interoperability auditing, issuance integration and Terraform integration remain
 unfinished. These CA-only checks do not implement manifest EE validation or prove
 native ARIN interoperability.
+
+## Manifest content and file-set checks
+
+The private manifest decoder implements bounded DER eContent parsing from
+[RFC 9286](https://www.rfc-editor.org/rfc/rfc9286.html), including the omitted
+version-zero default, nonnegative manifest numbers up to 159 bits, whole-second
+UTC GeneralizedTime, ordered update times, SHA-256 hashes, and unique filenames.
+It accepts at most 4 MiB and 10,000 entries. Filename extensions follow the
+[IANA RPKI Repository Name Schemes](https://www.iana.org/assignments/rpki)
+registry checked on 2026-09-23, including temporary registrations. Recognition
+of an extension does not implement validation of that object's payload.
+
+A separate file-set check requires a current manifest, every listed file with
+its exact digest, and exactly one CRL. Names retain their case. Unlisted files
+are ignored and cannot be treated as manifest-listed objects. The parser allows
+an empty list syntactically, but it cannot pass the file-set check without a CRL.
+Tests exercise malformed encodings, integer/time/hash bounds, duplicate names,
+path-like names, missing or changed files, and freshness boundaries.
+
+These helpers do not authenticate CMS or EE certificates and are not yet called
+by issuance or Terraform operations. Persistent rollback checks, authenticated
+manifest/CRL selection and delegated native verification remain unfinished.
