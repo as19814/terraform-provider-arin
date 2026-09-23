@@ -26,6 +26,7 @@ type rpkiExchangeState struct {
 	PeerID                string                         `json:"peer_id"`
 	LastSent              time.Time                      `json:"last_sent"`
 	LastReceived          time.Time                      `json:"last_received"`
+	LastResponse          *rpkiCompletedResponse         `json:"last_response,omitempty"`
 	Pending               *rpkiPendingExchange           `json:"pending,omitempty"`
 	RecoveredRead         *rpkiPendingExchange           `json:"recovered_read,omitempty"`
 	ReconciledPublication *rpkiPublicationReconciliation `json:"reconciled_publication,omitempty"`
@@ -108,6 +109,11 @@ func openRPKIExchangeMode(directory, peerID string, create bool) (*rpkiExchangeL
 		if lease.state.Pending == nil && lease.state.RecoveredRead == nil && lease.state.LastSent.IsZero() != lease.state.LastReceived.IsZero() {
 			return nil, errRPKIExchangeState
 		}
+		if r := lease.state.LastResponse; r != nil {
+			if !validRPKICompletedResponse(*r) || r.Request.SigningTime.After(lease.state.LastSent) || r.SigningTime.After(lease.state.LastReceived) {
+				return nil, errRPKIExchangeState
+			}
+		}
 		if p := lease.state.RecoveredRead; p != nil {
 			if !readOnlyRPKIOperation(p.Operation) || !exchangeDigest.MatchString(p.RequestSHA256) || p.SigningTime.IsZero() || !validExchangeTime(p.SigningTime) || p.SigningTime.After(lease.state.LastSent) || (lease.state.Pending != nil && !lease.state.Pending.SigningTime.After(p.SigningTime)) {
 				return nil, errRPKIExchangeState
@@ -147,6 +153,10 @@ func (l *rpkiExchangeLease) State() (rpkiExchangeState, error) {
 		return rpkiExchangeState{}, errRPKIExchangeState
 	}
 	state := l.state
+	if state.LastResponse != nil {
+		response := *state.LastResponse
+		state.LastResponse = &response
+	}
 	if state.Pending != nil {
 		pending := *state.Pending
 		state.Pending = &pending
@@ -195,7 +205,11 @@ func (l *rpkiExchangeLease) beginLocked(digest, operation string, signingTime ti
 func (l *rpkiExchangeLease) Complete(digest string, receivedTime time.Time) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.closed || l.poisoned || l.state.Pending == nil || l.state.Pending.RequestSHA256 != digest || receivedTime.IsZero() || !validExchangeTime(receivedTime) || receivedTime.Before(l.state.LastReceived) {
+	return l.completeLocked(digest, receivedTime)
+}
+
+func (l *rpkiExchangeLease) completeLocked(digest string, receivedTime time.Time) error {
+	if !l.canCompleteLocked(digest, receivedTime) {
 		return errRPKIExchangeState
 	}
 	l.state.LastReceived = receivedTime.UTC()
@@ -259,4 +273,8 @@ func syncRPKIExchangeDirectory(dir string) error {
 
 func (l *rpkiExchangeLease) canBeginLocked(digest, operation string, signingTime time.Time) bool {
 	return !(l.closed || l.poisoned || l.state.Pending != nil || !exchangeDigest.MatchString(digest) || !exchangeOperation.MatchString(operation) || signingTime.IsZero() || !validExchangeTime(signingTime) || signingTime.Before(l.state.LastSent) || (l.state.RecoveredRead != nil && !signingTime.After(l.state.RecoveredRead.SigningTime)))
+}
+
+func (l *rpkiExchangeLease) canCompleteLocked(digest string, receivedTime time.Time) bool {
+	return !l.closed && !l.poisoned && l.state.Pending != nil && l.state.Pending.RequestSHA256 == digest && !receivedTime.IsZero() && validExchangeTime(receivedTime) && !receivedTime.Before(l.state.LastReceived)
 }

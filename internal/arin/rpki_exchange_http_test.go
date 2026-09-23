@@ -101,6 +101,15 @@ func TestRPKIHTTPExchange(t *testing.T) {
 			if err != nil || state.Pending != nil || !state.LastReceived.Equal(cmsTrustNow()) {
 				t.Fatal("response watermark not saved")
 			}
+			receipt, evidence, err := lease.CompletedResponse()
+			if err != nil || receipt.Request.Operation != "list" {
+				t.Fatal("accepted response evidence missing")
+			}
+			verified, err := verifyRPKICMS(evidence, rpkiCMSTrust{Anchor: remote.Anchor, Now: cmsTrustNow()})
+			if err != nil || !bytes.Equal(verified.Content, responseXML) || !verified.SigningTime.Equal(receipt.SigningTime) {
+				t.Fatal("retained response failed reauthentication")
+			}
+
 		})
 	}
 }
@@ -184,7 +193,7 @@ func TestRPKIHTTPUncertainResponse(t *testing.T) {
 			}
 			defer lease.Close()
 			state, err := lease.State()
-			if err != nil || state.Pending == nil || !state.LastReceived.IsZero() {
+			if err != nil || state.Pending == nil || state.LastResponse != nil || !state.LastReceived.IsZero() {
 				t.Fatal("uncertain response cleared pending or advanced watermark")
 			}
 		})

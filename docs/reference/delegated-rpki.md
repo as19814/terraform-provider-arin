@@ -1823,3 +1823,26 @@ manifests, wrong keys and published/renewed keys. Corrupt receipt timestamps and
 incompatible CLI modes fail closed. Class disappearance, issuer rollover and
 expired issuer paths still require additional evidence; signed native delegated
 interoperability remains unverified without enrollment.
+
+### Retained signed responses
+
+Successful provisioning and publication exchanges now retain the exact accepted
+CMS response in a private, digest-named sidecar beside the exchange journal.
+The receipt records the associated request digest, operation and signing time,
+plus the response digest and signing time. The sidecar is synced before the
+journal clears the pending request. A later pending mutation preserves that last
+accepted response, including across restarts. A successful replacement removes
+the previous sidecar; failed commits retain evidence and fail closed. Crashes or
+cleanup failures can leave unreferenced sidecars for explicit housekeeping.
+
+Retention happens only after CMS authentication and protocol correlation. Reading
+the retained bytes checks file safety and digest integrity; it does not replace
+cryptographic reauthentication for future recovery. Legacy journals remain
+readable but have no retained response. Older binaries reject journals containing
+the new receipt and must not rewrite them.
+
+This is groundwork for binding a disappeared class to its historical issuer.
+It does not enable missing-class reconciliation, resend a mutation, or change
+the existing recovery approval requirements. Tests cover signed HTTP responses,
+restart during a pending mutation, replacement cleanup, unsafe or corrupt files,
+and sidecar or journal persistence failures.

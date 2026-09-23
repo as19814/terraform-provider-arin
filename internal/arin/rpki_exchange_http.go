@@ -159,7 +159,7 @@ func (c rpkiHTTPExchange) exchange(ctx context.Context, operation string, reques
 	if err := validate(bytes.Clone(requestXML), bytes.Clone(verified.Content)); err != nil {
 		return nil, errRPKIHTTPExchange
 	}
-	if err := lease.Complete(digest, verified.SigningTime); err != nil {
+	if err := lease.CompleteSigned(digest, verified.SigningTime, body); err != nil {
 		return nil, err
 	}
 	return bytes.Clone(verified.Content), nil
