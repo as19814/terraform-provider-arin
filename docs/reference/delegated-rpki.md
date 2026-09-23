@@ -1088,3 +1088,29 @@ request evidence after an uncertain response.
 This supplies evidence for future reconciliation. It does not yet reconcile
 uncertain mutations or permit their replay, and crash-lock recovery remains
 unfinished. The evidence is local to the configured persistent journal directory.
+
+## Inspecting pending publication intent
+
+The private publication recovery inspector now authenticates the retained CMS
+request against the configured local BPKI anchor at its recorded signing time.
+It verifies the peer identity, pending operation, request digest and exact CMS
+signing time before parsing the saved batch. It extracts the expected before and
+after hashes for each affected URL, including unchanged-member guards. It never
+reconstructs or resends the original request.
+
+A separate bounded inventory comparator returns `matches_before`, `matches_after`,
+`ambiguous` or `conflict`. Both-state matches, such as a batch containing only
+no-op replacements, are ambiguous. Partial transitions, missing guards and third
+party changes are conflicts. Unmanaged URLs are ignored. These labels describe
+the observed state, not proof of which actor changed it or a remote transaction's
+historical outcome.
+
+Signed-request tests cover exact intent recovery, wrong peer/operation/time,
+corrupted signatures, missing evidence and malformed payloads. Comparison tests
+cover create/replace/withdraw transitions, no-op ambiguity, partial updates,
+changed guards, malformed inventories and unmanaged objects. Inspection and
+comparison leave the pending journal unchanged.
+
+An authenticated recovery inventory exchange and durable reconciliation decision
+are still required before uncertain mutations can be cleared. This comparison
+helper alone does not authorize completion, abandonment or retry.
