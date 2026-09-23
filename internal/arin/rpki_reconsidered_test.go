@@ -166,3 +166,49 @@ func TestRPKIReconsideredResourceGaps(t *testing.T) {
 		t.Fatal("omitted intermediate resources reappeared")
 	}
 }
+
+func reconsideredTestExtensions(t *testing.T, extensions []pkix.Extension) []pkix.Extension {
+	t.Helper()
+	out := slices.Clone(extensions)
+	for i, e := range out {
+		switch {
+		case e.Id.Equal(oidRPKIASResources):
+			out[i].Id = oidRPKIASResourcesV2
+		case e.Id.Equal(oidRPKIIPResources):
+			out[i].Id = oidRPKIIPResourcesV2
+		case e.Id.String() == "2.5.29.32":
+			out[i].Value = resourceTestDER(t, []struct{ ID asn1.ObjectIdentifier }{{asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 14, 3}}})
+		}
+	}
+	return out
+}
+
+func TestRPKIReconsideredManifestPath(t *testing.T) {
+	for _, mode := range []string{"reconsidered_mixed", "reconsidered_all", "reconsidered_legacy_overclaim"} {
+		t.Run(mode, func(t *testing.T) {
+			f, pubs := manifestPathFixture(t, mode)
+			history := privateExchangeDir(t)
+			got, err := verifyAndRecordRPKIManifestPath(history, f.certs, f.certs[2], pubs, cmsTrustNow())
+			if mode == "reconsidered_legacy_overclaim" {
+				if err == nil {
+					t.Fatal("legacy descendant accepted an intermediate's overclaim")
+				}
+				return
+			}
+			if err != nil || !slices.Equal(got.ASN.Ranges, []rpkiASRange{{64500, 64510}}) {
+				t.Fatalf("manifest-backed verified resources: %v", err)
+			}
+			if _, err := verifyAndRecordRPKIManifestPath(history, f.certs, f.certs[2], pubs, cmsTrustNow()); err != nil {
+				t.Fatal("failed to reopen alternate-profile history")
+			}
+			class := &rpkiResourceClass{ASN: "64500-64510", Certificates: []rpkiResourceCertificate{{}}}
+			if err := validateIssuedResources(class, got); err != nil {
+				t.Fatal("authorized allocation rejected")
+			}
+			class.ASN = "64400-64600"
+			if err := validateIssuedResources(class, got); err == nil {
+				t.Fatal("issuance accepted allocation beyond verified resources")
+			}
+		})
+	}
+}

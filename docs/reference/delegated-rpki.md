@@ -1923,3 +1923,13 @@ Tests cover signed mixed-profile paths, policy mismatches, noncritical and
 duplicate extensions, AS authorization gaps, both IP families, empty intersections,
 inheritance and manifest EE constraints. Native alternate-profile interoperability
 remains unverified; the public census found only original-profile certificates.
+
+
+Manifest-backed integration tests additionally cover all-alternate and mixed
+certificate chains, an overclaiming intermediate, inherited manifest EE resources,
+manifest-selected CRLs, durable history reopening and allocation matching against
+the final verified set. A legacy descendant cannot reuse its alternate-profile
+issuer's unverified overclaim. An allocation wider than the verified set remains
+an issuance error even when certificate profile validation succeeds. These tests
+use signed synthetic chains and publications, not native ARIN alternate-profile
+certificates.

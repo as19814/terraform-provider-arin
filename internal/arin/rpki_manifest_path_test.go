@@ -7,12 +7,25 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"math/big"
+	"strings"
 	"testing"
 )
 
 func manifestPathFixture(t *testing.T, mode string) (resourcePathFixture, []rpkiPathPublication) {
 	t.Helper()
 	f := resourceCertificateFixture(t)
+	if mode == "reconsidered_all" {
+		c := *f.certs[2]
+		c.ExtraExtensions = reconsideredTestExtensions(t, c.Extensions)
+		raw, err := x509.CreateCertificate(rand.Reader, &c, &c, &f.keys[2].PublicKey, f.keys[2])
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.certs[2], err = x509.ParseCertificate(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 	const directory = "rsync://repo.example/module/child/"
 	for i := 1; i >= 0; i-- {
 		c := *f.certs[i]
@@ -31,6 +44,19 @@ func manifestPathFixture(t *testing.T, mode string) (resourcePathFixture, []rpki
 				if e.Id.Equal(oidRPKIASResources) {
 					c.ExtraExtensions[j] = resourceTestAS(t, cmsTestDER(t, []int{65000}))
 				}
+			}
+		}
+		if strings.HasPrefix(mode, "reconsidered") {
+			if i == 1 || mode == "reconsidered_legacy_overclaim" {
+				for j, e := range c.ExtraExtensions {
+					if e.Id.Equal(oidRPKIASResources) {
+						c.ExtraExtensions[j] = reconsideredTestAS(t, 64400, 64600)
+						c.ExtraExtensions[j].Id = oidRPKIASResources
+					}
+				}
+			}
+			if mode != "reconsidered_legacy_overclaim" || i != 0 {
+				c.ExtraExtensions = reconsideredTestExtensions(t, c.ExtraExtensions)
 			}
 		}
 		der, err := x509.CreateCertificate(rand.Reader, &c, f.certs[i+1], &f.keys[i].PublicKey, f.keys[i+1])
@@ -55,8 +81,10 @@ func manifestPathFixture(t *testing.T, mode string) (resourcePathFixture, []rpki
 			case "2.5.29.35", "2.5.29.31", "1.3.6.1.5.5.7.1.11":
 				continue
 			}
-			if e.Id.Equal(oidRPKIASResources) {
+			if e.Id.Equal(oidRPKIASResources) || e.Id.Equal(oidRPKIASResourcesV2) {
+				id := e.Id
 				e = resourceTestAS(t, []byte{5, 0})
+				e.Id = id
 			}
 			c.ExtraExtensions = append(c.ExtraExtensions, e)
 		}
