@@ -471,3 +471,24 @@ newer extension profiles, requested-allocation comparison and persistent CRL
 rollback history remain to be addressed. CRLs use the existing signature,
 currentness and revocation checks; stricter resource-CRL profile checks remain.
 Terraform integration, recovery and native delegated evidence are still pending.
+
+## Resource CRL profile checks
+
+The resource-path verifier now applies additional CRL profile checks after DER
+parsing. It requires version 2, SHA-256/RSA PKCS#1 v1.5, matching inner/outer
+algorithm identifiers with NULL parameters, and exactly the non-critical AKI and
+CRL-number extensions. The AKI must contain only a 20-byte key identifier. Unknown,
+scoped and delta extensions are rejected, as are all entry extensions, duplicate
+serials, invalid serial bounds and revocation dates after the CRL's issue time.
+Signature, issuer, currentness and newest-number checks remain in the existing
+revocation verification step.
+
+Tests create and sign CRLs with unknown non-critical extensions, delta/scoping
+fields, entry extensions/reason codes, duplicate entries, future revocation dates
+and alternate signature algorithms. Both the profile checker and the integrated
+resource-path verifier reject these; ordinary empty CRLs and extension-free
+revocation entries pass. The shared BPKI CMS validator keeps its separate policy.
+
+This does not complete certificate profile validation, persistent CRL rollback
+protection, issuance integration, or native interoperability. Full DER time/name
+profile auditing also remains before claiming every RPKI profile rule is covered.

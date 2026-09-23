@@ -58,7 +58,7 @@ func verifyRPKICertificatePath(path []*x509.Certificate, anchor *x509.Certificat
 		}
 		var err error
 		parsedCRLs[i], err = x509.ParseRevocationList(c.Raw)
-		if err != nil {
+		if err != nil || validateRPKICRLProfile(parsedCRLs[i]) != nil {
 			return nil, errRPKIUpDown
 		}
 	}
