@@ -33,6 +33,26 @@ invent them. Missing or foreign-namespace descriptions remain null, while the
 complete XML retains the original response. Mock lookup/search/relationship
 acceptance and read-only Terraform lookups on both origins passed on 2026-09-23.
 
+## POC name field audit
+
+The guide's Data Transformation example explicitly reads `firstName`,
+`middleName` and `lastName`; its search table also documents a `middle` filter.
+`middle_name` is now exposed alongside the first and last names in individual
+POC lookups, full-detail POC searches and the org/ASN/network POC relationships.
+Reference-only results retain null name fields when names are not published.
+
+Decoder tests cover populated, absent and foreign-namespace middle names while
+preserving complete XML. Fake Terraform tests cover populated values in each of
+the five affected data sources. The read-only six-record lookup suite passed on
+OT&E and production with clean subsequent plans. The reference POC omitted
+`middleName` on both origins, so that native run establishes null handling only;
+a populated native middle name has not been observed in this audit.
+
+The public records inspected during the audit also include root terms/copyright
+attributes, related-resource containers and reference names/URLs. These remain
+available in complete `whois_xml`; typed relationship data sources expose their
+identities separately. No response URL is followed and no API key is sent.
+
 ## Relationships
 
 All twelve documented relationship operations have data sources:

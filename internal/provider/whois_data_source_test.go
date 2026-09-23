@@ -89,6 +89,7 @@ func TestAccWhoisErrors(t *testing.T) {
 
 func whoisPOCMetadataChecks(address, prefix string) []resource.TestCheckFunc {
 	return []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(address, prefix+"middle_name", "Augusta"),
 		resource.TestCheckResourceAttr(address, prefix+"poc_type_description", "Person"),
 		resource.TestCheckResourceAttr(address, prefix+"status_description", "Validated"),
 		resource.TestCheckResourceAttr(address, prefix+"phones.0.description", "Office"),

@@ -195,3 +195,32 @@ func TestWhoisPOCDescriptions(t *testing.T) {
 		})
 	}
 }
+
+func TestWhoisPOCMiddleName(t *testing.T) {
+	var spec ReadSpec
+	for _, s := range WhoisRecordReads() {
+		if s.Name == "whois_poc" {
+			spec = s
+		}
+	}
+	for _, extra := range []string{`<middleName>Augusta</middleName>`, `<middleName xmlns="urn:foreign">Foreign</middleName>`, ""} {
+		body := whoisFixture("poc", whoisFixtures()["poc"]+extra)
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, body) }))
+		c, _ := New(Config{WhoisBaseURL: server.URL})
+		values, err := c.ReadRegistration(context.Background(), spec, map[string]string{"handle": "EXAMPLE-ARIN"})
+		server.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if extra == `<middleName>Augusta</middleName>` {
+			if values["middle_name"] != "Augusta" {
+				t.Fatal("middle name lost")
+			}
+		} else if values["middle_name"] != nil {
+			t.Fatal("missing or foreign middle name became typed output")
+		}
+		if values["whois_xml"] != body {
+			t.Fatal("complete XML changed")
+		}
+	}
+}

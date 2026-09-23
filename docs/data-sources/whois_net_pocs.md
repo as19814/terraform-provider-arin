@@ -53,6 +53,7 @@ Read-Only:
 - `handle` (String) handle returned by ARIN.
 - `is_role_account` (Boolean)
 - `last_name` (String) last name returned by ARIN.
+- `middle_name` (String) middle name returned by ARIN.
 - `phones` (Attributes List) phones returned by ARIN. (see [below for nested schema](#nestedatt--pocs--phones))
 - `poc_functions` (List of String) Sorted POC association function codes. Reference links retain their function; expanded POCs collect functions from inline links to the requested owner.
 - `poc_type` (String) poc type returned by ARIN.
