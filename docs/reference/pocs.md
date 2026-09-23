@@ -107,8 +107,11 @@ verifies absence.
 ## Remaining work
 
 Organization associations are covered by `arin_org_poc`; see [evidence](org-pocs.md).
-The final API audit remains. The full
-implementation inventory tracks the broader outstanding API families.
+The final API audit remains, including reconciliation of the phone type
+description metadata (already exposed by the read data source) with managed
+resource state. Country code3 and E.164 calling code metadata now round-trip
+through resource state, with native Terraform lifecycle and import coverage. The
+full implementation inventory tracks the broader outstanding API families.
 
 References: collected [methods](arin-api/reg-rws/methods.md#pocs) and
 [payload](arin-api/reg-rws/payloads.md#poc-payload) guides.

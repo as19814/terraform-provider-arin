@@ -78,8 +78,10 @@ func TestOTECustomerLifecycle(t *testing.T) {
 		private := true
 		comments := `["Disposable sandbox customer"]`
 		street := `["123 Test Street"]`
+		country, city, subdivision, postal := "US", "Chantilly", "VA", "20151"
 		if updated {
 			customerName += " updated"
+			country, city, subdivision, postal = "GB", "London", "", "SW1A 1AA"
 			private = false
 			comments = `[]`
 			street = `["456 Test Street", "Suite 2"]`
@@ -91,14 +93,16 @@ func TestOTECustomerLifecycle(t *testing.T) {
 resource "arin_customer" "test" {
  parent_net_handle = %q
  name = %q
- country_code = "US"
- city = "Chantilly"
- subdivision = "VA"
- postal_code = "20151"
+ country_code = %q
+ city = %q
+ subdivision = %q
+ postal_code = %q
  street_address = %s
  comments = %s
  private_customer = %t
-}`, parent, customerName, street, comments, private)
+}
+data "arin_customer" "read" {handle=arin_customer.test.id}
+`, parent, customerName, country, city, subdivision, postal, street, comments, private)
 	}
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("ote-test")())},
@@ -120,7 +124,7 @@ resource "arin_customer" "test" {
 				t.Logf("Disposable OT&E customer: %s", handle)
 				return nil
 			}},
-			{Config: config(true), Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_customer.test", "private_customer", "false"), resource.TestCheckResourceAttr("arin_customer.test", "comments.#", "0"), resource.TestCheckResourceAttr("arin_customer.test", "street_address.#", "2"))},
+			{Config: config(true), Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_customer.test", "private_customer", "false"), resource.TestCheckResourceAttr("arin_customer.test", "comments.#", "0"), resource.TestCheckResourceAttr("arin_customer.test", "street_address.#", "2"), resource.TestCheckResourceAttr("arin_customer.test", "country_code3", "GBR"), resource.TestCheckResourceAttr("arin_customer.test", "country_calling_code", "44"), resource.TestCheckResourceAttrPair("arin_customer.test", "country_code3", "data.arin_customer.read", "country_code3"), resource.TestCheckResourceAttrPair("arin_customer.test", "country_calling_code", "data.arin_customer.read", "country_calling_code"))},
 			{ResourceName: "arin_customer.test", ImportState: true, ImportStateIdFunc: func(_ *terraform.State) (string, error) { return parent + "/" + handle, nil }, ImportStateVerify: true},
 			{Config: config(true), PlanOnly: true, ExpectNonEmptyPlan: false},
 		},

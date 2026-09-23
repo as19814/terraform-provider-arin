@@ -32,7 +32,7 @@ func joinFields(groups ...[]Field) []Field {
 
 var pocLinks = objects("poc_links", "pocLinks/pocLinkRef", required(text("handle", "@handle")), text("function", "@function"), text("description", "@description"))
 var addressFields = []Field{
-	lines("street_address", "streetAddress"), text("city", "city"), text("subdivision", "iso3166-2"), text("postal_code", "postalCode"), text("country_code", "iso3166-1/code2"), text("country_name", "iso3166-1/name"),
+	lines("street_address", "streetAddress"), text("city", "city"), text("subdivision", "iso3166-2"), text("postal_code", "postalCode"), text("country_code", "iso3166-1/code2"), text("country_name", "iso3166-1/name"), text("country_code3", "iso3166-1/code3"), text("country_calling_code", "iso3166-1/e164"),
 }
 var netFields = []Field{
 	required(text("handle", "handle")), text("name", "netName"), integer("ip_version", "version"), text("org_handle", "orgHandle"), text("customer_handle", "customerHandle"), text("parent_net_handle", "parentNetHandle"), text("registration_date", "registrationDate"), lines("comments", "comment"),

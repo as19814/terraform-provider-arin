@@ -36,7 +36,10 @@ data "arin_whois_poc" "example" {
 - `city` (String) city returned by ARIN.
 - `comments` (List of String) Ordered lines of comments.
 - `company_name` (String) company name returned by ARIN.
+- `country_calling_code` (String) country calling code returned by ARIN.
 - `country_code` (String) country code returned by ARIN.
+- `country_code3` (String) country code3 returned by ARIN.
+- `country_name` (String) country name returned by ARIN.
 - `emails` (List of String) emails returned by ARIN.
 - `first_name` (String) first name returned by ARIN.
 - `is_role_account` (Boolean)

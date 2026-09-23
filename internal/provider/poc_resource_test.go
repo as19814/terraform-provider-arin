@@ -48,7 +48,7 @@ func pocSteps(last string) []resource.TestStep {
 	updated := pocConfig("ROLE", last, pocContactUpdated)
 	person := pocConfig("PERSON", last, pocContactBase)
 	return []resource.TestStep{
-		{Config: base, Check: resource.TestCheckResourceAttr("arin_poc.test", "contact_type", "ROLE")},
+		{Config: base, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_poc.test", "contact_type", "ROLE"), resource.TestCheckResourceAttr("arin_poc.test", "country_code3", "USA"), resource.TestCheckResourceAttr("arin_poc.test", "country_calling_code", "1"))},
 		{ResourceName: "arin_poc.test", ImportState: true, ImportStateVerify: true},
 		{Config: updated, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_poc.test", "emails.#", "2"), resource.TestCheckResourceAttr("arin_poc.test", "phones.#", "2"))},
 		{Config: base, Check: resource.TestCheckResourceAttr("arin_poc.test", "comments.#", "0")},
@@ -98,6 +98,7 @@ func TestAccPOCResourceLifecycle(t *testing.T) {
 			} else if p.Handle != handle || p.Date != "2026-01-01" {
 				t.Error("invalid update identity")
 			}
+			body = []byte(strings.Replace(string(body), "</iso3166-1>", "<name>UNITED STATES</name><code3>USA</code3><e164>1</e164></iso3166-1>", 1))
 			objects[handle] = string(body)
 			fmt.Fprint(w, string(body))
 		case "DELETE":

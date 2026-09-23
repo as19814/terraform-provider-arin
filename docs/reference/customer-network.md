@@ -80,6 +80,12 @@ were checked on 2026-09-23 against the client and provider:
 Name, address lines, city, subdivision, postal code, country code, comments and
 privacy are configurable. Handle, registration date, parent organization and
 country name are read from ARIN. The client refreshes server identity before PUT.
-Country `code3` and `e164` response metadata are not yet exposed as typed customer
-attributes; retain that item in the final field audit. This endpoint audit does
-not claim completion of the remaining provider-wide API inventory.
+Country `code3` and `e164` response metadata are exposed as computed
+`country_code3` and `country_calling_code` strings on customer, organization and
+POC resources and their Reg-RWS and Whois data sources. Only `country_code`
+configures the country in write requests. The standalone OT&E customer test
+changes US to GB, verifies `GBR` and `44` in resource and data source state, then
+imports, checks a clean plan and confirms deletion. The OT&E POC lifecycle also
+verifies its derived country fields. This completes the customer payload and
+CRUD endpoint audit, without claiming completion of the remaining provider-wide
+API inventory.

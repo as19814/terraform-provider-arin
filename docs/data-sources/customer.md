@@ -32,7 +32,9 @@ data "arin_customer" "example" {
 
 - `city` (String, Sensitive) city returned by ARIN.
 - `comments` (List of String, Sensitive) Ordered lines of comments.
+- `country_calling_code` (String, Sensitive) country calling code returned by ARIN.
 - `country_code` (String, Sensitive) country code returned by ARIN.
+- `country_code3` (String, Sensitive) country code3 returned by ARIN.
 - `country_name` (String, Sensitive) country name returned by ARIN.
 - `name` (String, Sensitive) name returned by ARIN.
 - `parent_org_handle` (String, Sensitive) parent org handle returned by ARIN.

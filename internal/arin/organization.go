@@ -13,12 +13,12 @@ import (
 // RegisteredOrganization is the full writable organization record. The older
 // Organization type is a minimal discovery result and must not be used for PUT.
 type RegisteredOrganization struct {
-	Handle, Name, DBAName, RegistrationDate                 string
-	CountryCode, CountryName, City, Subdivision, PostalCode string
-	TaxID, RWhoisURL                                        string
-	AcceptReassignments                                     *bool
-	StreetAddress, Comments                                 []string
-	POCs                                                    []OrgPOC
+	Handle, Name, DBAName, RegistrationDate                                                   string
+	CountryCode, CountryName, CountryCode3, CountryCallingCode, City, Subdivision, PostalCode string
+	TaxID, RWhoisURL                                                                          string
+	AcceptReassignments                                                                       *bool
+	StreetAddress, Comments                                                                   []string
+	POCs                                                                                      []OrgPOC
 }
 
 type organizationXML struct {
@@ -141,7 +141,7 @@ func decodeRegisteredOrganizationNode(root *xmlNode, handle string) (*Registered
 		return nil, err
 	}
 	s := func(k string) string { return netString(v, k) }
-	o := &RegisteredOrganization{Handle: s("handle"), Name: s("name"), DBAName: s("dba_name"), RegistrationDate: s("registration_date"), CountryCode: s("country_code"), CountryName: s("country_name"), City: s("city"), Subdivision: s("subdivision"), PostalCode: s("postal_code"), TaxID: s("tax_id"), RWhoisURL: s("rwhois_url")}
+	o := &RegisteredOrganization{Handle: s("handle"), Name: s("name"), DBAName: s("dba_name"), RegistrationDate: s("registration_date"), CountryCode: s("country_code"), CountryName: s("country_name"), CountryCode3: s("country_code3"), CountryCallingCode: s("country_calling_code"), City: s("city"), Subdivision: s("subdivision"), PostalCode: s("postal_code"), TaxID: s("tax_id"), RWhoisURL: s("rwhois_url")}
 	if b, ok := v["accept_reassignments"].(bool); ok {
 		o.AcceptReassignments = &b
 	}

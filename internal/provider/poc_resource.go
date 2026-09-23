@@ -26,22 +26,24 @@ var (
 
 type pocResource struct{ client *arin.Client }
 type pocModel struct {
-	ID               types.String `tfsdk:"id"`
-	ContactType      types.String `tfsdk:"contact_type"`
-	CompanyName      types.String `tfsdk:"company_name"`
-	FirstName        types.String `tfsdk:"first_name"`
-	MiddleName       types.String `tfsdk:"middle_name"`
-	LastName         types.String `tfsdk:"last_name"`
-	RegistrationDate types.String `tfsdk:"registration_date"`
-	CountryCode      types.String `tfsdk:"country_code"`
-	CountryName      types.String `tfsdk:"country_name"`
-	City             types.String `tfsdk:"city"`
-	Subdivision      types.String `tfsdk:"subdivision"`
-	PostalCode       types.String `tfsdk:"postal_code"`
-	Street           types.List   `tfsdk:"street_address"`
-	Comments         types.List   `tfsdk:"comments"`
-	Emails           types.Set    `tfsdk:"emails"`
-	Phones           types.Set    `tfsdk:"phones"`
+	ID                 types.String `tfsdk:"id"`
+	ContactType        types.String `tfsdk:"contact_type"`
+	CompanyName        types.String `tfsdk:"company_name"`
+	FirstName          types.String `tfsdk:"first_name"`
+	MiddleName         types.String `tfsdk:"middle_name"`
+	LastName           types.String `tfsdk:"last_name"`
+	RegistrationDate   types.String `tfsdk:"registration_date"`
+	CountryCode        types.String `tfsdk:"country_code"`
+	CountryName        types.String `tfsdk:"country_name"`
+	CountryCode3       types.String `tfsdk:"country_code3"`
+	CountryCallingCode types.String `tfsdk:"country_calling_code"`
+	City               types.String `tfsdk:"city"`
+	Subdivision        types.String `tfsdk:"subdivision"`
+	PostalCode         types.String `tfsdk:"postal_code"`
+	Street             types.List   `tfsdk:"street_address"`
+	Comments           types.List   `tfsdk:"comments"`
+	Emails             types.Set    `tfsdk:"emails"`
+	Phones             types.Set    `tfsdk:"phones"`
 }
 type pocPhoneModel struct {
 	Type      types.String `tfsdk:"type"`
@@ -64,21 +66,23 @@ func (r *pocResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 		return a
 	}
 	resp.Schema = schema.Schema{MarkdownDescription: "Manage an ARIN role or person point of contact. New POCs are linked to the API key's ARIN Online account. Contact type and first, middle and last names require replacement. This resource owns all email addresses and phone numbers; do not overlap with other writers of those collections. Remove dependent organization and NET associations before destroy. Contact attributes are sensitive in output but remain in Terraform state. Import by POC handle.", Attributes: map[string]schema.Attribute{
-		"id":                schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}, MarkdownDescription: "ARIN-generated POC handle."},
-		"contact_type":      schema.StringAttribute{Required: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}, MarkdownDescription: "ROLE or PERSON. Immutable after creation."},
-		"company_name":      optional("Company name. Required for ROLE contacts.", false),
-		"first_name":        optional("First name. Required for PERSON and empty for ROLE contacts. Immutable after creation.", true),
-		"middle_name":       optional("Middle name. Immutable after creation.", true),
-		"last_name":         schema.StringAttribute{Required: true, Sensitive: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}, MarkdownDescription: "Last name for a PERSON, or role name for a ROLE. Immutable after creation."},
-		"country_code":      schema.StringAttribute{Required: true, MarkdownDescription: "Uppercase two-letter country code."},
-		"country_name":      schema.StringAttribute{Computed: true, MarkdownDescription: "Country name returned by ARIN."},
-		"city":              optional("City. Omission sends an empty value.", false),
-		"subdivision":       optional("State/province code. Required for US and CA contacts.", false),
-		"postal_code":       optional("Postal code. Required for US and CA contacts.", false),
-		"street_address":    schema.ListAttribute{Required: true, Sensitive: true, ElementType: types.StringType, MarkdownDescription: "Ordered address lines. At least one is required."},
-		"comments":          schema.ListAttribute{Optional: true, Computed: true, Sensitive: true, ElementType: types.StringType, Default: listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})), MarkdownDescription: "Ordered operational comments. Omission clears comments."},
-		"registration_date": schema.StringAttribute{Computed: true, MarkdownDescription: "Server-generated registration date, preserved on update."},
-		"emails":            schema.SetAttribute{Required: true, Sensitive: true, ElementType: types.StringType, MarkdownDescription: "Complete collection of email addresses. At least one is required."},
+		"id":                   schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}, MarkdownDescription: "ARIN-generated POC handle."},
+		"contact_type":         schema.StringAttribute{Required: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}, MarkdownDescription: "ROLE or PERSON. Immutable after creation."},
+		"company_name":         optional("Company name. Required for ROLE contacts.", false),
+		"first_name":           optional("First name. Required for PERSON and empty for ROLE contacts. Immutable after creation.", true),
+		"middle_name":          optional("Middle name. Immutable after creation.", true),
+		"last_name":            schema.StringAttribute{Required: true, Sensitive: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}, MarkdownDescription: "Last name for a PERSON, or role name for a ROLE. Immutable after creation."},
+		"country_code":         schema.StringAttribute{Required: true, MarkdownDescription: "Uppercase two-letter country code."},
+		"country_name":         schema.StringAttribute{Computed: true, MarkdownDescription: "Country name returned by ARIN."},
+		"country_code3":        schema.StringAttribute{Computed: true, MarkdownDescription: "Three-letter country code returned by ARIN."},
+		"country_calling_code": schema.StringAttribute{Computed: true, MarkdownDescription: "E.164 country calling code returned by ARIN, retained as text."},
+		"city":                 optional("City. Omission sends an empty value.", false),
+		"subdivision":          optional("State/province code. Required for US and CA contacts.", false),
+		"postal_code":          optional("Postal code. Required for US and CA contacts.", false),
+		"street_address":       schema.ListAttribute{Required: true, Sensitive: true, ElementType: types.StringType, MarkdownDescription: "Ordered address lines. At least one is required."},
+		"comments":             schema.ListAttribute{Optional: true, Computed: true, Sensitive: true, ElementType: types.StringType, Default: listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})), MarkdownDescription: "Ordered operational comments. Omission clears comments."},
+		"registration_date":    schema.StringAttribute{Computed: true, MarkdownDescription: "Server-generated registration date, preserved on update."},
+		"emails":               schema.SetAttribute{Required: true, Sensitive: true, ElementType: types.StringType, MarkdownDescription: "Complete collection of email addresses. At least one is required."},
 		"phones": schema.SetNestedAttribute{Required: true, Sensitive: true, MarkdownDescription: "Complete phone collection. At least one office phone is required; each type/number pair must be unique.", NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
 			"type":      schema.StringAttribute{Required: true, MarkdownDescription: "O (office), F (fax), or M (mobile)."},
 			"number":    schema.StringAttribute{Required: true, MarkdownDescription: "Phone number, including international dialing prefix, for example +1-202-555-0100."},
@@ -131,7 +135,7 @@ func (r *pocResource) ValidateConfig(ctx context.Context, req resource.ValidateC
 	}
 }
 func pocState(ctx context.Context, p *arin.POC) (pocModel, diag.Diagnostics) {
-	m := pocModel{ID: types.StringValue(p.Handle), ContactType: types.StringValue(p.ContactType), CompanyName: types.StringValue(p.CompanyName), FirstName: types.StringValue(p.FirstName), MiddleName: types.StringValue(p.MiddleName), LastName: types.StringValue(p.LastName), CountryCode: types.StringValue(p.CountryCode), CountryName: types.StringValue(p.CountryName), City: types.StringValue(p.City), Subdivision: types.StringValue(p.Subdivision), PostalCode: types.StringValue(p.PostalCode), RegistrationDate: types.StringValue(p.RegistrationDate)}
+	m := pocModel{ID: types.StringValue(p.Handle), ContactType: types.StringValue(p.ContactType), CompanyName: types.StringValue(p.CompanyName), FirstName: types.StringValue(p.FirstName), MiddleName: types.StringValue(p.MiddleName), LastName: types.StringValue(p.LastName), CountryCode: types.StringValue(p.CountryCode), CountryName: types.StringValue(p.CountryName), CountryCode3: types.StringValue(p.CountryCode3), CountryCallingCode: types.StringValue(p.CountryCallingCode), City: types.StringValue(p.City), Subdivision: types.StringValue(p.Subdivision), PostalCode: types.StringValue(p.PostalCode), RegistrationDate: types.StringValue(p.RegistrationDate)}
 	var d, next diag.Diagnostics
 	m.Street, next = types.ListValueFrom(ctx, types.StringType, nonNilStrings(p.StreetAddress))
 	d.Append(next...)

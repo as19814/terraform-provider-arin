@@ -36,7 +36,10 @@ data "arin_whois_customer" "example" {
 - `can_allocate` (Boolean) can allocate returned by ARIN.
 - `city` (String) city returned by ARIN.
 - `comments` (List of String) Ordered lines of comments.
+- `country_calling_code` (String) country calling code returned by ARIN.
 - `country_code` (String) country code returned by ARIN.
+- `country_code3` (String) country code3 returned by ARIN.
+- `country_name` (String) country name returned by ARIN.
 - `name` (String) name returned by ARIN.
 - `parent_org_handle` (String) parent org handle returned by ARIN.
 - `postal_code` (String) postal code returned by ARIN.

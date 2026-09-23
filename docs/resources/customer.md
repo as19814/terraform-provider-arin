@@ -47,6 +47,8 @@ resource "arin_customer" "example" {
 
 ### Read-Only
 
+- `country_calling_code` (String) E.164 country calling code returned by ARIN, retained as text.
+- `country_code3` (String) Three-letter country code returned by ARIN.
 - `country_name` (String) Country name returned by ARIN.
 - `id` (String) ARIN-generated customer handle.
 - `parent_org_handle` (String) Parent organization assigned by ARIN.

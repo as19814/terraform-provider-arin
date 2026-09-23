@@ -44,7 +44,10 @@ Read-Only:
 - `can_allocate` (Boolean)
 - `city` (String) city returned by ARIN.
 - `comments` (List of String) Ordered lines of comments.
+- `country_calling_code` (String) country calling code returned by ARIN.
 - `country_code` (String) country code returned by ARIN.
+- `country_code3` (String) country code3 returned by ARIN.
+- `country_name` (String) country name returned by ARIN.
 - `handle` (String) handle returned by ARIN.
 - `name` (String) name returned by ARIN.
 - `poc_functions` (List of String) Sorted POC association function codes. Reference links retain their function; expanded POCs collect functions from inline links to the requested owner.

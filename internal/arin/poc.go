@@ -17,11 +17,11 @@ type POCPhone struct {
 	Extension string
 }
 type POC struct {
-	Handle, RegistrationDate                                  string
-	ContactType, CompanyName, FirstName, MiddleName, LastName string
-	CountryCode, CountryName, City, Subdivision, PostalCode   string
-	StreetAddress, Comments, Emails                           []string
-	Phones                                                    []POCPhone
+	Handle, RegistrationDate                                                                  string
+	ContactType, CompanyName, FirstName, MiddleName, LastName                                 string
+	CountryCode, CountryName, CountryCode3, CountryCallingCode, City, Subdivision, PostalCode string
+	StreetAddress, Comments, Emails                                                           []string
+	Phones                                                                                    []POCPhone
 }
 type pocPhoneTypeXML struct {
 	Code string `xml:"code"`
@@ -188,7 +188,7 @@ func decodePOC(body []byte, handle string) (*POC, error) {
 		return nil, err
 	}
 	s := func(k string) string { return netString(v, k) }
-	p := &POC{Handle: s("handle"), RegistrationDate: s("registration_date"), ContactType: s("contact_type"), CompanyName: s("company_name"), FirstName: s("first_name"), MiddleName: s("middle_name"), LastName: s("last_name"), CountryCode: s("country_code"), CountryName: s("country_name"), City: s("city"), Subdivision: s("subdivision"), PostalCode: s("postal_code")}
+	p := &POC{Handle: s("handle"), RegistrationDate: s("registration_date"), ContactType: s("contact_type"), CompanyName: s("company_name"), FirstName: s("first_name"), MiddleName: s("middle_name"), LastName: s("last_name"), CountryCode: s("country_code"), CountryName: s("country_name"), CountryCode3: s("country_code3"), CountryCallingCode: s("country_calling_code"), City: s("city"), Subdivision: s("subdivision"), PostalCode: s("postal_code")}
 	for key, target := range map[string]*[]string{"street_address": &p.StreetAddress, "comments": &p.Comments, "emails": &p.Emails} {
 		for _, x := range v[key].([]any) {
 			*target = append(*target, x.(string))

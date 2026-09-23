@@ -59,7 +59,7 @@ func TestOTEOrgResourceRecovery(t *testing.T) {
 	if d := read.State.Get(ctx, &current); d.HasError() {
 		t.Fatal(d)
 	}
-	if current.Handle.ValueString() != handle || current.Name.ValueString() == "" || current.POCs.IsNull() {
+	if current.Handle.ValueString() != handle || current.Name.ValueString() == "" || current.POCs.IsNull() || current.CountryCode3.ValueString() == "" || current.CountryCallingCode.ValueString() == "" {
 		t.Fatal("resource refresh did not populate complete organization state")
 	}
 	cache, err := os.UserCacheDir()

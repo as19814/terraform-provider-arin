@@ -58,6 +58,11 @@ func TestAccCustomerResourceLifecycle(t *testing.T) {
 				http.Error(w, "update lost server identity", 400)
 				return
 			}
+			metadata := "<name>UNITED STATES</name><code3>USA</code3><e164>1</e164>"
+			if strings.Contains(string(b), "<code2>GB</code2>") {
+				metadata = "<name>UNITED KINGDOM</name><code3>GBR</code3><e164>44</e164>"
+			}
+			b = []byte(strings.Replace(string(b), "</iso3166-1>", metadata+"</iso3166-1>", 1))
 			writes[r.Method]++
 			objects[handle] = string(b)
 			fmt.Fprint(w, string(b))
@@ -93,13 +98,13 @@ private_customer = true`)
 		CheckDestroy: func(_ *terraform.State) error {
 			mu.Lock()
 			defer mu.Unlock()
-			if len(objects) != 0 || writes["POST"] != 3 || writes["PUT"] != 2 || writes["DELETE"] != 2 {
+			if len(objects) != 0 || writes["POST"] != 3 || writes["PUT"] != 3 || writes["DELETE"] != 2 {
 				return fmt.Errorf("unexpected lifecycle: objects=%d writes=%v", len(objects), writes)
 			}
 			return nil
 		},
 		Steps: []resource.TestStep{
-			{Config: base, Check: resource.TestCheckResourceAttr("arin_customer.test", "id", "C1")},
+			{Config: base, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_customer.test", "id", "C1"), resource.TestCheckResourceAttr("arin_customer.test", "country_code3", "USA"), resource.TestCheckResourceAttr("arin_customer.test", "country_calling_code", "1"))},
 			{ResourceName: "arin_customer.test", ImportState: true, ImportStateId: "NET-192-0-2-0-1/C1", ImportStateVerify: true},
 			{PreConfig: func() {
 				mu.Lock()
@@ -107,7 +112,8 @@ private_customer = true`)
 				objects["C1"] = strings.Replace(objects["C1"], "Suite 2", "Suite 3", 1)
 			}, Config: base},
 			{Config: empty, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_customer.test", "comments.#", "0"), resource.TestCheckResourceAttr("arin_customer.test", "private_customer", "false"))},
-			{Config: empty, PlanOnly: true, ExpectNonEmptyPlan: false},
+			{Config: strings.Replace(empty, `country_code = "US"`, `country_code = "GB"`, 1), Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_customer.test", "country_code3", "GBR"), resource.TestCheckResourceAttr("arin_customer.test", "country_calling_code", "44"))},
+			{Config: strings.Replace(empty, `country_code = "US"`, `country_code = "GB"`, 1), PlanOnly: true, ExpectNonEmptyPlan: false},
 			{PreConfig: func() { mu.Lock(); defer mu.Unlock(); delete(objects, "C1") }, Config: empty, Check: resource.TestCheckResourceAttr("arin_customer.test", "id", "C2")},
 			{Config: config("NET-198-51-100-0-1", ""), Check: resource.TestCheckResourceAttr("arin_customer.test", "id", "C3")},
 		},

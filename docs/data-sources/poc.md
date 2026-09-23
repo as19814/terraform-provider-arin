@@ -33,7 +33,9 @@ data "arin_poc" "example" {
 - `comments` (List of String) Ordered lines of comments.
 - `company_name` (String) company name returned by ARIN.
 - `contact_type` (String) contact type returned by ARIN.
+- `country_calling_code` (String) country calling code returned by ARIN.
 - `country_code` (String) country code returned by ARIN.
+- `country_code3` (String) country code3 returned by ARIN.
 - `country_name` (String) country name returned by ARIN.
 - `emails` (List of String) emails returned by ARIN.
 - `first_name` (String) first name returned by ARIN.

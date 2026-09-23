@@ -19,7 +19,7 @@ var whoisCommonFields = []Field{
 	text("ref", "ref"), text("rdap_ref", "rdapRef"), {Name: "whois_xml", Kind: StringKind, Description: "Complete Whois-RWS XML, preserving references, metadata and extensions. No links are followed."},
 }
 var whoisAddressFields = []Field{
-	lines("street_address", "streetAddress"), text("city", "city"), text("state", "iso3166-2"), text("postal_code", "postalCode"), text("country_code", "iso3166-1/code2"),
+	lines("street_address", "streetAddress"), text("city", "city"), text("state", "iso3166-2"), text("postal_code", "postalCode"), text("country_code", "iso3166-1/code2"), text("country_name", "iso3166-1/name"), text("country_code3", "iso3166-1/code3"), text("country_calling_code", "iso3166-1/e164"),
 }
 
 func WhoisReads() []ReadSpec {

@@ -31,24 +31,26 @@ var (
 
 type orgResource struct{ client *arin.Client }
 type orgModel struct {
-	ID               types.String `tfsdk:"id"`
-	Handle           types.String `tfsdk:"handle"`
-	Name             types.String `tfsdk:"name"`
-	DBAName          types.String `tfsdk:"dba_name"`
-	Date             types.String `tfsdk:"registration_date"`
-	CountryCode      types.String `tfsdk:"country_code"`
-	CountryName      types.String `tfsdk:"country_name"`
-	City             types.String `tfsdk:"city"`
-	Subdivision      types.String `tfsdk:"subdivision"`
-	PostalCode       types.String `tfsdk:"postal_code"`
-	TaxID            types.String `tfsdk:"tax_id"`
-	RWhoisURL        types.String `tfsdk:"rwhois_url"`
-	Accept           types.Bool   `tfsdk:"accept_reassignments"`
-	Street           types.List   `tfsdk:"street_address"`
-	Comments         types.List   `tfsdk:"comments"`
-	POCs             types.Set    `tfsdk:"poc_links"`
-	PendingOperation types.String `tfsdk:"pending_operation"`
-	PendingTicket    types.String `tfsdk:"pending_ticket"`
+	ID                 types.String `tfsdk:"id"`
+	Handle             types.String `tfsdk:"handle"`
+	Name               types.String `tfsdk:"name"`
+	DBAName            types.String `tfsdk:"dba_name"`
+	Date               types.String `tfsdk:"registration_date"`
+	CountryCode        types.String `tfsdk:"country_code"`
+	CountryName        types.String `tfsdk:"country_name"`
+	CountryCode3       types.String `tfsdk:"country_code3"`
+	CountryCallingCode types.String `tfsdk:"country_calling_code"`
+	City               types.String `tfsdk:"city"`
+	Subdivision        types.String `tfsdk:"subdivision"`
+	PostalCode         types.String `tfsdk:"postal_code"`
+	TaxID              types.String `tfsdk:"tax_id"`
+	RWhoisURL          types.String `tfsdk:"rwhois_url"`
+	Accept             types.Bool   `tfsdk:"accept_reassignments"`
+	Street             types.List   `tfsdk:"street_address"`
+	Comments           types.List   `tfsdk:"comments"`
+	POCs               types.Set    `tfsdk:"poc_links"`
+	PendingOperation   types.String `tfsdk:"pending_operation"`
+	PendingTicket      types.String `tfsdk:"pending_ticket"`
 }
 
 func NewOrgResource() resource.Resource { return &orgResource{} }
@@ -68,6 +70,8 @@ func (r *orgResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 		"dba_name":             dba,
 		"country_code":         schema.StringAttribute{Required: true, MarkdownDescription: "Uppercase two-letter country code."},
 		"country_name":         schema.StringAttribute{Computed: true, MarkdownDescription: "Country name returned by ARIN."},
+		"country_code3":        schema.StringAttribute{Computed: true, MarkdownDescription: "Three-letter country code returned by ARIN."},
+		"country_calling_code": schema.StringAttribute{Computed: true, MarkdownDescription: "E.164 country calling code returned by ARIN, retained as text."},
 		"city":                 optional("City. Omission sends an empty value."),
 		"subdivision":          optional("State or province code, required for US and CA."),
 		"postal_code":          optional("Postal code, required for US and CA."),
@@ -133,7 +137,7 @@ func (r *orgResource) ValidateConfig(ctx context.Context, req resource.ValidateC
 	}
 }
 func orgState(ctx context.Context, o *arin.RegisteredOrganization) (orgModel, diag.Diagnostics) {
-	m := orgModel{ID: types.StringValue(o.Handle), Handle: types.StringValue(o.Handle), Name: types.StringValue(o.Name), DBAName: types.StringValue(o.DBAName), Date: types.StringValue(o.RegistrationDate), CountryCode: types.StringValue(o.CountryCode), CountryName: types.StringValue(o.CountryName), City: types.StringValue(o.City), Subdivision: types.StringValue(o.Subdivision), PostalCode: types.StringValue(o.PostalCode), TaxID: types.StringValue(o.TaxID), RWhoisURL: types.StringValue(o.RWhoisURL), Accept: types.BoolNull(), PendingOperation: types.StringValue(""), PendingTicket: types.StringValue("")}
+	m := orgModel{ID: types.StringValue(o.Handle), Handle: types.StringValue(o.Handle), Name: types.StringValue(o.Name), DBAName: types.StringValue(o.DBAName), Date: types.StringValue(o.RegistrationDate), CountryCode: types.StringValue(o.CountryCode), CountryName: types.StringValue(o.CountryName), CountryCode3: types.StringValue(o.CountryCode3), CountryCallingCode: types.StringValue(o.CountryCallingCode), City: types.StringValue(o.City), Subdivision: types.StringValue(o.Subdivision), PostalCode: types.StringValue(o.PostalCode), TaxID: types.StringValue(o.TaxID), RWhoisURL: types.StringValue(o.RWhoisURL), Accept: types.BoolNull(), PendingOperation: types.StringValue(""), PendingTicket: types.StringValue("")}
 	if o.AcceptReassignments != nil {
 		m.Accept = types.BoolValue(*o.AcceptReassignments)
 	}
@@ -171,8 +175,10 @@ func pendingOrg(m orgModel, op string, result *arin.OrganizationWriteResult) org
 			m.ID = types.StringValue(fmt.Sprintf("pending:%x", sum[:12]))
 		}
 	}
-	if m.CountryName.IsUnknown() || m.CountryName.IsNull() {
-		m.CountryName = types.StringValue("")
+	for _, value := range []*types.String{&m.CountryName, &m.CountryCode3, &m.CountryCallingCode} {
+		if value.IsUnknown() || value.IsNull() {
+			*value = types.StringValue("")
+		}
 	}
 	if m.Date.IsUnknown() || m.Date.IsNull() {
 		m.Date = types.StringValue("")
@@ -304,6 +310,8 @@ func (r *orgResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	m.ID = old.ID
 	m.Date = old.Date
 	m.CountryName = old.CountryName
+	m.CountryCode3 = old.CountryCode3
+	m.CountryCallingCode = old.CountryCallingCode
 	o, d := m.api(ctx)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {

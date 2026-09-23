@@ -62,9 +62,14 @@ func TestLiveWhoisLookups(t *testing.T) {
 				address := "data.arin_" + spec.Name + "." + tc.label
 				previous = address
 				checks = append(checks, resource.TestCheckResourceAttrSet(address, "whois_xml"))
-				for _, field := range []string{"name", "first_name", "start_address", "end_address", "parent_org_handle"} {
+				for _, field := range []string{"name", "first_name", "start_address", "end_address", "parent_org_handle", "country_name", "country_code3", "country_calling_code"} {
 					if value, ok := expected[field].(string); ok {
 						checks = append(checks, resource.TestCheckResourceAttr(address, field, value))
+					}
+				}
+				if tc.kind == "org" || tc.kind == "poc" || tc.kind == "customer" {
+					for _, field := range []string{"country_name", "country_code3", "country_calling_code"} {
+						checks = append(checks, resource.TestCheckResourceAttrSet(address, field))
 					}
 				}
 				if tc.label == "signed_domain" {

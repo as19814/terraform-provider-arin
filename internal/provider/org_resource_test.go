@@ -84,6 +84,9 @@ func (f *orgFake) handler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(405)
 		return
 	}
+	if r.Method == "POST" || r.Method == "PUT" {
+		f.body = strings.Replace(f.body, "</iso3166-1>", "<name>UNITED STATES</name><code3>USA</code3><e164>1</e164></iso3166-1>", 1)
+	}
 	if pending {
 		w.WriteHeader(202)
 		fmt.Fprint(w, `<ticket xmlns="http://www.arin.net/regrws/core/v1"><ticketNo>20260922-X1</ticketNo><webTicketStatus>PENDING_REVIEW</webTicketStatus></ticket>`)
@@ -136,7 +139,7 @@ func TestAccOrgResourceLifecycle(t *testing.T) {
  { handle = "ROUTE-ARIN", function = "R" },
  { handle = "DNS-ARIN", function = "D" }`, 1)
 	resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("test")())}, Steps: []resource.TestStep{
-		{Config: first, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("arin_org.test", "id", "ORG-TEST"), resource.TestCheckResourceAttr("arin_org.test", "pending_operation", ""))},
+		{Config: first, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("arin_org.test", "country_code3", "USA"), resource.TestCheckResourceAttr("arin_org.test", "country_calling_code", "1"), resource.TestCheckResourceAttr("arin_org.test", "id", "ORG-TEST"), resource.TestCheckResourceAttr("arin_org.test", "pending_operation", ""))},
 		{ResourceName: "arin_org.test", ImportState: true, ImportStateVerify: true},
 		{Config: changed, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("arin_org.test", "city", "Changed"), resource.TestCheckResourceAttr("arin_org.test", "comments.#", "0"), resource.TestCheckResourceAttr("arin_org.test", "tax_id", ""), resource.TestCheckResourceAttr("arin_org.test", "accept_reassignments", "false"))},
 		{Config: allRoles, Check: resource.TestCheckResourceAttr("arin_org.test", "poc_links.#", "6")},

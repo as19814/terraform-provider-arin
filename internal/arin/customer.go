@@ -14,10 +14,10 @@ import (
 // Customer contains the complete registration payload. The parent network is a
 // create-only argument and is not returned by the customer API.
 type Customer struct {
-	Handle, Name, ParentOrgHandle, RegistrationDate         string
-	CountryCode, CountryName, City, Subdivision, PostalCode string
-	StreetAddress, Comments                                 []string
-	Private                                                 bool
+	Handle, Name, ParentOrgHandle, RegistrationDate                                           string
+	CountryCode, CountryName, CountryCode3, CountryCallingCode, City, Subdivision, PostalCode string
+	StreetAddress, Comments                                                                   []string
+	Private                                                                                   bool
 }
 type registrationCountryXML struct {
 	Code2 string `xml:"code2"`
@@ -98,7 +98,7 @@ func decodeCustomer(body []byte, handle string) (*Customer, error) {
 		return nil, err
 	}
 	str := func(k string) string { v, _ := values[k].(string); return v }
-	r := &Customer{Handle: str("handle"), Name: str("name"), ParentOrgHandle: str("parent_org_handle"), RegistrationDate: str("registration_date"), CountryCode: str("country_code"), CountryName: str("country_name"), City: str("city"), Subdivision: str("subdivision"), PostalCode: str("postal_code")}
+	r := &Customer{Handle: str("handle"), Name: str("name"), ParentOrgHandle: str("parent_org_handle"), RegistrationDate: str("registration_date"), CountryCode: str("country_code"), CountryName: str("country_name"), CountryCode3: str("country_code3"), CountryCallingCode: str("country_calling_code"), City: str("city"), Subdivision: str("subdivision"), PostalCode: str("postal_code")}
 	private, ok := values["private_customer"].(bool)
 	if !ok || !handlePattern.MatchString(r.Handle) || r.Name == "" || r.RegistrationDate == "" || r.CountryCode == "" || (handle != "" && r.Handle != handle) {
 		return nil, errors.New("ARIN returned an incomplete or mismatched customer")
