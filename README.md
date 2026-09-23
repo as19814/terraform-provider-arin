@@ -245,7 +245,7 @@ metadata resource when Terraform also manages the owning ROA or bundle.
 
 ## Next steps
 
-Extend managed-resource support to additional IRR objects, organizations, contacts, and hosted RPKI, with explicit lifecycle semantics and OT&E validation. Network and reverse DNS management are implemented. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
+Continue the [coverage inventory](docs/reference/implementation-status.md): finish delegated RPKI recovery and trust-anchor handling, verify signed interoperability once sandbox enrollment is available, and close the remaining organization, ticket and account-access validation gaps. IRR, organization, contact, hosted RPKI and ticket resources already have documented lifecycle behavior and tests.
 
 Start with the [API index](docs/reference/arin-api/README.md), [provider notes](docs/reference/arin-api/PROVIDER-NOTES.md), and [schema findings](docs/reference/arin-api/schemas/README.md).
 

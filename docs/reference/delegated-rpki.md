@@ -1963,10 +1963,20 @@ chain, independent of local directory names. Terraform acceptance tests cover
 input mapping, clean plans, cache relocation, refreshed chain/identity changes,
 validation failures and rejection of empty discovery results. Use an independently
 available certificate when feeding its output into a certificate resource to avoid
-a dependency cycle. Native intermediate discovery remains unverified.
+a dependency cycle.
 
 On 2026-09-23 the credential-free public OT&E repository test also passed direct-child
 issuer discovery against the TAL-pinned anchor, reusing persistent RRDP data and
 durable manifest history. The snapshot contained 235,888 objects and 510,127,932
 decoded bytes; one published child path was validated. This native test covers a
 one-link path, not intermediate issuer selection. It passed in 19.05 seconds.
+
+The public test was then extended to select a real descendant of the validated
+root child and discover its intermediate through AIA within the configured
+repository. It passed in 24.83 seconds on 2026-09-23, returning exactly the
+expected intermediate and pinned anchor, with current manifests, CRLs, resource
+authorization and durable history checked for both publication levels. This
+verifies native three-certificate discovery using a shared notification URL.
+Distinct-repository discovery and rejection cases retain signed TLS fixture
+coverage. This does not verify native delegated provisioning or publication
+mutations, which still require enrollment.

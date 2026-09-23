@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -209,6 +210,14 @@ func TestOTEPublicRPKIRepository(t *testing.T) {
 	}
 	history := privateExchangeDir(t)
 	children := 0
+	discoveredIntermediates := 0
+	var certificateURIs []string
+	for uri := range spool.entries {
+		if strings.HasSuffix(uri, ".cer") {
+			certificateURIs = append(certificateURIs, uri)
+		}
+	}
+	sort.Strings(certificateURIs)
 	for name, data := range publication.Files {
 		if !strings.HasSuffix(name, ".cer") {
 			continue
@@ -238,10 +247,43 @@ func TestOTEPublicRPKIRepository(t *testing.T) {
 		if err != nil || len(issuers) != 1 || !bytes.Equal(issuers[0].Raw, anchor.Raw) {
 			t.Fatal("discovered chain does not match the pinned anchor")
 		}
+		// Select a real descendant of this already validated issuer. Discovery
+		// must retrieve the intermediate through AIA and authenticate both
+		// publication levels; this is distinct from returning the pinned root.
+		for _, uri := range certificateURIs {
+			raw, err := spool.ReadObject(uri)
+			if err != nil {
+				t.Fatal(err)
+			}
+			descendant, err := x509.ParseCertificate(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(descendant.AuthorityKeyId, child.SubjectKeyId) || descendant.CheckSignatureFrom(child) != nil {
+				continue
+			}
+			chain, err := discoverRPKIIssuerChain(ctx, string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: descendant.Raw})), RPKICertificateValidation{
+				AnchorPEM:     string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: anchor.Raw})),
+				Notifications: []string{notificationURI, notificationURI}, CacheDirectory: directory, HistoryDirectory: history,
+			}, fetchedAt, client)
+			if err != nil {
+				t.Fatalf("native intermediate issuer discovery: %v", err)
+			}
+			issuers, err := rpkiPEMCertificates(chain, 2)
+			if err != nil || len(issuers) != 2 || !bytes.Equal(issuers[0].Raw, child.Raw) || !bytes.Equal(issuers[1].Raw, anchor.Raw) {
+				t.Fatal("discovered intermediate chain differs from verified issuers")
+			}
+			discoveredIntermediates++
+			break
+		}
 		children++
 	}
 	if children == 0 {
 		t.Fatal("no published child CA to validate")
 	}
+	if discoveredIntermediates == 0 {
+		t.Fatal("no published descendant available for intermediate discovery")
+	}
+	t.Logf("discovered and validated %d intermediate issuer paths", discoveredIntermediates)
 	t.Logf("validated root manifest/CRL and %d child CA paths; discovered direct-child issuer chains and reopened durable history", children)
 }
