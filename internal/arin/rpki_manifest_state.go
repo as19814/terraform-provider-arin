@@ -41,69 +41,93 @@ func verifyAndRecordRPKIManifestPath(directory string, path []*x509.Certificate,
 
 // The extra check runs on resolved resources before any history is committed.
 func verifyAndRecordRPKIManifestPathWithCheck(directory string, path []*x509.Certificate, anchor *x509.Certificate, publications []rpkiPathPublication, now time.Time, check func(*rpkiCertificateResources) error) (resources *rpkiCertificateResources, err error) {
+	err = withRPKIManifestHistory(directory, anchor, func(history *rpkiManifestHistory) error {
+		var e error
+		resources, e = verifyRPKIManifestPath(path, anchor, publications, now)
+		if e != nil {
+			return e
+		}
+		if check != nil {
+			if e := check(resources); e != nil {
+				return e
+			}
+		}
+		for i, p := range publications {
+			if e := rememberRPKIManifest(history, path[i+1].Raw, p); e != nil {
+				return e
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resources, nil
+}
+
+// withRPKIManifestHistory commits all verified evidence together under one anchor lock.
+func withRPKIManifestHistory(directory string, anchor *x509.Certificate, check func(*rpkiManifestHistory) error) (err error) {
 	if !filepath.IsAbs(directory) || anchor == nil || len(anchor.Raw) == 0 || len(anchor.Raw) > 512000 {
-		return nil, errRPKIManifestState
+		return errRPKIManifestState
 	}
 	info, e := os.Lstat(directory)
 	if e != nil || !info.IsDir() || info.Mode().Perm()&0077 != 0 {
-		return nil, errRPKIManifestState
+		return errRPKIManifestState
 	}
 	anchorID := rpkiManifestDigest(anchor.Raw)
 	statePath := filepath.Join(directory, "rpki-manifests-"+anchorID+".json")
 	lock := statePath + ".lock"
 	if os.Mkdir(lock, 0700) != nil {
-		return nil, errRPKIManifestState
+		return errRPKIManifestState
 	}
 	defer func() {
 		if os.Remove(lock) != nil || syncRPKIExchangeDirectory(directory) != nil {
-			resources = nil
 			err = errRPKIManifestState
 		}
 	}()
 	if syncRPKIExchangeDirectory(directory) != nil {
-		return nil, errRPKIManifestState
+		return errRPKIManifestState
 	}
 	history, e := readRPKIManifestHistory(statePath, anchorID)
 	if e != nil {
-		return nil, e
+		return e
 	}
-	resources, e = verifyRPKIManifestPath(path, anchor, publications, now)
-	if e != nil {
-		return nil, e
+	if e := check(&history); e != nil {
+		return e
 	}
-	if check != nil {
-		if e := check(resources); e != nil {
-			return nil, e
-		}
-	}
-	for i, p := range publications {
-		issuer, e := x509.ParseCertificate(path[i+1].Raw)
-		if e != nil {
-			return nil, errRPKIManifestState
-		}
-		scope, _ := json.Marshal([]string{rpkiManifestDigest(issuer.RawSubjectPublicKeyInfo), p.ManifestURI})
-		id := rpkiManifestDigest(scope)
-		m, e := decodeRPKIManifest(p.ManifestDER)
-		if e != nil {
-			return nil, e
-		}
-		next := rpkiManifestWatermark{Number: m.Content.Number.String(), ThisUpdate: m.Content.ThisUpdate.UTC(), SHA256: rpkiManifestDigest(p.ManifestDER)}
-		if old, exists := history.Entries[id]; exists {
-			oldNumber, _ := new(big.Int).SetString(old.Number, 10)
-			comparison := m.Content.Number.Cmp(oldNumber)
-			if comparison < 0 || (comparison == 0 && (next.SHA256 != old.SHA256 || !next.ThisUpdate.Equal(old.ThisUpdate))) || (comparison > 0 && !next.ThisUpdate.After(old.ThisUpdate)) {
-				return nil, errRPKIManifestState
-			}
-		}
-		history.Entries[id] = next
-	}
+
 	if len(history.Entries) > 4096 {
-		return nil, errRPKIManifestState
+		return errRPKIManifestState
 	}
 	if e := saveRPKIManifestHistory(statePath, history); e != nil {
-		return nil, e
+		return e
 	}
-	return resources, nil
+	return nil
+}
+
+// rememberRPKIManifest must only receive evidence authenticated by the caller.
+func rememberRPKIManifest(history *rpkiManifestHistory, issuerDER []byte, p rpkiPathPublication) error {
+	issuer, e := x509.ParseCertificate(issuerDER)
+	if e != nil {
+		return errRPKIManifestState
+	}
+
+	scope, _ := json.Marshal([]string{rpkiManifestDigest(issuer.RawSubjectPublicKeyInfo), p.ManifestURI})
+	id := rpkiManifestDigest(scope)
+	m, e := decodeRPKIManifest(p.ManifestDER)
+	if e != nil {
+		return e
+	}
+	next := rpkiManifestWatermark{Number: m.Content.Number.String(), ThisUpdate: m.Content.ThisUpdate.UTC(), SHA256: rpkiManifestDigest(p.ManifestDER)}
+	if old, exists := history.Entries[id]; exists {
+		oldNumber, _ := new(big.Int).SetString(old.Number, 10)
+		comparison := m.Content.Number.Cmp(oldNumber)
+		if comparison < 0 || (comparison == 0 && (next.SHA256 != old.SHA256 || !next.ThisUpdate.Equal(old.ThisUpdate))) || (comparison > 0 && !next.ThisUpdate.After(old.ThisUpdate)) {
+			return errRPKIManifestState
+		}
+	}
+	history.Entries[id] = next
+	return nil
 }
 
 func readRPKIManifestHistory(path, anchor string) (rpkiManifestHistory, error) {

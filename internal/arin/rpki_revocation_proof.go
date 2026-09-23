@@ -93,3 +93,27 @@ func checkRPKIRevocationProof(der []byte, ski string, issuers []*x509.Certificat
 	}
 	return &rpkiRevocationProof{CertificateSHA256: rpkiManifestDigest(certificate.Raw), IssuerSHA256: rpkiManifestDigest(issuer.Raw), CRLSHA256: rpkiManifestDigest(checked.CRL.Raw), ManifestSHA256: rpkiManifestDigest(publication.ManifestDER), CRLURI: checked.CRLURI}, nil
 }
+
+// verifyAndRecordRPKIRevocationProof checks all supplied evidence and atomically
+// records both upstream manifests and the retiring issuer's own manifest. It
+// shares history with issuance, preventing rollback across the two workflows.
+func verifyAndRecordRPKIRevocationProof(directory string, der []byte, ski string, issuers []*x509.Certificate, anchor *x509.Certificate, upstream []rpkiPathPublication, publication rpkiPathPublication, now time.Time) (*rpkiRevocationProof, error) {
+	var proof *rpkiRevocationProof
+	err := withRPKIManifestHistory(directory, anchor, func(history *rpkiManifestHistory) error {
+		var err error
+		proof, err = checkRPKIRevocationProof(der, ski, issuers, anchor, upstream, publication, now)
+		if err != nil {
+			return err
+		}
+		for i, p := range upstream {
+			if err := rememberRPKIManifest(history, issuers[i+1].Raw, p); err != nil {
+				return err
+			}
+		}
+		return rememberRPKIManifest(history, issuers[0].Raw, publication)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return proof, nil
+}

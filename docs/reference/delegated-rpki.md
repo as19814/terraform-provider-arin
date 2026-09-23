@@ -1513,3 +1513,24 @@ overclaims, tampered CRLs, expired manifests and future revocation times.
 Repository retrieval, durable history integration, reconciliation and native
 verification remain unfinished. The relevant protocol scope is
 [RFC 6492 section 3.5](https://www.rfc-editor.org/rfc/rfc6492.html#section-3.5).
+
+### Durable revocation evidence history
+
+Revocation proof validation now has a durable wrapper. Under the existing
+per-anchor manifest-history lock, it verifies the complete revocation proof and
+records the issuer's own manifest together with every upstream manifest in one
+atomic save. A failed proof or rollback in any member leaves on-disk history
+unchanged. No proof is returned if persistence or lock cleanup fails.
+
+Issuance, refresh and revocation use the same history file and issuer-key/manifest
+URI scopes. The schema is unchanged. A newer revocation manifest therefore
+prevents a later issuance/refresh from accepting the earlier manifest and CRL
+that showed the key as unrevoked. Recovery also cannot ignore a newer upstream
+manifest already recorded by ordinary certificate validation.
+
+Signed tests verify persistence/reopen, idempotent evidence, local and upstream
+rollback rejection, unchanged history after a mixed-version failure, exclusive
+locking and shared watermarks across issuance and revocation. Repository
+retrieval and binding the proof to a fresh signed parent inventory are still
+required before journal reconciliation; native delegated verification remains
+unavailable.
