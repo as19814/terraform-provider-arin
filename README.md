@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twelve managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Thirteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organization POC associations, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -208,6 +208,8 @@ before retrying a failed apply.
 
 [`arin_poc_email`](docs/resources/poc_email.md) and [`arin_poc_phone`](docs/resources/poc_phone.md) manage individual records on existing contacts. They preserve sibling records, support import, and require replacement for changes. Do not overlap their ownership with the full `arin_poc` collections.
 
+[`arin_org_poc`](docs/resources/org_poc.md) manages one organization association for a Tech, NOC, Abuse, Routing or DNS POC. Import existing links first. Destroy removes only the association. Admin changes require a full organization update. Association writes to the same organization are serialized within the provider process because concurrent OT&E writes can lose changes. See the [association evidence and recovery notes](docs/reference/org-pocs.md).
+
 ## Next steps
 
 Extend managed-resource support to additional IRR objects, organizations, contacts, and hosted RPKI, with explicit lifecycle semantics and OT&E validation. Network and reverse DNS management are implemented. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
@@ -253,7 +255,7 @@ outside the repository, exercise nameservers and DS records, restore the origina
 configuration and verify equality. Failed restoration retains the recovery copy
 and prevents overwriting it on a later run. See the
 [DNS lifecycle notes](docs/reference/delegations.md).
-Normal tests and CI skip these sandbox tests.
+Organization association tests create a disposable POC, snapshot the original links outside the repository, exercise all five supported roles, and verify the original links after cleanup. The client and Terraform test packages run sequentially to avoid overlapping snapshots. Normal tests and CI skip these sandbox tests.
 
 OT&E account data and API keys are refreshed from production monthly. If the
 preflight rejects a recently created production key, generate a key in

@@ -106,7 +106,8 @@ verifies absence.
 
 ## Remaining work
 
-Organization association coverage and the final API audit remain. The full
+Organization associations are covered by `arin_org_poc`; see [evidence](org-pocs.md).
+The final API audit remains. The full
 implementation inventory tracks the broader outstanding API families.
 
 References: collected [methods](arin-api/reg-rws/methods.md#pocs) and

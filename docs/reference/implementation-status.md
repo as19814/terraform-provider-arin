@@ -19,8 +19,8 @@ again before declaring full coverage.
 | IRR aut-num | Simple XML resource plus individual/list data sources; all six policies and membership pass OT&E | Advanced RPSL capability |
 | NET records | Read data sources, arin_net and arin_net_metadata; IPv4/IPv6 single/multi-block lifecycles, metadata and POC editing pass OT&E; pending recovery passes mocks | Live asynchronous ticket evidence and remove-with-message workflow; see [evidence](net-registration.md) |
 | Customers | Individual data source and managed recipient resource; mock and OT&E lifecycle pass | Network reassignment integration |
-| Organizations | Individual data source | Creation, update, deletion and POC associations; ticket semantics |
-| POCs | Individual/reference data sources, arin_poc, arin_poc_email and arin_poc_phone; full and individual-contact lifecycles pass OT&E | Organization association coverage and final API audit; see [evidence](pocs.md) |
+| Organizations | Individual data source and arin_org_poc; all five non-admin association roles pass mock and OT&E lifecycles | Full organization creation, update, deletion and Admin POC changes; ticket semantics; see [association evidence](org-pocs.md) |
+| POCs | Individual/reference data sources, arin_poc, arin_poc_email and arin_poc_phone; full and individual-contact lifecycles pass OT&E | Final API audit; see [evidence](pocs.md) |
 | DNS delegations | Read data sources, arin_delegation and arin_delegation_nameserver; full-zone and individual-NS lifecycles pass IPv4/IPv6 OT&E | Final endpoint audit; see [evidence](delegations.md) |
 | Hosted ROAs | Individual and organization list data sources | Transactional create/delete/replacement, import, IRR auto-link support |
 | Hosted ASPAs | Individual and organization list data sources | Transactional create/delete/replacement and import |
@@ -74,6 +74,6 @@ again before declaring full coverage.
 - `make check`: vet, race tests, fake-server acceptance tests and binary build.
 - `make generate`: reproducible provider documentation and examples.
 - `ARIN_TEST_ORG_HANDLE=... make testlive`: explicitly read-only live tests.
-- `ARIN_TEST_ORG_HANDLE=... make testote`: opt-in OT&E mutations on disposable objects; DNS tests snapshot and restore.
+- `ARIN_TEST_ORG_HANDLE=... make testote`: opt-in OT&E mutations on disposable objects; DNS and organization association tests snapshot and restore.
 
 Credentials, live account responses, state and saved plans must not be committed.
