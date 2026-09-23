@@ -46,11 +46,15 @@ func TestPublicReads(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, s := range PublicReads() {
-		result, err := c.ReadRegistration(context.Background(), s, map[string]string{"org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"})
+		result, err := c.ReadRegistration(context.Background(), s, map[string]string{"handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"})
 		if err != nil {
 			t.Fatal(err)
 		}
 		switch s.Name {
+		case "rdap_entity":
+			if result["handle"] != "EXAMPLE-1" || result["vcard_json"] != nil || len(result["emails"].([]any)) != 0 {
+				t.Fatal("incorrect entity with omitted contact fields")
+			}
 		case "rdap_network":
 			if result["handle"] != "NET-192-0-2-0-1" {
 				t.Fatal("incorrect network")
@@ -83,7 +87,7 @@ func TestPublicIncompleteAndMismatchedRecords(t *testing.T) {
 		c, _ := New(Config{RDAPBaseURL: server.URL})
 		for _, s := range PublicReads() {
 			if s.Name == tc.name {
-				if _, err := c.ReadRegistration(context.Background(), s, map[string]string{"org_handle": "EXAMPLE-1", "asn": "64496"}); err == nil {
+				if _, err := c.ReadRegistration(context.Background(), s, map[string]string{"handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496"}); err == nil {
 					t.Errorf("%s accepted incomplete or mismatched response", s.Name)
 				}
 			}

@@ -1,0 +1,19 @@
+{
+ "objectClassName":"entity", "handle":"EXAMPLE-1",
+ "vcardArray":["vcard",[
+  ["version",{},"text","4.0"],
+  ["fn",{},"text","Example Organization"],
+  ["fn",{"language":"fr"},"text","Organisation Exemple"],
+  ["kind",{},"text","org"],
+  ["email",{},"text","noc@example.net"],
+  ["tel",{"type":["work","voice"]},"uri","tel:+1-555-0100"],
+  ["tel",{"type":"fax"},"text","+1-555-0101"],
+  ["adr",{"label":"Example Street\nExample City"},"text",["","",["Building A","Example Street"],"Example City","","12345","US"]],
+  ["x-example",{"x-param":["a","b"]},"unknown","preserved"]
+ ]],
+ "roles":["registrant"],"status":["validated"],
+ "entities":[{"objectClassName":"entity","handle":"EXAMPLE-ARIN","roles":["technical","abuse"]}],
+ "events":[{"eventAction":"registration","eventDate":"2020-01-01T00:00:00Z"}],
+ "remarks":[{"title":"Example","description":["Public synthetic fixture"]}],
+ "x-number":9007199254740993
+}

@@ -29,6 +29,35 @@ and prefix queries for IPv4/IPv6 against OT&E and production. It compares Terraf
 results with separate client reads and verifies clean plans. Both origins passed
 with the API key explicitly unset.
 
+## Implemented entity lookup
+
+`arin_rdap_entity` requests `/registry/entity/HANDLE` for an organization or POC.
+It exposes formatted names, entity kind, email and telephone values, address
+labels, roles, status, events and directly linked entity handles/roles. Collections
+are sorted and deduplicated where appropriate. Missing optional scalar fields
+remain null and missing collections are empty. Handle identity is case-insensitive.
+
+The complete `vcard_json` retains structured addresses, multiple language variants,
+telephone parameters, repeated properties and extensions using the
+[jCard representation](https://www.rfc-editor.org/rfc/rfc7095.html).
+`rdap_json` retains the entire returned entity, including embedded entities,
+public identifiers, remarks, notices, links and extensions. JSON numbers are
+preserved without conversion to floating point. These JSON fields represent the
+returned public record; omitted or private registration details are not inferred.
+No linked records or referrals are followed. Truncation and pagination notices in
+nested entities are errors, as are mismatched identities and malformed jCards.
+
+Fake-server tests cover contact extraction, repeated formatted names, structured
+addresses, extensions, identity failures, nested partial responses, refresh and
+missing records. `TestLiveRDAPEntity` passed organization and discovered POC
+Terraform reads and clean plans against OT&E and production on 2026-09-23,
+with credentials unset. No account payloads are stored in fixtures.
+
+```sh
+ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
+  go test ./internal/provider -run '^TestLiveRDAPEntity$' -count=1 -v
+```
+
 ## Remaining endpoint audit
 
 | Family | Current coverage | Remaining work |
@@ -37,7 +66,7 @@ with the API key explicitly unset.
 | IP network searches | `arin_networks` handles direct registrant inventory | Handle/name search, hierarchy relations, other entity reverse-search filters |
 | ASN lookup | `arin_asn` | Final field audit |
 | ASN searches | `arin_asns` handles direct registrant inventory | Handle/name search and other entity reverse-search filters |
-| Entity lookup | `arin_org_pocs` reads linked public contacts | Full public organization/POC entity representation |
+| Entity lookup | `arin_rdap_entity` exposes contact fields and complete JSON; native organization/POC reads verified | Final endpoint audit |
 | Entity searches | Not implemented | Handle/name searches and complete-result handling |
 | Reverse domain lookup/search | Authenticated DNS data sources exist | Public RDAP domain lookup and hierarchy searches |
 | Standalone nameserver lookup | Unsupported by ARIN RDAP | No data source for an unimplemented operation |
