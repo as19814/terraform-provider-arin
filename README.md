@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 61 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Nineteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs and ASPAs, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes, and advanced RPSL objects, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 66 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Nineteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs and ASPAs, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes, and advanced RPSL objects, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -298,3 +298,20 @@ CI runs on the YYJ self-hosted runners (`runs-on: [self-hosted, yyj]`) inside an
 Public Whois-RWS lookups are available as `arin_whois_org`, `arin_whois_customer`, `arin_whois_poc`, `arin_whois_asn`, `arin_whois_net`, and `arin_whois_delegation`. They expose typed fields and complete `whois_xml`, with optional inline details and no credentials. See the [Whois-RWS coverage notes](docs/reference/whois-rws.md).
 
 Whois relationship data sources cover POC orgs/ASNs/networks, org POCs/ASNs/networks, ASN POCs, network POCs/parent/children/delegations, and delegation networks. Set `show_details = true` for expanded records. Reference results retain handles, available names/address ranges, and POC function codes; other detail fields remain null or empty. The complete response is available as top-level `whois_xml`.
+
+Whois searches are available as `arin_whois_orgs`, `arin_whois_customers`,
+`arin_whois_pocs`, `arin_whois_asns`, and `arin_whois_nets`. Combine documented
+filters in a map, for example:
+
+```hcl
+data "arin_whois_orgs" "matching" {
+  filters = {
+    handle = "FT-684"
+    name   = "Foundability*"
+  }
+  show_details = true
+}
+```
+
+Unknown filter names and unsupported wildcard positions are rejected locally.
+Truncated searches fail instead of returning an incomplete inventory.

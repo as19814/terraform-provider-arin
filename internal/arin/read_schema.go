@@ -276,6 +276,12 @@ func (s ReadSpec) Validate(params map[string]string) error {
 		case "rdap_domain":
 			_, err := rdapDomainName(value)
 			valid = err == nil
+		case "whois_filters":
+			_, err := whoisSearchFilters(s.Name, value)
+			if err != nil {
+				return err
+			}
+			valid = true
 		case "rdap_search":
 			valid = validRDAPSearch(value)
 		case "ip_network":
@@ -319,7 +325,7 @@ func (s ReadSpec) Validate(params map[string]string) error {
 	return nil
 }
 
-// ReadRegistration issues exactly one documented read request. It cannot create
+// ReadRegistration performs documented read operations. It cannot create
 // reports, update records, follow response links, or fetch arbitrary URLs.
 func (c *Client) ReadRegistration(ctx context.Context, spec ReadSpec, params map[string]string) (map[string]any, error) {
 	if err := spec.Validate(params); err != nil {

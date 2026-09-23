@@ -22,7 +22,9 @@ var whoisAddressFields = []Field{
 	lines("street_address", "streetAddress"), text("city", "city"), text("state", "iso3166-2"), text("postal_code", "postalCode"), text("country_code", "iso3166-1/code2"),
 }
 
-func WhoisReads() []ReadSpec { return append(WhoisRecordReads(), WhoisRelationshipReads()...) }
+func WhoisReads() []ReadSpec {
+	return append(append(WhoisRecordReads(), WhoisRelationshipReads()...), WhoisSearchReads()...)
+}
 
 func WhoisRecordReads() []ReadSpec {
 	identity := []Field{required(text("handle", "handle")), text("name", "name")}
@@ -97,6 +99,9 @@ func normalizeWhoisTree(node *xmlNode) error {
 func (c *Client) readWhois(ctx context.Context, spec ReadSpec, p map[string]string) (map[string]any, error) {
 	if c.whoisBaseURL == "" {
 		return nil, errors.New("whois_base_url is required for Whois reads with a custom base_url")
+	}
+	if info, ok := whoisSearch(spec.Name); ok {
+		return c.readWhoisSearch(ctx, spec, info, p)
 	}
 	if info, ok := whoisRelationship(spec.Name); ok {
 		return c.readWhoisRelated(ctx, spec, info, p)

@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -38,6 +39,8 @@ func (d *registrationDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 			description += " Defaults to `" + in.Default + "`."
 		}
 		switch in.Kind {
+		case "whois_filters":
+			attributes[in.Name] = schema.MapAttribute{Required: true, ElementType: types.StringType, MarkdownDescription: description}
 		case "bool":
 			attributes[in.Name] = schema.BoolAttribute{Required: in.Default == "", Optional: in.Default != "", Sensitive: d.spec.Sensitive, MarkdownDescription: description}
 		case "asn", "id":
@@ -64,6 +67,28 @@ func (d *registrationDataSource) Read(ctx context.Context, req datasource.ReadRe
 	for _, in := range d.spec.Inputs {
 		value := in.Default
 		switch in.Kind {
+		case "whois_filters":
+			var v types.Map
+			resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root(in.Name), &v)...)
+			if v.IsUnknown() || v.IsNull() {
+				resp.Diagnostics.AddAttributeError(path.Root(in.Name), "Invalid filters", "Search filters must be known and non-null before reading ARIN.")
+				return
+			}
+			filters := map[string]string{}
+			for name, item := range v.Elements() {
+				str, ok := item.(types.String)
+				if !ok || str.IsNull() || str.IsUnknown() {
+					resp.Diagnostics.AddAttributeError(path.Root(in.Name), "Invalid filter", "Every search filter value must be a known, non-null string.")
+					return
+				}
+				filters[name] = str.ValueString()
+			}
+			encoded, err := json.Marshal(filters)
+			if err != nil {
+				resp.Diagnostics.AddError("Invalid filters", err.Error())
+				return
+			}
+			value = string(encoded)
 		case "bool":
 			var v types.Bool
 			resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root(in.Name), &v)...)
@@ -159,6 +184,9 @@ func outputFields(spec arin.ReadSpec) []arin.Field {
 		}
 		if strings.HasPrefix(spec.Name, "whois_") {
 			description = "Related records ordered deterministically. Distinct POC role links are preserved. Reference responses omit detail-only fields; show_details requests full records. Confirmed no matches produce an empty list."
+		}
+		if len(spec.Inputs) > 0 && spec.Inputs[0].Kind == "whois_filters" {
+			description = "Matching records ordered deterministically. Reference responses omit detail-only fields; show_details requests full records. Recognized no-results responses produce an empty list. Truncation is an error."
 		}
 		return append([]arin.Field{{Name: spec.Output, Kind: arin.ObjectsKind, Fields: spec.Fields, Description: description}}, spec.ResponseFields...)
 	}

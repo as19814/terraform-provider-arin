@@ -92,6 +92,10 @@ func (c *Client) readWhoisRelated(ctx context.Context, spec ReadSpec, info whois
 		}
 		return map[string]any{spec.Output: []any{}, "whois_xml": nil}, nil
 	}
+	return decodeWhoisCollection(body, spec, info, identity, p["show_details"] == "true")
+}
+
+func decodeWhoisCollection(body []byte, spec ReadSpec, info whoisRelation, identity string, details bool) (map[string]any, error) {
 	root, err := parseXML(body)
 	if err != nil {
 		return nil, err
@@ -128,7 +132,7 @@ func (c *Client) readWhoisRelated(ctx context.Context, spec ReadSpec, info whois
 		if !full && !reference {
 			return nil, errors.New("ARIN returned an unexpected related record type")
 		}
-		if p["show_details"] == "true" && !full {
+		if details && !full {
 			return nil, errors.New("ARIN returned a reference instead of requested Whois details")
 		}
 		var record map[string]any
@@ -158,7 +162,7 @@ func (c *Client) readWhoisRelated(ctx context.Context, spec ReadSpec, info whois
 				functions = append(functions, value)
 			}
 		}
-		if info.target == "poc" && full {
+		if info.owner != "" && info.target == "poc" && full {
 			for _, link := range nodesAt(node, info.owner+"s/"+info.owner+"PocLinkRef") {
 				attrs, err := decodeFields(link, []Field{required(text("handle", "@handle")), text("function", "@relPocFunction")})
 				if err != nil {

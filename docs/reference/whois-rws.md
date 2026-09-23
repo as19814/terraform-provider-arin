@@ -24,7 +24,7 @@ errors for these individual lookups.
 Optional `show_details = true` sends `showDetails=true`. Additional inline records
 remain in the complete XML. Any nested `limitExceeded=true` rejects the entire
 response, even when the primary record appears complete. Invalid limit flags also
-remain errors. Search operations are separate remaining work.
+remain errors. Search data sources are described below.
 
 ## Relationships
 
@@ -62,6 +62,45 @@ and exact no-results messages trigger an independent owner lookup. A confirmed
 existing owner permits an empty list and null `whois_xml`; unknown owners,
 unrecognized 404 pages, partial responses and referrals remain errors. An org's
 POCs are not automatically inherited by its network/ASN relationship endpoints.
+
+## Searches
+
+| Data source | Endpoint | Filter keys |
+| --- | --- | --- |
+| `arin_whois_orgs` | `/rest/orgs` | `handle`, `name`, `dba` |
+| `arin_whois_customers` | `/rest/customers` | `handle`, `name` |
+| `arin_whois_pocs` | `/rest/pocs` | `handle`, `domain`, `first`, `middle`, `last`, `company`, `city` |
+| `arin_whois_asns` | `/rest/asns` | `handle`, `name` |
+| `arin_whois_nets` | `/rest/nets` | `handle`, `name` |
+
+A required `filters` map supplies one or more predicates, combined with AND.
+Values match case-insensitively and allow one trailing `*` for a prefix search.
+Filter keys are checked locally: native OT&E silently ignores unknown keys.
+Empty/null values, control characters and unsupported wildcard positions are
+rejected. Keys are sorted and values are escaped independently as URL matrix
+parameters, preserving spaces, Unicode and punctuation without injecting paths,
+additional predicates or query options.
+
+Searches return references by default and full records with `show_details = true`.
+Typed fields use the same record validators as lookups and relationships. Full
+XML is retained once at the top level. A recognized native Whois no-results
+HTTP 404 produces an empty list and null XML; other HTTP errors remain errors.
+Any nested truncation rejects the response. No pagination or response links are
+followed, and the provider never labels a capped result a complete inventory.
+
+On 2026-09-23, native OT&E accepted all documented secondary filters: adding an
+impossible value to a known handle produced no matches instead of ignoring the
+filter. Public handle searches and combined filters also passed Terraform on both
+origins in reference and detail modes. Prefix searches, empty results, clean plans
+and rejection of an over-limit `A*` org search passed. `TestLiveWhoisSearches`
+retains these checks; fixtures and state contain no committed live payloads.
+
+The guide lists `/rdns` with a "delegation name" parameter without spelling out
+a matrix key. Native `/rest/rdns;name=...`, `;dname=...` and `;delegationName=...`
+returned HTTP 400 on both origins, while `/rest/rdns/NAME` returned the individual
+delegation. OT&E `/rest/rdns/NAME*` returned 404. A separate delegation search is
+not claimed as supported; the existing delegation lookup and network-to-delegation
+relationship are available. Keep this ambiguity in the final endpoint audit.
 
 ## Origins and XML handling
 
@@ -118,9 +157,17 @@ ARIN_LIVE_TESTS=1 TF_ACC=1 go test ./internal/provider \
   -run '^TestLiveWhois' -v -count=1 -timeout 5m
 ```
 
+## Initial IP/CIDR observations
+
+Read-only OT&E probes on 2026-09-23 returned full `net` objects for
+`/rest/ip/23.189.120.1`, `/rest/ip/2602:f805::1` and
+`/rest/cidr/23.189.120.0/24`. CIDR `/less` and `/more` returned complete `nets`
+collections for both the IPv4 /24 and `2602:f805::/32`. Appending `/less` or
+`/more` to the IPv4 IP-address path returned 404. These observations guide the
+pending implementation; no IP/CIDR Whois data source is claimed yet.
+
 ## Remaining coverage
 
-- Documented handle/name and other field searches, including wildcard and
-  multi-predicate behavior, reference/full-detail modes, and truncated results.
+- Resolve the guide's ambiguous delegation-search entry during the final audit.
 - IP address and CIDR lookup, including more/less-specific relations.
 - Remaining query options and final field/endpoint audit against native behavior.

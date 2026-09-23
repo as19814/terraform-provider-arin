@@ -2,8 +2,10 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -143,6 +145,97 @@ func TestLiveWhoisRelationships(t *testing.T) {
 				}
 			}
 			resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("live-test")())}, Steps: []resource.TestStep{{Config: config, Check: resource.ComposeAggregateTestCheckFunc(checks...)}, {Config: config, PlanOnly: true}}})
+		})
+	}
+}
+
+func TestLiveWhoisSearches(t *testing.T) {
+	if os.Getenv("ARIN_LIVE_TESTS") != "1" || os.Getenv("TF_ACC") != "1" {
+		t.Skip("requires read-only live opt-in")
+	}
+	for _, key := range []string{"ARIN_API_KEY", "ARIN_BASE_URL", "ARIN_RDAP_BASE_URL", "ARIN_WHOIS_BASE_URL"} {
+		t.Setenv(key, "")
+	}
+	for _, origin := range []string{arin.WhoisOTEURL, arin.WhoisProductionURL} {
+		t.Run(origin, func(t *testing.T) {
+			c, err := arin.New(arin.Config{WhoisBaseURL: origin})
+			if err != nil {
+				t.Fatal(err)
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+			config := fmt.Sprintf("provider \"arin\" {whois_base_url=%q}\n", origin)
+			previous := ""
+			checks := []resource.TestCheckFunc{}
+			for _, spec := range arin.WhoisSearchReads() {
+				kind := strings.TrimSuffix(strings.TrimPrefix(spec.Name, "whois_"), "s")
+				handle := map[string]string{"org": "FT-684", "customer": "C00000055", "poc": "KOSTE-ARIN", "asn": "AS19814", "net": "NET-23-189-120-0-1"}[kind]
+				var individual arin.ReadSpec
+				for _, r := range arin.WhoisRecordReads() {
+					if r.Name == "whois_"+kind {
+						individual = r
+					}
+				}
+				record, err := c.ReadRegistration(ctx, individual, map[string]string{"handle": handle, "show_details": "false"})
+				if err != nil {
+					t.Fatal(err)
+				}
+				name := record["name"]
+				nameKey := "name"
+				if kind == "poc" {
+					name = record["last_name"]
+					nameKey = "last"
+				}
+				if name == nil {
+					t.Fatal("missing native search fixture name")
+				}
+				// Verify every documented secondary filter is honored, rather than silently ignored.
+				keys := map[string][]string{"org": {"name", "dba"}, "customer": {"name"}, "poc": {"domain", "first", "middle", "last", "company", "city"}, "asn": {"name"}, "net": {"name"}}[kind]
+				for _, key := range keys {
+					encoded, _ := json.Marshal(map[string]string{"handle": handle, key: "ZZZ-CODEX-NO-MATCH-19814"})
+					result, err := c.ReadRegistration(ctx, spec, map[string]string{"filters": string(encoded), "show_details": "false"})
+					if err != nil {
+						t.Fatalf("%s %s filter: %v", kind, key, err)
+					}
+					if len(result[spec.Output].([]any)) != 0 {
+						t.Fatalf("%s %s filter was ignored", kind, key)
+					}
+				}
+				for _, mode := range []string{"exact", "prefix", "combined", "empty"} {
+					filters := map[string]string{"handle": handle}
+					if mode == "prefix" {
+						filters["handle"] += "*"
+					}
+					if mode == "combined" {
+						filters[nameKey] = name.(string)
+					}
+					if mode == "empty" {
+						filters[nameKey] = "ZZZ-CODEX-NO-MATCH-19814"
+					}
+					encoded, _ := json.Marshal(filters)
+					for _, details := range []bool{false, true} {
+						label := fmt.Sprintf("%s_%t", mode, details)
+						address := "data.arin_" + spec.Name + "." + label
+						config += fmt.Sprintf("data %q %q {\n filters=%s\n show_details=%t\n", "arin_"+spec.Name, label, encoded, details)
+						if previous != "" {
+							config += " depends_on=[" + previous + "]\n"
+						}
+						config += "}\n"
+						previous = address
+						if mode == "empty" {
+							checks = append(checks, resource.TestCheckResourceAttr(address, spec.Output+".#", "0"), resource.TestCheckNoResourceAttr(address, "whois_xml"))
+						} else {
+							checks = append(checks, resource.TestCheckResourceAttr(address, spec.Output+".#", "1"), resource.TestCheckResourceAttr(address, spec.Output+".0.handle", handle), resource.TestCheckResourceAttrSet(address, "whois_xml"))
+							if details && kind != "poc" {
+								checks = append(checks, resource.TestCheckResourceAttr(address, spec.Output+".0.name", name.(string)))
+							}
+						}
+					}
+				}
+			}
+			resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("live-test")())}, Steps: []resource.TestStep{{Config: config, Check: resource.ComposeAggregateTestCheckFunc(checks...)}, {Config: config, PlanOnly: true}}})
+			// Broad searches must fail rather than commit ARIN's capped inventory to state.
+			resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("live-test")())}, Steps: []resource.TestStep{{Config: fmt.Sprintf("provider \"arin\" {whois_base_url=%q}\ndata \"arin_whois_orgs\" \"partial\" {filters={handle=\"A*\"}}", origin), ExpectError: regexp.MustCompile("truncated")}}})
 		})
 	}
 }
