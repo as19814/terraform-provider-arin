@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Ten managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twelve managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -205,6 +205,8 @@ before retrying a failed apply.
 [`arin_delegation_nameserver`](docs/resources/delegation_nameserver.md) manages one nameserver without changing sibling nameservers or DS records. Its optional TTL resets to inheritance when omitted. Use either full-delegation management or individual nameserver resources for a zone, never both.
 
 [`arin_poc`](docs/resources/poc.md) manages role and person contacts, including address, email and phone collections. New contacts are linked to the API account. Changes to contact type or first/middle/last names require replacement; remove dependent associations before destroy.
+
+[`arin_poc_email`](docs/resources/poc_email.md) and [`arin_poc_phone`](docs/resources/poc_phone.md) manage individual records on existing contacts. They preserve sibling records, support import, and require replacement for changes. Do not overlap their ownership with the full `arin_poc` collections.
 
 ## Next steps
 

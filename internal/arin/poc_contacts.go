@@ -24,7 +24,7 @@ func (c *Client) AddPOCEmail(ctx context.Context, handle, email string) (*POC, e
 	if err := ValidatePOCHandle(handle); err != nil {
 		return nil, err
 	}
-	if err := validatePOCEmail(email); err != nil {
+	if err := ValidatePOCEmail(email); err != nil {
 		return nil, err
 	}
 	p, err := c.mutatePOCContact(ctx, http.MethodPost, "/rest/poc/"+url.PathEscape(handle)+"/email/"+url.PathEscape(email), handle, nil)
@@ -42,7 +42,7 @@ func (c *Client) DeletePOCEmail(ctx context.Context, handle, email string) (*POC
 	if err := ValidatePOCHandle(handle); err != nil {
 		return nil, err
 	}
-	if err := validatePOCEmail(email); err != nil {
+	if err := ValidatePOCEmail(email); err != nil {
 		return nil, err
 	}
 	p, err := c.mutatePOCContact(ctx, http.MethodDelete, "/rest/poc/"+url.PathEscape(handle)+"/email/"+url.PathEscape(email), handle, nil)

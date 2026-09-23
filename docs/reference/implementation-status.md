@@ -20,7 +20,7 @@ again before declaring full coverage.
 | NET records | Read data sources, arin_net and arin_net_metadata; IPv4/IPv6 single/multi-block lifecycles, metadata and POC editing pass OT&E; pending recovery passes mocks | Live asynchronous ticket evidence and remove-with-message workflow; see [evidence](net-registration.md) |
 | Customers | Individual data source and managed recipient resource; mock and OT&E lifecycle pass | Network reassignment integration |
 | Organizations | Individual data source | Creation, update, deletion and POC associations; ticket semantics |
-| POCs | Individual/reference data sources and arin_poc; role/person lifecycles and individual email/phone client operations pass OT&E | Individual phone/email Terraform resources and organization association coverage; see [evidence](pocs.md) |
+| POCs | Individual/reference data sources, arin_poc, arin_poc_email and arin_poc_phone; full and individual-contact lifecycles pass OT&E | Organization association coverage and final API audit; see [evidence](pocs.md) |
 | DNS delegations | Read data sources, arin_delegation and arin_delegation_nameserver; full-zone and individual-NS lifecycles pass IPv4/IPv6 OT&E | Final endpoint audit; see [evidence](delegations.md) |
 | Hosted ROAs | Individual and organization list data sources | Transactional create/delete/replacement, import, IRR auto-link support |
 | Hosted ASPAs | Individual and organization list data sources | Transactional create/delete/replacement and import |

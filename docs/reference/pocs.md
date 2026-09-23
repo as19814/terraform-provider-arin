@@ -77,12 +77,37 @@ Mock tests cover request paths, validation, unrelated-record preservation,
 no retries after mutation errors, and rejection of success responses whose
 requested changes cannot be observed.
 
+## Individual Terraform resources
+
+`arin_poc_email` imports as `POC-HANDLE/EMAIL`. `arin_poc_phone` imports as
+`POC-HANDLE/TYPE/NUMBER`. Both require an existing POC, refuse to adopt existing
+records without import, and remove only their own record on destroy. Multiple
+individual resources may share a POC when they manage different records; they
+must not overlap the complete collections owned by `arin_poc`.
+
+All configured changes require replacement. For a phone, extension changes use
+delete then add, since the native addition endpoint ignores extension updates.
+Do not use `create_before_destroy` for an extension change on the same type and
+number. ARIN may reject removal of contact details required for a valid POC;
+full-POC updates can change an extension without removing the phone first.
+
+The identity is saved even if creation has an uncertain outcome. Refresh can
+reconcile a lost response. Access errors, conflicts and unconfirmed deletion
+retain state. Identity and contact values are sensitive in Terraform output,
+while still stored in state.
+
+Mock acceptance tests cover multiple simultaneous records, import, email and
+phone-extension replacement, extension clearing, stable plans, missing-record
+recreation, drift and sibling preservation. State tests cover import guards,
+uncertain creation, access errors and unconfirmed deletion. The combined OT&E
+Terraform lifecycle passes against a disposable POC. After resource destroy,
+the complete POC is compared with its baseline; cleanup deletes the POC and
+verifies absence.
+
 ## Remaining work
 
-Individual phone/email Terraform resources and their ownership boundaries
-remain to be implemented. Organization associations will be covered with the
-organization resources. The full implementation inventory remains authoritative
-for broader outstanding API families.
+Organization association coverage and the final API audit remain. The full
+implementation inventory tracks the broader outstanding API families.
 
 References: collected [methods](arin-api/reg-rws/methods.md#pocs) and
 [payload](arin-api/reg-rws/payloads.md#poc-payload) guides.

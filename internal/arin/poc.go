@@ -51,7 +51,7 @@ type pocXML struct {
 	Phones           []pocPhoneXML          `xml:"phones>phone"`
 }
 
-func validatePOCEmail(email string) error {
+func ValidatePOCEmail(email string) error {
 	parsed, err := mail.ParseAddress(email)
 	if err != nil || parsed.Address != email || strings.ContainsAny(email, "\r\n") {
 		return errors.New("POC email must be a plain email address")
@@ -93,7 +93,7 @@ func (p POC) Validate() error {
 	}
 	seen := map[string]bool{}
 	for _, e := range p.Emails {
-		if err := validatePOCEmail(e); err != nil {
+		if err := ValidatePOCEmail(e); err != nil {
 			return err
 		}
 		if seen[e] {
