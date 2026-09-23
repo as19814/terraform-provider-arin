@@ -351,4 +351,4 @@ wrong families/ranges, disjoint blocks, empty/error results and URL options.
 ## Remaining coverage
 
 - Resolve the guide's ambiguous delegation-search entry during the final audit.
-- Final field/endpoint audit against native behavior.
+- The [operation and field reconciliation](whois-rws-coverage.md) maps all 27 data sources to the guide and native evidence. Optional fields and unpublished endpoint contracts remain subject to the stated limits.
