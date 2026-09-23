@@ -91,13 +91,15 @@ func TestRPKIRevocationReconciliationState(t *testing.T) {
 	}
 }
 func TestRPKIRevocationReconciliationCorruption(t *testing.T) {
-	for _, mode := range []string{"certificate_digest", "issuer_digest", "crl_digest", "manifest_digest", "crl_uri", "class", "key", "operation", "original_digest", "sent", "received", "peer", "expiry_without_check", "check_without_expiry", "before_expiry", "bad_expiry", "expiry_offset"} {
+	for _, mode := range []string{"certificate_digest", "issuer_digest", "crl_digest", "manifest_digest", "crl_uri", "class", "key", "operation", "original_digest", "sent", "received", "peer", "expiry_without_check", "check_without_expiry", "before_expiry", "bad_expiry", "expiry_offset", "class_evidence_digest"} {
 		t.Run(mode, func(t *testing.T) {
 			directory := privateExchangeDir(t)
 			now := cmsTrustNow()
 			receipt := &rpkiRevocationReconciliation{Original: rpkiPendingExchange{RequestSHA256: testExchangeDigest, Operation: "updown-revoke", SigningTime: now}, RecoveryPeerID: strings.Repeat("c", 64), Class: "class", Proof: rpkiRevocationProof{CertificateSHA256: strings.Repeat("a", 64), IssuerSHA256: strings.Repeat("b", 64), CRLSHA256: strings.Repeat("c", 64), ManifestSHA256: strings.Repeat("d", 64), CRLURI: "rsync://repo.example/module/issuer.crl", SKI: "AAAAAAAAAAAAAAAAAAAAAAAAAAA"}, Sent: now.Add(time.Second), Received: now.Add(time.Second)}
 			state := rpkiExchangeState{Version: 1, PeerID: testExchangePeer, LastSent: receipt.Sent, LastReceived: receipt.Received, ReconciledRevocation: receipt}
 			switch mode {
+			case "class_evidence_digest":
+				receipt.Proof.ClassEvidenceSHA256 = "invalid"
 			case "expiry_without_check":
 				receipt.Proof.ExpiredAt = now.Format(time.RFC3339Nano)
 			case "check_without_expiry":

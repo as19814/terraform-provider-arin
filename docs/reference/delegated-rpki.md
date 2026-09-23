@@ -1622,9 +1622,9 @@ Older provider builds reject journals containing the new receipt field.
 Run Terraform refresh/plan after reconciliation. Recovery does not edit Terraform
 state. The inventory-only observation mode remains available by omitting
 `-revocation-validation`; it never clears a mutation. The issuance and revocation
-validation flags are mutually exclusive. A missing class, changed issuer,
-expired prior certificate or unavailable current CRL remains unresolved by this
-flow. Equal-time signed inventory replay remains a protocol limitation because
+validation flags are mutually exclusive. Changed issuers and unavailable current
+CRLs remain unresolved. Expired certificates and missing classes require the
+explicit recovery modes described below. Equal-time signed inventory replay remains a protocol limitation because
 list requests have no nonce. Native delegated ARIN verification still requires
 sandbox enrollment and identities.
 
@@ -1820,8 +1820,8 @@ reopened expiry receipts, unchanged pending state on failures, disabled opt-in,
 wrong selected hashes and missing classes. Proof tests reject exact expiry-boundary
 ambiguity, unexpired/unrevoked certificates, invalid validity intervals, stale
 manifests, wrong keys and published/renewed keys. Corrupt receipt timestamps and
-incompatible CLI modes fail closed. Class disappearance, issuer rollover and
-expired issuer paths still require additional evidence; signed native delegated
+incompatible CLI modes fail closed. Issuer rollover and expired issuer paths
+still require additional evidence; signed native delegated
 interoperability remains unverified without enrollment.
 
 ### Retained signed responses
@@ -1841,8 +1841,37 @@ cryptographic reauthentication for future recovery. Legacy journals remain
 readable but have no retained response. Older binaries reject journals containing
 the new receipt and must not rewrite them.
 
-This is groundwork for binding a disappeared class to its historical issuer.
-It does not enable missing-class reconciliation, resend a mutation, or change
-the existing recovery approval requirements. Tests cover signed HTTP responses,
+This retained evidence supports the missing-class recovery mode below. Retention
+alone does not reconcile or resend a mutation. Tests cover signed HTTP responses,
 restart during a pending mutation, replacement cleanup, unsafe or corrupt files,
 and sidecar or journal persistence failures.
+
+
+### Missing-class revocation recovery
+
+`-accept-missing-class`, used with `-revocation-validation`, permits recovery when
+fresh authenticated inventory no longer contains the pending revoke's class.
+The Go API exposes `RPKIRevocationValidation.AllowClassAbsent`. Both default to
+false, and the JSON trust file cannot silently enable this mode.
+
+Recovery requires the original peer journal's last completed response to be an
+accepted `updown-list` exchange initiated strictly before the pending revoke.
+It reauthenticates that exact CMS at its recorded signing time against the
+configured peer BPKI trust, checks the child and parent handles, and requires the
+historical class to contain the exact retained prior certificate DER. A renewed
+certificate with the same key is insufficient. The historical issuer must match
+the explicitly configured immediate issuer, whose current anchored path is still
+validated. Current manifest/CRL checks, key withdrawal and durable manifest
+history remain required. The expiry opt-in can be enabled separately.
+
+Observation returns `outcome: class_absent` and `class_evidence_sha256`, the hash
+of the authenticated historical CMS. Committing still requires the exact prior
+certificate hash. The durable reconciliation proof retains the historical hash;
+its presence distinguishes missing-class recovery from ordinary key absence.
+Old receipts remain readable. Older binaries reject the new proof field.
+
+Legacy journals without retained evidence, unrelated or rejected responses,
+wrong peers/classes/issuers/certificates, tampered evidence and nonpreceding
+requests fail closed. Recovery never repeats the revoke. Signed HTTP/TLS tests
+cover successful commit, observation, restart and these rejection cases. Native
+signed ARIN interoperability remains unverified without delegated enrollment.

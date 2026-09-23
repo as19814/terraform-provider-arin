@@ -10,14 +10,15 @@ import (
 )
 
 type rpkiRevocationProof struct {
-	CertificateSHA256 string `json:"certificate_sha256"`
-	IssuerSHA256      string `json:"issuer_sha256"`
-	CRLSHA256         string `json:"crl_sha256"`
-	ManifestSHA256    string `json:"manifest_sha256"`
-	CRLURI            string `json:"crl_uri"`
-	SKI               string `json:"ski"`
-	ExpiredAt         string `json:"expired_at,omitempty"`
-	CheckedAt         string `json:"checked_at,omitempty"`
+	ClassEvidenceSHA256 string `json:"class_evidence_sha256,omitempty"`
+	CertificateSHA256   string `json:"certificate_sha256"`
+	IssuerSHA256        string `json:"issuer_sha256"`
+	CRLSHA256           string `json:"crl_sha256"`
+	ManifestSHA256      string `json:"manifest_sha256"`
+	CRLURI              string `json:"crl_uri"`
+	SKI                 string `json:"ski"`
+	ExpiredAt           string `json:"expired_at,omitempty"`
+	CheckedAt           string `json:"checked_at,omitempty"`
 }
 
 // checkRPKIRevocationProof checks supplied repository evidence only. Callers must

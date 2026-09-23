@@ -230,7 +230,7 @@ func TestJournalIssuanceModes(t *testing.T) {
 }
 
 func TestJournalProvenRevocationModes(t *testing.T) {
-	for _, mode := range []string{"observe", "commit", "load_error", "read_error", "missing_provisioning", "missing_validation", "publication", "expect", "read", "issuance", "expiry_observe", "expiry_commit", "expiry_without_validation"} {
+	for _, mode := range []string{"observe", "commit", "load_error", "read_error", "missing_provisioning", "missing_validation", "publication", "expect", "read", "issuance", "expiry_observe", "expiry_commit", "expiry_without_validation", "class_observe", "class_commit", "class_without_validation"} {
 		t.Run(mode, func(t *testing.T) {
 			calls := []string{}
 			actions := journalActions{
@@ -248,8 +248,11 @@ func TestJournalProvenRevocationModes(t *testing.T) {
 				recoverRevocation: func(_ context.Context, c arin.RPKIProvisioningReadConfig, v arin.RPKIRevocationValidation, digest, expected string) (*arin.RPKIRevocationRecoveryReport, error) {
 					calls = append(calls, "revocation")
 					want := ""
-					if mode == "commit" || mode == "expiry_commit" {
+					if mode == "commit" || mode == "expiry_commit" || mode == "class_commit" {
 						want = "hash"
+					}
+					if v.AllowClassAbsent != strings.HasPrefix(mode, "class_") {
+						t.Fatal("class opt-in changed")
 					}
 					if v.AllowExpired != strings.HasPrefix(mode, "expiry_") {
 						t.Fatal("expiry opt-in changed")
@@ -265,7 +268,7 @@ func TestJournalProvenRevocationModes(t *testing.T) {
 			}
 			args := []string{"-provisioning-config", "/private/provisioning.json", "-revocation-validation", "/private/validation.json", "-request-sha256", "digest"}
 			switch mode {
-			case "commit", "expiry_commit":
+			case "commit", "expiry_commit", "class_commit":
 				args = append(args, "-expect-certificate-sha256", "hash")
 			case "missing_provisioning":
 				args = args[2:]
@@ -283,15 +286,21 @@ func TestJournalProvenRevocationModes(t *testing.T) {
 			if strings.HasPrefix(mode, "expiry_") {
 				args = append(args, "-accept-expired-certificate")
 			}
+			if strings.HasPrefix(mode, "class_") {
+				args = append(args, "-accept-missing-class")
+			}
+			if mode == "class_without_validation" {
+				args = []string{"-provisioning-config", "/private/config.json", "-request-sha256", "digest", "-accept-missing-class"}
+			}
 			if mode == "expiry_without_validation" {
 				args = []string{"-provisioning-config", "/private/config.json", "-request-sha256", "digest", "-accept-expired-certificate"}
 			}
 			var out, stderr bytes.Buffer
 			code := runJournal(args, &out, &stderr, actions)
 			switch mode {
-			case "observe", "commit", "expiry_observe", "expiry_commit":
+			case "observe", "commit", "expiry_observe", "expiry_commit", "class_observe", "class_commit":
 				want := `"committed": false`
-				if mode == "commit" || mode == "expiry_commit" {
+				if mode == "commit" || mode == "expiry_commit" || mode == "class_commit" {
 					want = `"committed": true`
 				}
 				if code != 0 || strings.Join(calls, ",") != "provisioning,validation,revocation" || !strings.Contains(out.String(), want) {

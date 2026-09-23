@@ -8,24 +8,25 @@ import (
 )
 
 type RPKIRevocationRecoveryReport struct {
-	RequestSHA256     string    `json:"request_sha256"`
-	RecoveryPeerID    string    `json:"recovery_peer_id"`
-	Child             string    `json:"child_handle"`
-	Parent            string    `json:"parent_handle"`
-	Class             string    `json:"class_name"`
-	SKI               string    `json:"ski"`
-	Evidence          string    `json:"evidence,omitempty"`
-	ExpiredAt         string    `json:"expired_at,omitempty"`
-	CheckedAt         string    `json:"checked_at,omitempty"`
-	Outcome           string    `json:"outcome"`
-	Committed         bool      `json:"committed"`
-	Sent              time.Time `json:"sent"`
-	Received          time.Time `json:"received"`
-	CertificateSHA256 string    `json:"certificate_sha256,omitempty"`
-	IssuerSHA256      string    `json:"issuer_sha256,omitempty"`
-	CRLSHA256         string    `json:"crl_sha256,omitempty"`
-	ManifestSHA256    string    `json:"manifest_sha256,omitempty"`
-	CRLURI            string    `json:"crl_uri,omitempty"`
+	ClassEvidenceSHA256 string    `json:"class_evidence_sha256,omitempty"`
+	RequestSHA256       string    `json:"request_sha256"`
+	RecoveryPeerID      string    `json:"recovery_peer_id"`
+	Child               string    `json:"child_handle"`
+	Parent              string    `json:"parent_handle"`
+	Class               string    `json:"class_name"`
+	SKI                 string    `json:"ski"`
+	Evidence            string    `json:"evidence,omitempty"`
+	ExpiredAt           string    `json:"expired_at,omitempty"`
+	CheckedAt           string    `json:"checked_at,omitempty"`
+	Outcome             string    `json:"outcome"`
+	Committed           bool      `json:"committed"`
+	Sent                time.Time `json:"sent"`
+	Received            time.Time `json:"received"`
+	CertificateSHA256   string    `json:"certificate_sha256,omitempty"`
+	IssuerSHA256        string    `json:"issuer_sha256,omitempty"`
+	CRLSHA256           string    `json:"crl_sha256,omitempty"`
+	ManifestSHA256      string    `json:"manifest_sha256,omitempty"`
+	CRLURI              string    `json:"crl_uri,omitempty"`
 }
 
 // ObserveRPKIRevocation reads authenticated inventory without clearing the pending
@@ -72,6 +73,7 @@ func recoverRPKIRevocation(ctx context.Context, config RPKIProvisioningReadConfi
 	p := observation.Plan
 	report := &RPKIRevocationRecoveryReport{RequestSHA256: p.RequestSHA256, RecoveryPeerID: observation.RecoveryPeerID, Child: p.Child, Parent: p.Parent, Class: p.Class, SKI: p.SKI, Outcome: observation.Outcome, Sent: observation.Sent, Received: observation.Received, Committed: expectedCertificate != ""}
 	if p := observation.Proof; p != nil {
+		report.ClassEvidenceSHA256 = p.ClassEvidenceSHA256
 		report.Evidence = "revoked"
 		if p.ExpiredAt != "" {
 			report.Evidence = "expired_withdrawn"

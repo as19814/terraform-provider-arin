@@ -99,10 +99,20 @@ func (client rpkiUpDownClient) readPendingRevocation(ctx context.Context, digest
 		if clock == nil {
 			clock = time.Now
 		}
-		observation.Proof, err = validateRevocationInventory(ctx, plan, objects, *validation, repository, clock())
+		var historical *rpkiResourceClass
+		var evidence string
+		if outcome == "class_absent" && validation.AllowClassAbsent {
+			class, hash, historyErr := client.historicalRevocationClass(lease, plan, *validation)
+			if historyErr != nil {
+				return observation, historyErr
+			}
+			historical, evidence = &class, hash
+		}
+		observation.Proof, err = validateRevocationInventory(ctx, plan, objects, *validation, repository, clock(), historical)
 		if err != nil {
 			return observation, err
 		}
+		observation.Proof.ClassEvidenceSHA256 = evidence
 	}
 	if expectedCertificate != "" {
 		if observation.Proof == nil || observation.Proof.CertificateSHA256 != expectedCertificate {

@@ -14,7 +14,7 @@ type rpkiRevocationReconciliation struct {
 func validRevocationReconciliation(r rpkiRevocationReconciliation) bool {
 	p := r.Proof
 	ski, err := upDownSKI(p.SKI)
-	return err == nil && validRPKIRetirementTimes(p) && ski == p.SKI && upDownLabel(r.Class) && upDownToken(r.Class) == r.Class &&
+	return err == nil && (p.ClassEvidenceSHA256 == "" || exchangeDigest.MatchString(p.ClassEvidenceSHA256)) && validRPKIRetirementTimes(p) && ski == p.SKI && upDownLabel(r.Class) && upDownToken(r.Class) == r.Class &&
 		exchangeDigest.MatchString(p.CertificateSHA256) && exchangeDigest.MatchString(p.IssuerSHA256) &&
 		exchangeDigest.MatchString(p.CRLSHA256) && exchangeDigest.MatchString(p.ManifestSHA256) && publicationURI(p.CRLURI) &&
 		r.Original.Operation == "updown-revoke" && exchangeDigest.MatchString(r.Original.RequestSHA256) &&
@@ -28,7 +28,10 @@ func validRevocationReconciliation(r rpkiRevocationReconciliation) bool {
 func (l *rpkiExchangeLease) reconcileRevocation(o rpkiRevocationRecoveryObservation) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.closed || l.poisoned || l.state.Pending == nil || l.state.Pending.RequestSHA256 != o.Plan.RequestSHA256 || !l.state.Pending.SigningTime.Equal(o.Plan.SigningTime) || o.Outcome != "key_absent" || o.Proof == nil || o.Proof.SKI != o.Plan.SKI {
+	if l.closed || l.poisoned || l.state.Pending == nil || l.state.Pending.RequestSHA256 != o.Plan.RequestSHA256 || !l.state.Pending.SigningTime.Equal(o.Plan.SigningTime) || (o.Outcome != "key_absent" && o.Outcome != "class_absent") || o.Proof == nil || o.Proof.SKI != o.Plan.SKI {
+		return errRPKIExchangeState
+	}
+	if (o.Outcome == "class_absent") != (o.Proof.ClassEvidenceSHA256 != "") {
 		return errRPKIExchangeState
 	}
 	receipt := rpkiRevocationReconciliation{Original: *l.state.Pending, RecoveryPeerID: o.RecoveryPeerID, Class: o.Plan.Class, Proof: *o.Proof, Sent: o.Sent.UTC(), Received: o.Received.UTC()}

@@ -11,16 +11,18 @@ import (
 // resource trust settings used to prove an uncertain revocation.
 type RPKIRevocationValidation struct {
 	// AllowExpired accepts proven expiry and withdrawal as a distinct outcome.
-	AllowExpired        bool
+	AllowExpired bool
+	// AllowClassAbsent requires retained authenticated historical class evidence.
+	AllowClassAbsent    bool
 	PriorCertificatePEM string
 	Path                RPKICertificateValidation
 }
 
 // validateRevocationInventory consumes authenticated parent inventory. A missing
-// class cannot bind the current issuer and is insufficient for reconciliation.
-func validateRevocationInventory(ctx context.Context, plan rpkiRevocationRecoveryPlan, classes []rpkiResourceClass, validation RPKIRevocationValidation, repository rrdpHTTPClient, now time.Time) (*rpkiRevocationProof, error) {
+// class requires separately authenticated historical evidence of the issuer.
+func validateRevocationInventory(ctx context.Context, plan rpkiRevocationRecoveryPlan, classes []rpkiResourceClass, validation RPKIRevocationValidation, repository rrdpHTTPClient, now time.Time, historical *rpkiResourceClass) (*rpkiRevocationProof, error) {
 	outcome, err := classifyRevocationInventory(plan, classes)
-	if err != nil || outcome != "key_absent" {
+	if err != nil || (outcome != "key_absent" && !(outcome == "class_absent" && validation.AllowClassAbsent && historical != nil && historical.Name == plan.Class)) {
 		return nil, errRPKIUpDown
 	}
 	prior, err := rpkiPEMCertificates(validation.PriorCertificatePEM, 1)
@@ -39,6 +41,9 @@ func validateRevocationInventory(ctx context.Context, plan rpkiRevocationRecover
 	issuers, err := rpkiPEMCertificates(v.IssuerChainPEM, 31)
 	if err != nil || len(issuers) == 0 || len(issuers) != len(v.Notifications) || !bytes.Equal(issuers[len(issuers)-1].Raw, anchors[0].Raw) {
 		return nil, errRPKIUpDown
+	}
+	if outcome == "class_absent" {
+		classes = []rpkiResourceClass{*historical}
 	}
 	for _, class := range classes {
 		if class.Name == plan.Class && !bytes.Equal(class.IssuerDER, issuers[0].Raw) {
