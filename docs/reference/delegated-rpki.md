@@ -852,3 +852,26 @@ first-attempt failure and concurrent refresh rejection. Corruption, schema,
 identity, permissions and stale-lock tests exercise fail-closed behavior.
 Issuance resolver wiring, recovery, Terraform integration and native delegated
 verification remain unfinished.
+
+
+## RRDP publication retrieval for supplied paths
+
+The private RRDP client now assembles manifest publications for an explicitly
+supplied leaf-first CA chain and per-issuer notification URLs. It reparses
+certificate DER, selects the issuer's rsync manifest location from SIA, retrieves
+repository caches, and copies the manifest-listed files. It identifies each
+child certificate by exact DER equality and rejects missing or ambiguous child
+locations. Distinct notifications retain separate object maps even when their
+rsync URLs overlap. Repeated notifications are retrieved once per operation;
+recent successful caches can be reused inside the polling interval.
+
+Input chains are limited to 32 certificates. Retained repository object data and
+assembled publication data each have a 128 MiB aggregate limit. The result is
+explicitly untrusted: the configured anchor, manifest history, revocation,
+resource containment and issuance-response binding remain validation duties.
+Signed TLS fixtures exercise retrieval followed by durable path validation,
+cache reuse, independent byte ownership, missing files, wrong children,
+repository substitution, CRL tampering and wrong anchors.
+
+Automatic issuer-chain discovery, issuance resolver configuration, recovery,
+Terraform integration and native delegated verification remain unfinished.
