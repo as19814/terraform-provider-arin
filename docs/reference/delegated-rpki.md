@@ -467,9 +467,9 @@ missing CRLs, invalid signatures, forged parsed fields and signed overclaims.
 
 This primitive is not yet connected to issuance acceptance. It is not complete
 RFC 6487 validation: certificate/CRL profile rules, resource-anchor provisioning,
-newer extension profiles, requested-allocation comparison and persistent CRL
-rollback history remain to be addressed. CRLs use the existing signature,
-currentness and revocation checks; stricter resource-CRL profile checks remain.
+newer extension profiles, requested-allocation comparison and authenticated
+manifest selection/rollback protection remain to be addressed. CRL profile
+checks and RFC 9829 selection behavior are described below.
 Terraform integration, recovery and native delegated evidence are still pending.
 
 ## Resource CRL profile checks
@@ -480,8 +480,8 @@ algorithm identifiers with NULL parameters, and exactly the non-critical AKI and
 CRL-number extensions. The AKI must contain only a 20-byte key identifier. Unknown,
 scoped and delta extensions are rejected, as are all entry extensions, duplicate
 serials, invalid serial bounds and revocation dates after the CRL's issue time.
-Signature, issuer, currentness and newest-number checks remain in the existing
-revocation verification step.
+Signature, issuer and currentness checks remain in the revocation verification
+step. Resource CRL selection follows the RFC 9829 correction below.
 
 Tests create and sign CRLs with unknown non-critical extensions, delta/scoping
 fields, entry extensions/reason codes, duplicate entries, future revocation dates
@@ -489,6 +489,26 @@ and alternate signature algorithms. Both the profile checker and the integrated
 resource-path verifier reject these; ordinary empty CRLs and extension-free
 revocation entries pass. The shared BPKI CMS validator keeps its separate policy.
 
-This does not complete certificate profile validation, persistent CRL rollback
+This does not complete certificate profile validation, manifest rollback
 protection, issuance integration, or native interoperability. Full DER time/name
 profile auditing also remains before claiming every RPKI profile rule is covered.
+
+## RFC 9829 CRL selection correction
+
+The standards audit identified [RFC 9829](https://datatracker.ietf.org/doc/html/rfc9829),
+which updates resource CRL selection. The resource-path verifier no longer reuses
+the BPKI helper that ranks CRLs by number. Resource CRL numbers are checked for
+valid syntax/range only. Multiple distinct signed CRLs for the same issuer now
+fail as ambiguous, regardless of their relative numbers. Repeated identical DER
+is harmless. The BPKI CMS revocation policy is unchanged.
+
+The resource-path caller must provide the CRL selected from the issuer's
+validated current manifest and matching the certificate's CRLDP. Manifest
+validation and selection are still unimplemented, so this remains a private
+verification primitive, not a complete RPKI relying-party validator. No CRL is
+chosen merely because it has a larger number.
+
+Tests cover zero and maximum permitted CRL numbers, conflicting candidates in
+both orders, identical copies and revocation in a low-number candidate. Both
+helper and path-level cases pass. Name/time profile checks remain outstanding;
+this correction took priority when the updated standard was discovered.

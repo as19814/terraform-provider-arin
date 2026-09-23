@@ -9,7 +9,8 @@ import (
 )
 
 // Verify the exact supplied leaf-first CA path against an explicitly configured
-// resource anchor. This establishes PKIX signatures, time validity, current CRL
+// resource anchor. CRLs must already be selected using authenticated manifests
+// and CRLDPs; this function does not perform that selection. It checks current CRL
 // status and original-profile resource containment, not the entire RPKI profile.
 func verifyRPKICertificatePath(path []*x509.Certificate, anchor *x509.Certificate, crls []*x509.RevocationList, now time.Time) (*rpkiCertificateResources, error) {
 	if len(path) == 0 || len(path) > 32 || anchor == nil || now.IsZero() || len(crls) > 32 {
@@ -93,7 +94,7 @@ func verifyRPKICertificatePath(path []*x509.Certificate, anchor *x509.Certificat
 	}
 	for i := 0; i+1 < len(parsed); i++ {
 		cert, issuer := parsed[i], parsed[i+1]
-		if !bytes.Equal(cert.RawIssuer, issuer.RawSubject) || len(cert.AuthorityKeyId) == 0 || !bytes.Equal(cert.AuthorityKeyId, issuer.SubjectKeyId) || !cmsCertificateUnrevoked(cert, issuer, parsedCRLs, now) {
+		if !bytes.Equal(cert.RawIssuer, issuer.RawSubject) || len(cert.AuthorityKeyId) == 0 || !bytes.Equal(cert.AuthorityKeyId, issuer.SubjectKeyId) || !resourceCertificateUnrevoked(cert, issuer, parsedCRLs, now) {
 			return nil, errRPKIUpDown
 		}
 	}
