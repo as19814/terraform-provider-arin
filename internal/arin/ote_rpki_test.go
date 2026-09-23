@@ -356,20 +356,53 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 		t.Fatal("rejected transaction changed the inventory before cleanup")
 	}
 	t.Log("reserved-provider transaction rejected without changing either inventory")
-	result, err := c.ApplyRPKITransaction(ctx, org, RPKITransaction{AddROAs: []ROARequest{request}, DeleteASPAs: []int64{original.CustomerASN}, AddASPAs: []ASPA{changed}})
+	bundleDesired := RPKIBundleDesired{ROAs: map[string]RPKIBundleROA{"disposable": {Request: request}}, ASPAs: map[int64]ASPA{changed.CustomerASN: changed}}
+	bundlePlan, err := PlanRPKIBundle(RPKIBundleOwnership{ASPAs: []int64{original.CustomerASN}}, bundleDesired, RPKIBundleInventory{ROAs: beforeROAs, ASPAs: beforeASPAs})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := c.ApplyRPKITransaction(ctx, org, bundlePlan.Transaction)
 	if err != nil {
 		t.Fatalf("combined creation/replacement failed: %v; XML shape: %s", err, trace.shape)
 	}
 	if len(result.ROAs) != 1 || len(result.ASPAs) != 1 || result.ROAs[0].NotValidBefore == "" {
 		t.Fatal("incomplete combined result")
 	}
+	bundleInventoryAfter := func() RPKIBundleInventory {
+		roas, err := c.ListROAs(ctx, org)
+		if err != nil {
+			t.Fatal(err)
+		}
+		aspas, err := c.ListASPAs(ctx, org)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return RPKIBundleInventory{ROAs: roas, ASPAs: aspas}
+	}
+	currentBundle := bundleInventoryAfter()
+	recoveredBundle, err := ReconcileRPKIBundle(bundlePlan, currentBundle)
+	if err != nil || recoveredBundle.ROAs["disposable"].Handle != result.ROAs[0].Handle || !ASPAEqual(recoveredBundle.ASPAs[original.CustomerASN], changed) {
+		t.Fatalf("combined bundle recovery failed: %v", err)
+	}
 	t.Log("combined IPv4/IPv6 ROA creation and ASPA replacement passed")
 	next := request
 	next.Resources = []ROAResource{resources[0]}
-	result, err = c.ApplyRPKITransaction(ctx, org, RPKITransaction{DeleteROAs: []ROADelete{{Handle: result.ROAs[0].Handle}}, AddROAs: []ROARequest{next}})
+	bundleDesired.ROAs["disposable"] = RPKIBundleROA{Request: next}
+	bundlePlan, err = PlanRPKIBundle(RPKIBundleOwnership{ROAs: map[string]RPKIBundleOwnedROA{"disposable": {Handle: result.ROAs[0].Handle}}, ASPAs: []int64{original.CustomerASN}}, bundleDesired, currentBundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(bundlePlan.Transaction.AddASPAs)+len(bundlePlan.Transaction.DeleteASPAs) != 0 {
+		t.Fatal("bundle replacement unnecessarily rewrites unchanged ASPA")
+	}
+	result, err = c.ApplyRPKITransaction(ctx, org, bundlePlan.Transaction)
 	if err != nil {
 		t.Fatalf("ROA replacement failed: %v; XML shape: %s", err, trace.shape)
 	}
+	if _, err := ReconcileRPKIBundle(bundlePlan, bundleInventoryAfter()); err != nil {
+		t.Fatalf("replacement bundle recovery failed: %v", err)
+	}
+	t.Log("bundle planner and complete postcondition recovery passed for combined write and replacement")
 	t.Log("atomic ROA replacement passed")
 	// Authorize one level of more-specific prefixes, not just an explicit default.
 	// Verify the entire expanded range still belongs to the original parent.

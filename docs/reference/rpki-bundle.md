@@ -1,6 +1,18 @@
 # Managed RPKI bundle implementation requirements
 
-Status: required implementation, not an available provider resource.
+Status: client planning and recovery engine implemented and exercised in OT&E.
+Terraform resource integration remains required; this is not an available
+provider resource.
+
+`PlanRPKIBundle` builds one transaction from explicit prior ownership, desired
+members and freshly read inventories. `ReconcileRPKIBundle` verifies the complete
+postcondition from a serialized plan without replaying writes. Unit tests cover
+mixed changes, unrelated inventory, ownership collisions, incomplete visibility,
+ambiguous matches, malformed receipts, policy-only changes and reused owned
+handles. The native client lifecycle exercises combined ROA creation and ASPA
+replacement, then ROA replacement with the unchanged ASPA retained. It verifies
+baseline restoration and linked-route cleanup. These tests establish the engine
+behavior, not the pending Terraform resource lifecycle below.
 
 The hosted RPKI API supports one transaction containing ROA and ASPA additions
 and deletions. `ApplyRPKITransaction` already exercises this behavior in OT&E.
