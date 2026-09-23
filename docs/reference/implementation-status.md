@@ -22,8 +22,8 @@ again before declaring full coverage.
 | Organizations | Individual data source, arin_org and arin_org_poc; full Terraform CRUD/import/recovery pass mocks; no-change PUT and all non-admin association roles pass OT&E; live creation returned a pending review ticket | Await live creation review, then validate disposable mutable fields, Admin replacement and deletion; no automatic handle discovery from ticket-only responses; see [organization evidence](organizations.md) and [association evidence](org-pocs.md) |
 | POCs | Individual/reference data sources, arin_poc, arin_poc_email and arin_poc_phone; full and individual-contact lifecycles pass OT&E | Final API audit; see [evidence](pocs.md) |
 | DNS delegations | Read data sources, arin_delegation and arin_delegation_nameserver; full-zone and individual-NS lifecycles pass IPv4/IPv6 OT&E | Final endpoint audit; see [evidence](delegations.md) |
-| Hosted ROAs | Individual and organization list data sources | Transactional create/delete/replacement, import, IRR auto-link support |
-| Hosted ASPAs | Individual and organization list data sources | Transactional create/delete/replacement and import |
+| Hosted ROAs | Individual/list data sources and shared transaction client; combined IPv4/IPv6 creation, atomic replacement and deletion pass OT&E | Terraform resource/import, explicit max-length and AS0 live coverage, IRR auto-link lifecycle; see [evidence](rpki.md) |
+| Hosted ASPAs | Individual/list data sources and arin_aspa; atomic provider replacement, import, AS0-only declaration and deletion pass Terraform OT&E; original inventories restored | Final API audit and broader combined-transaction resource needs; see [evidence](rpki.md) |
 | Tickets | Detail, summary, list, summaries, message and attachment data sources | Message submission, status/update, asynchronous workflow reconciliation |
 | Reports | No provider operations | WhoWas ASN/NET, associations, reassignment reports; request GETs create tickets and belong to action/resource workflows |
 | Public RDAP | Org network discovery, ASN record/inventory, POC references | Audit supported search/lookup operations against sandbox |

@@ -26,8 +26,8 @@ check: vet test testacc build
 testlive:
 	ARIN_LIVE_TESTS=1 TF_ACC=1 go test ./internal/provider -run '^TestLive' -v -count=1 -timeout 5m
 
-# Explicit opt-in writes, pinned to OT&E. DNS and org tests snapshot and restore.
+# Explicit opt-in writes, pinned to OT&E. DNS, org and RPKI tests snapshot and restore.
 # Serialize packages because client and provider tests share sandbox objects.
 .PHONY: testote
 testote:
-	ARIN_OTE_WRITE_TESTS=1 TF_ACC=1 go test -p 1 ./internal/arin ./internal/provider -run '^TestOTE(ASSet|IRRRoute|RouteSet|Autnum|Customer|Net|NetMultiBlock|NetMetadata|NetAssignmentClient|DelegationClient|Delegation|DelegationNameserver|POC|POCClient|POCContacts|OrgPOC|OrgPOCClient)Lifecycle$$|^TestOTEOrganizationClientNoChange$$|^TestOTEOrgResourceRecovery$$' -v -count=1 -timeout 10m
+	ARIN_OTE_WRITE_TESTS=1 TF_ACC=1 go test -p 1 ./internal/arin ./internal/provider -run '^TestOTE(ASSet|IRRRoute|RouteSet|Autnum|Customer|Net|NetMultiBlock|NetMetadata|NetAssignmentClient|DelegationClient|Delegation|DelegationNameserver|POC|POCClient|POCContacts|OrgPOC|OrgPOCClient|RPKIClient|ASPA)Lifecycle$$|^TestOTEOrganizationClientNoChange$$|^TestOTEOrgResourceRecovery$$' -v -count=1 -timeout 10m

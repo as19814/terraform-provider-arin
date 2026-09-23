@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Fourteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Fifteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ASPAs, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -211,6 +211,8 @@ before retrying a failed apply.
 [`arin_org_poc`](docs/resources/org_poc.md) manages one organization association for a Tech, NOC, Abuse, Routing or DNS POC. Import existing links first. Destroy removes only the association. Admin changes require a full organization update. Association writes to the same organization are serialized within the provider process because concurrent OT&E writes can lose changes. See the [association evidence and recovery notes](docs/reference/org-pocs.md).
 
 [`arin_org`](docs/resources/org.md) manages full organization records, including Admin and other POC links. Creation can return a staff-review ticket rather than an immediate handle. Pending writes retain recovery state and block repeat submission. See the [organization lifecycle and recovery guide](docs/reference/organizations.md) before creating or importing an organization.
+
+[`arin_aspa`](docs/resources/aspa.md) manages one hosted ASPA with atomic provider-set changes. Import existing ASPAs by `ORG-HANDLE/CUSTOMER-ASN`. It supports `[0]` as the sole-provider set and preserves unrelated ASPAs and ROAs. See the [hosted RPKI evidence](docs/reference/rpki.md).
 
 ## Next steps
 
