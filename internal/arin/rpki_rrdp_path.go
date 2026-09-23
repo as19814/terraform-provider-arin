@@ -14,6 +14,18 @@ import (
 // The result is untrusted until the caller validates it against its configured
 // anchor, including persistent manifest history and issuance-response binding.
 func (c rrdpHTTPClient) RetrievePath(ctx context.Context, directory string, certificates []*x509.Certificate, notifications []string, now time.Time) (rpkiIssuePath, error) {
+	return c.retrievePath(ctx, directory, certificates, notifications, now, false)
+}
+
+// RetrieveRevocationPath includes the retiring issuer's publication even when
+// the prior certificate has been withdrawn. The remaining issuer chain must
+// still be published. This only assembles evidence: callers must authenticate
+// it with verifyAndRecordRPKIRevocationProof and bind it to parent inventory.
+func (c rrdpHTTPClient) RetrieveRevocationPath(ctx context.Context, directory string, certificates []*x509.Certificate, notifications []string, now time.Time) (rpkiIssuePath, error) {
+	return c.retrievePath(ctx, directory, certificates, notifications, now, true)
+}
+
+func (c rrdpHTTPClient) retrievePath(ctx context.Context, directory string, certificates []*x509.Certificate, notifications []string, now time.Time, retiring bool) (rpkiIssuePath, error) {
 	fail := func() (rpkiIssuePath, error) { return rpkiIssuePath{}, errRPKIRRDP }
 	if len(certificates) < 2 || len(certificates) > 32 || len(notifications) != len(certificates)-1 {
 		return fail()
@@ -109,7 +121,7 @@ func (c rrdpHTTPClient) RetrievePath(ctx context.Context, directory string, cert
 				publication.ChildURI = prefix + name
 			}
 		}
-		if publication.ChildURI == "" {
+		if publication.ChildURI == "" && !(retiring && i == 0) {
 			return fail()
 		}
 		result.Publications = append(result.Publications, publication)

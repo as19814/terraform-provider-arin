@@ -1510,8 +1510,8 @@ not substituted for explicit current revocation evidence.
 Signed tests cover valid revocation, absent revocation entries, still-published
 and reissued keys, incorrect keys/anchors/issuers/CRL locations, resource
 overclaims, tampered CRLs, expired manifests and future revocation times.
-Repository retrieval, durable history integration, reconciliation and native
-verification remain unfinished. The relevant protocol scope is
+Repository retrieval and durable history integration are described below;
+reconciliation and native verification remain unfinished. The relevant protocol scope is
 [RFC 6492 section 3.5](https://www.rfc-editor.org/rfc/rfc6492.html#section-3.5).
 
 ### Durable revocation evidence history
@@ -1530,7 +1530,24 @@ manifest already recorded by ordinary certificate validation.
 
 Signed tests verify persistence/reopen, idempotent evidence, local and upstream
 rollback rejection, unchanged history after a mixed-version failure, exclusive
-locking and shared watermarks across issuance and revocation. Repository
-retrieval and binding the proof to a fresh signed parent inventory are still
-required before journal reconciliation; native delegated verification remains
-unavailable.
+locking and shared watermarks across issuance and revocation. Binding the proof
+to a fresh signed parent inventory is still required before journal
+reconciliation; native delegated verification remains unavailable.
+
+
+### RRDP retrieval for revocation evidence
+
+The private RRDP client now assembles revocation evidence from the persistent
+HTTPS repository cache. Callers supply the prior certificate followed by its
+issuer chain and one notification URL per issuer. The retiring issuer's
+manifest may omit the prior certificate; every upstream issuer certificate
+must still be published. The same notification scoping, object bounds, polling
+limits and cloned buffers used by issuance apply here.
+
+Retrieval does not authenticate a revocation by itself. Its result must pass the
+anchored revocation proof and shared durable history checks. Signed TLS tests
+exercise these together, including a direct anchor issuer, a withdrawn child,
+a still-published key, missing files and upstream certificates, swapped
+repositories, tampered CRLs, wrong anchors and persistent cache reuse after
+caller mutation. No exchange journal is cleared by retrieval. Fresh signed
+parent inventory binding and a durable reconciliation receipt remain required.
