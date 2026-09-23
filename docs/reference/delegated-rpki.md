@@ -250,3 +250,25 @@ error replies, and implement recovery. An authenticated protocol error can compl
 an exchange only after its identity and correlation are verified; arbitrary
 validator errors retain pending state. No Terraform schema exposes this transport
 and no native ARIN protocol exchange has occurred.
+
+## Publication inventory client
+
+The private RFC 8181 client now sends signed version-4 list queries through the
+durable HTTP exchange layer. It validates reply namespaces, attributes, message
+type, SHA-256 hashes and rsync object URIs, rejects duplicate object URIs and
+mixed reply categories, and returns an empty collection for an empty inventory.
+Hashes are normalized to lowercase; object URIs remain unchanged.
+
+Authenticated protocol errors are validated before completing the exchange.
+Only defined error codes are returned to callers; remote diagnostic text and
+echoed PDUs are excluded from errors. If a failed PDU is supplied, it must match
+the empty list request. Malformed replies retain pending state and block another
+request. Signed fake-server tests exercise inventory, empty inventory, rejected
+requests, malformed replies, subsequent calls and persisted journal state.
+
+RFC 8181 list requests have no tag or nonce. This client relies on peer CMS
+authentication, serialized exchanges and the persisted signing-time watermark;
+it cannot distinguish replayed list replies with equal signing times. No claim
+of unique request-response correlation is made. Native ARIN validation still
+requires delegated enrollment and an existing BPKI identity. Publication
+mutations, explicit recovery and Terraform integration remain unimplemented.
