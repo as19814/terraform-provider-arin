@@ -408,3 +408,25 @@ Subject-name reuse remains governed by the parent's issuance policy. These check
 do not assert that an enrolled ARIN parent accepts every optional request field.
 Native CSR interoperability, complete issued-certificate profile/path/resource
 validation, asynchronous recovery and Terraform integration remain unfinished.
+
+## Resource-extension decoding
+
+A private decoder now reads the original RFC 3779 IP and AS extension OIDs using
+the RFC 6487 resource-certificate constraints. It preserves the distinction among
+absent, inherited and explicitly allocated resources. Explicit sets become bounded
+AS-number intervals and IPv4/IPv6 address intervals, including zero-length prefixes
+covering an entire address family.
+
+The decoder rejects duplicate or non-critical resource extensions, empty explicit
+sets, unsupported families, SAFI/RDI fields, incorrect family ordering, oversized
+AS numbers, inverted/overlapping/adjacent intervals and noncanonical range forms.
+IP range bounds use RFC 3779 zero/one suffix expansion and require trimmed endpoint
+encodings; ranges representable by a single prefix are rejected. Tests cover
+valid AS/IP examples, inheritance, malformed sets and full-family boundaries.
+
+This helper is not yet used to accept an issued certificate. It does not resolve
+inheritance, check containment against an issuer or requested allocation, or
+establish a trust path. It handles the original extension OIDs only; newer resource
+validation profiles and unknown critical-extension handling need a separate audit
+before claiming complete certificate validation. Native interoperability remains
+unverified.
