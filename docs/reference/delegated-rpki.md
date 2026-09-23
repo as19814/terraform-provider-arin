@@ -221,3 +221,32 @@ still need to hold the lease across signing, dispatch, verification and durable
 completion, and implement explicit recovery for uncertain outcomes. Equal-time
 messages, CRL rollback history, response correlation and native ARIN exchanges
 remain outside this journal's guarantees. No protocol request has been sent.
+
+## Signed HTTP exchange integration
+
+The private HTTP exchange layer now holds the journal lease across signing,
+POST dispatch, CMS verification, protocol validation and durable completion.
+Peer history is bound to endpoint, protocol media type, caller-provided peer
+scope and local/remote CA fingerprints. EE renewal does not reset that identity.
+The caller must provide the existing private journal directory and trusted setup
+configuration. HTTPS is required except for loopback test servers.
+
+The layer posts CMS with the up-down or publication media type, without API-key
+headers. Redirects, body replay and automatic application retries are disabled.
+It checks status, content type and encoding, bounds responses to 4 MiB, verifies
+CMS against the configured peer and stored timestamp, then invokes the required
+protocol validator. Only successful validation and journal completion return XML.
+Errors do not echo remote bodies, URLs or validator details. A post-dispatch
+failure retains pending state and blocks another POST.
+
+Signed fake-server tests cover both media types, journal-before-dispatch ordering,
+held locks, response watermark persistence and rollback, lost/truncated/oversized
+responses, redirects, HTTP/media/encoding failures, bad signatures, wrong peers,
+correlation failures, cancellation and retry prevention. Test XML is synthetic;
+these tests establish the shared transport, not either protocol's message schema.
+
+Typed protocol clients must still build/validate messages, interpret authenticated
+error replies, and implement recovery. An authenticated protocol error can complete
+an exchange only after its identity and correlation are verified; arbitrary
+validator errors retain pending state. No Terraform schema exposes this transport
+and no native ARIN protocol exchange has occurred.
