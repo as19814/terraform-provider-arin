@@ -901,3 +901,28 @@ manifest history, including a second call that must not retry failed issuance.
 This entry point remains internal. Terraform configuration/resources, automatic
 chain discovery, pending-operation recovery and native delegated enrollment and
 interoperability remain unfinished.
+
+
+## Terraform publication inventory
+
+`arin_rpki_publication` now exposes RFC 8181 list requests through Terraform.
+It accepts a trusted endpoint, assigned publisher handle, explicit local and peer
+BPKI anchors, existing EE certificate, optional intermediate chains and local
+CRLs. The RSA signing key is read from a private regular PEM file (PKCS#1 or
+PKCS#8); symlinks, oversized files and group/other permissions are rejected.
+Key bytes are not returned or stored in Terraform state. Certificate inputs and
+the key path are stored in state.
+
+The data source requires an existing private, persistent journal directory.
+Authenticated lists complete the journal; interrupted or unverifiable exchanges
+remain pending and block automatic retries. Server-reported objects are sorted
+by URI. Their hashes are inventory metadata, not independent RPKI validation.
+The API key is not used and remote repository contents are not modified.
+
+Signed fake-server client tests exercise key loading, signature verification,
+refresh and sorted inventories. Terraform acceptance tests exercise schema,
+configuration mapping, state, empty inventories and error propagation through
+an injected reader. They complement protocol tests rather than claiming native
+ARIN interoperability. Native verification remains blocked by absent delegated
+sandbox enrollment and BPKI credentials. Pending recovery and managed delegated
+resources remain unfinished.

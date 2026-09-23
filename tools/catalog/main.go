@@ -18,12 +18,13 @@ func main() {
 
 All non-report read endpoints documented in the collected Reg-RWS, IRR, and hosted RPKI guides have data sources. Public RDAP also supplies network and ASN discovery, ASN registration details, organization contact references, and public organization/POC entity details with complete jCard/RDAP JSON, entity searches by handle or name, reverse-domain registrations including published DNSSEC data, domain hierarchy searches, network/ASN searches by registration or associated entity fields, IPv4/IPv6 network hierarchy searches, exact nameserver-to-domain searches, and service help metadata. Network, ASN, entity and domain registrations retain complete RDAP JSON alongside typed fields. Public Whois-RWS supplies all six individual record types, all twelve related-resource operations, and organization/customer/POC/ASN/network searches, and IPv4/IPv6 address, CIDR and CIDR hierarchy queries with typed fields and complete XML.
 
-Report-request endpoints are intentionally excluded: they create tickets even though ARIN exposes them as HTTP GET. These data sources perform no write operations; managed resources are documented separately. Delegated RPKI protocol exchanges and account report-generation workflows are not Terraform data sources in this provider.
+Report-request endpoints are intentionally excluded: they create tickets even though ARIN exposes them as HTTP GET. These data sources do not mutate remote resources; managed resources are documented separately. The delegated publication inventory data source sends a signed read-only RFC 8181 list request and updates local exchange journals. Account report-generation workflows are not Terraform data sources.
 
 ## Catalog
 
 | Data source | API | Purpose |
 | --- | --- | --- |
+| [arin_rpki_publication](../data-sources/rpki_publication.md) | RFC 8181 | Read a signed publication inventory with an existing BPKI identity and persistent exchange journal. |
 | [arin_rpki_setup_request](../data-sources/rpki_setup_request.md) | Local RFC 8183 | Generate child and publisher setup requests from an existing BPKI certificate, without submitting them. |
 | [arin_rpki_setup](../data-sources/rpki_setup.md) | Local RFC 8183 | Inspect delegated RPKI and publication setup XML, BPKI certificates and referrals without network access. |
 | [arin_bulk_whois](../data-sources/bulk_whois.md) | Account downloads | Read an approved Bulk Whois artifact with optional object selection and ZIP/XML/text format. |
