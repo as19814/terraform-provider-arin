@@ -270,5 +270,27 @@ RFC 8181 list requests have no tag or nonce. This client relies on peer CMS
 authentication, serialized exchanges and the persisted signing-time watermark;
 it cannot distinguish replayed list replies with equal signing times. No claim
 of unique request-response correlation is made. Native ARIN validation still
-requires delegated enrollment and an existing BPKI identity. Publication
-mutations, explicit recovery and Terraform integration remain unimplemented.
+requires delegated enrollment and an existing BPKI identity. Explicit recovery and Terraform integration remain unimplemented.
+
+## Publication mutation batches
+
+The private publication client now builds one signed request containing a batch
+of publish and withdraw operations. Creation omits an old hash; replacement and
+withdrawal use the caller's SHA-256 precondition. It rejects invalid URIs/hashes,
+empty publish bodies, duplicate target URIs and oversized batches before dispatch.
+Random per-batch tags identify individual operations in error replies. The caller
+must supply properly signed DER objects and the updated manifest; this layer
+transports opaque object bytes and does not create or validate RPKI objects.
+
+A single empty success PDU completes a batch. Authenticated error replies accept
+only known codes and matching operation tags when supplied; optional failed PDUs
+must match the requested operation, attributes and object bytes. Untagged generic
+errors are accepted without an echoed mutation. Invalid or mixed replies retain
+the pending journal. Success replies have no tag or nonce, so the same equal-time
+replay limitation as inventory applies. No retries are performed automatically.
+
+Signed fake-repository tests cover creation, replacement, withdrawal, stale-hash
+rejection, atomic rollback of a staged multi-operation request, durable completion,
+and a malformed reply after mutation that blocks a second POST. These prove client
+behavior against the fake server, not native ARIN atomicity or real RPKI object
+acceptance. Provider resources, explicit recovery and native testing remain.

@@ -17,7 +17,11 @@ var errRPKIPublicationReply = errors.New("invalid RPKI publication reply")
 type rpkiPublicationObject struct{ URI, SHA256 string }
 
 // Remote diagnostic text and echoed PDUs are deliberately excluded from errors.
-type rpkiPublicationError struct{ Codes []string }
+type rpkiPublicationError struct {
+	Codes []string
+	// OperationIndexes aligns with Codes for batches; -1 identifies a generic error.
+	OperationIndexes []int
+}
 
 func (e *rpkiPublicationError) Error() string {
 	return "RPKI publication server rejected request: " + strings.Join(e.Codes, ", ")
@@ -132,12 +136,17 @@ func parseRPKIPublicationList(body []byte) ([]rpkiPublicationObject, *rpkiPublic
 }
 
 func publicationListError(n *xmlNode) (string, error) {
+	return publicationError(n, func(tag string, failed *xmlNode) bool {
+		return strings.Trim(tag, " \t\r\n") == "" && (failed == nil || publicationEmpty(failed, "list"))
+	})
+}
+
+func publicationError(n *xmlNode, matches func(string, *xmlNode) bool) (string, error) {
 	a, err := publicationAttrs(n, "report_error", "error_code", "tag")
 	if err != nil || strings.Trim(n.Text, " \t\r\n") != "" {
 		return "", errRPKIPublicationReply
 	}
-	// list has no tag. A nonempty tag cannot refer to this request.
-	if strings.Trim(a["tag"], " \t\r\n") != "" {
+	if !matches(a["tag"], nil) {
 		return "", errRPKIPublicationReply
 	}
 	switch a["error_code"] {
@@ -157,7 +166,7 @@ func publicationListError(n *xmlNode) (string, error) {
 			}
 			textSeen = true
 		case "failed_pdu":
-			if failedSeen || strings.Trim(c.Text, " \t\r\n") != "" || len(c.Children) != 1 || !publicationEmpty(c.Children[0], "list") {
+			if failedSeen || strings.Trim(c.Text, " \t\r\n") != "" || len(c.Children) != 1 || !matches(a["tag"], c.Children[0]) {
 				return "", errRPKIPublicationReply
 			}
 			failedSeen = true
