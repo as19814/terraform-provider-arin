@@ -24,31 +24,16 @@ func (c rpkiHTTPExchange) pendingPublicationPlan(lease *rpkiExchangeLease) (rpki
 	if lease == nil || c.MediaType != "application/rpki-publication" {
 		return plan, errRPKIExchangeState
 	}
-	peer, err := c.peerID()
+	verified, pending, err := c.pendingMutationContent(lease, "publication-batch")
 	if err != nil {
 		return plan, err
 	}
-	state, err := lease.State()
-	if err != nil || state.PeerID != peer || state.Pending == nil || state.Pending.Operation != "publication-batch" {
-		return plan, errRPKIExchangeState
-	}
-	raw, err := lease.PendingRequest()
-	if err != nil {
-		return plan, err
-	}
-	if fmt.Sprintf("%x", sha256.Sum256(raw)) != state.Pending.RequestSHA256 {
-		return plan, errRPKIExchangeState
-	}
-	verified, err := verifyRPKICMS(raw, rpkiCMSTrust{Anchor: c.Identity.Anchor, Intermediates: c.Identity.Intermediates, Now: state.Pending.SigningTime})
-	if err != nil || !verified.SigningTime.Equal(state.Pending.SigningTime) {
-		return plan, errRPKIExchangeState
-	}
-	plan, err = parsePublicationRecoveryPlan(verified.Content)
+	plan, err = parsePublicationRecoveryPlan(verified)
 	if err != nil {
 		return rpkiPublicationRecoveryPlan{}, err
 	}
-	plan.RequestSHA256 = state.Pending.RequestSHA256
-	plan.SigningTime = state.Pending.SigningTime
+	plan.RequestSHA256 = pending.RequestSHA256
+	plan.SigningTime = pending.SigningTime
 	return plan, nil
 }
 func parsePublicationRecoveryPlan(body []byte) (rpkiPublicationRecoveryPlan, error) {

@@ -1228,3 +1228,19 @@ codes. File-loading tests cover configuration validation. A signed client test
 loads the existing signing identity, observes a pending batch, commits a match
 and verifies the report excludes identity material. Native ARIN verification
 still requires delegated enrollment and credentials unavailable in this sandbox.
+
+### Pending revocation intent
+
+The private revocation recovery planner now verifies the retained signed request
+against its original BPKI anchor and recorded signing time, checks its digest and
+exact peer journal, and extracts the child, parent, resource class and normalized
+key identifier. Publication recovery shares the same saved-request verification
+helper. Neither inspection changes journal state nor sends network requests.
+
+[RFC 6492 section 3.5](https://www.rfc-editor.org/rfc/rfc6492.html#section-3.5)
+scopes revocation to a client's key within a resource class. Signed tests reject
+wrong peers, handles, operations, timestamps, signatures and missing evidence;
+parser tests reject malformed or mismatched revocation payloads. These tests use
+synthetic BPKI identities. Remote outcome verification, scheduled-revocation
+handling, durable reconciliation and Terraform certificate resources remain
+unfinished. No native delegated enrollment is available for verification.
