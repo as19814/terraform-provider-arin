@@ -225,14 +225,66 @@ ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
   go test ./internal/provider -run '^TestLiveRDAPResourceSearches$' -count=1 -v
 ```
 
+## Implemented IP network hierarchy searches
+
+`arin_rdap_network_hierarchy` requests
+`/registry/ips/rirSearch1/rdap-RELATION/ADDRESS-OR-PREFIX` without credentials.
+Canonical IPv4/IPv6 addresses and prefixes without host bits are accepted.
+
+| Relation | Result |
+| --- | --- |
+| `top` | Least-specific covering network, potentially equal to the query |
+| `up` | Strictly larger covering parent |
+| `down` | Immediate children inside the query |
+| `bottom` | Most-specific networks, potentially with an enclosing registration to cover gaps |
+
+All relations produce a `networks` list sorted by handle, with typed network
+fields and complete per-record `rdap_json`. Top/up responses contain one record
+or none. Bottom results can overlap and are not a partition of the queried range.
+The client rejects unrelated ranges, duplicate handles, referrals, pagination,
+and truncation, including partial nested entities. Structured RDAP 404 responses
+mean no matches. For collection relations, the documented 404 with an empty
+`ipSearchResults` array is also accepted. Plain HTTP errors, contradictory error
+payloads and partial results remain errors.
+
+`active_only = true` sends `status=active` and is supported for top/up only.
+ARIN determines active status before evaluating the hierarchy. OT&E returned 501
+for down/bottom with this filter on 2026-09-23; these combinations are rejected
+before a request is sent.
+
+Read-only native probes on 2026-09-23 confirmed both IPv4 and IPv6 address/prefix
+queries. For `23.189.120.0/24`, top/up returned the enclosing `23.0.0.0/8`,
+active top returned the query network itself, and active up/down/bottom returned
+no matches. For a point address within that prefix, up/bottom returned the /24
+registration. IPv6 `2602:f805::/36` returned 25 immediate children and 26 bottom
+records, including an enclosing registration. Point-address down queries returned
+no matches in both families. Fake-server coverage exercises response errors,
+range validation, overlapping bottom records, stable ordering, full JSON number
+precision, Terraform refresh and clean plans. The opt-in
+`TestLiveRDAPNetworkHierarchy` checks actual Terraform state against both OT&E
+and production and compares active top with the independently discovered org
+network inventory. It sends no API key and performs no writes. Both origins
+passed on 2026-09-23, including clean Terraform plans; production returned 49
+IPv6 children and 50 bottom records, compared with 25 and 26 in OT&E.
+
+## ASN hierarchy capability audit
+
+RFC 9910 defines ASN hierarchy queries, but support must be established for each
+server. OT&E returned HTTP 501 with RDAP `errorCode: 501` for all four
+`/registry/autnums/rirSearch1/rdap-{top,up,down,bottom}/19814` requests on
+2026-09-23. The same four queries using range `19814-19815` also returned 501.
+No ASN hierarchy data source is exposed for these unsupported operations.
+ASN lookup, inventories, registration-field searches and entity reverse searches
+remain available through their existing data sources.
+
 ## Remaining endpoint audit
 
 | Family | Current coverage | Remaining work |
 | --- | --- | --- |
 | IP network lookup | `arin_rdap_network`, native IPv4/IPv6 evidence | Final field/endpoint audit |
-| IP network searches | `arin_networks` direct registrant inventory; `arin_rdap_networks` handle/name and entity reverse searches with supported role filters | Hierarchy relations and final field/endpoint audit |
+| IP network searches | `arin_networks` direct registrant inventory; `arin_rdap_networks` handle/name and entity reverse searches with supported role filters; `arin_rdap_network_hierarchy` for four relations and active top/up | Final field/endpoint audit |
 | ASN lookup | `arin_asn` | Final field audit |
-| ASN searches | `arin_asns` direct registrant inventory; `arin_rdap_asns` handle/name and entity reverse searches with supported role filters | Capability audit for RFC 9910 ASN hierarchy searches and final field/endpoint audit |
+| ASN searches | `arin_asns` direct registrant inventory; `arin_rdap_asns` handle/name and entity reverse searches with supported role filters | Final field/endpoint audit; RFC 9910 ASN hierarchy endpoints return native 501 |
 | Entity lookup | `arin_rdap_entity` exposes contact fields and complete JSON; native organization/POC reads verified | Final endpoint audit |
 | Entity searches | `arin_rdap_entities` covers handle/name searches, exact/trailing-wildcard queries, no matches and partial-result rejection | Final endpoint audit |
 | Reverse domain lookup/search | `arin_rdap_domain` plus `arin_rdap_domains` for all four hierarchy relations and supported active filters | Final field/endpoint audit |

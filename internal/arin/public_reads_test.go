@@ -37,7 +37,7 @@ func TestPublicReads(t *testing.T) {
 			fmt.Fprintf(w, `{"ipSearchResults":[%s]}`, network)
 		case "/registry/autnums?handle=AS64496":
 			fmt.Fprintf(w, `{"autnumSearchResults":[%s]}`, asn)
-		case "/registry/ip/192.0.2.1":
+		case "/registry/ip/192.0.2.1", "/registry/ips/rirSearch1/rdap-up/192.0.2.1":
 			_, _ = w.Write(network)
 		case "/registry/autnum/64496":
 			_, _ = w.Write(asn)
@@ -74,7 +74,7 @@ func TestPublicReads(t *testing.T) {
 			t.Fatal(err)
 		}
 		switch s.Name {
-		case "rdap_networks", "rdap_asns":
+		case "rdap_networks", "rdap_asns", "rdap_network_hierarchy":
 			if len(result[s.Output].([]any)) != 1 {
 				t.Fatal("missing resource search result")
 			}

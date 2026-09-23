@@ -109,10 +109,11 @@ type APIError struct {
 	// can distinguish no matches from a proxy or wrong-origin HTTP 404.
 	rdapNotFound bool
 	// Some hierarchy searches express no matches as an empty array on HTTP 404.
-	rdapEmptyDomains bool
-	StatusCode       int
-	Code             string
-	Message          string
+	rdapEmptyDomains  bool
+	rdapEmptyNetworks bool
+	StatusCode        int
+	Code              string
+	Message           string
 }
 
 func (e *APIError) Error() string {
@@ -266,6 +267,7 @@ func (c *Client) doRequest(ctx context.Context, method, origin, path, accept str
 				}
 				apiErr.rdapNotFound = resp.StatusCode == http.StatusNotFound && notFoundCode && emptyResults && checkRDAPCompleteness(body) == nil
 				apiErr.rdapEmptyDomains = resp.StatusCode == http.StatusNotFound && emptyResults && (rdapError.ErrorCode == nil || notFoundCode) && rdapError.Domains != nil && len(*rdapError.Domains) == 0 && checkRDAPCompleteness(body) == nil
+				apiErr.rdapEmptyNetworks = resp.StatusCode == http.StatusNotFound && emptyResults && (rdapError.ErrorCode == nil || notFoundCode) && rdapError.Networks != nil && len(*rdapError.Networks) == 0 && checkRDAPCompleteness(body) == nil
 			}
 		}
 		return nil, apiErr

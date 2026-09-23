@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 40 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Nineteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs and ASPAs, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes, and advanced RPSL objects, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 41 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Nineteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs and ASPAs, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes, and advanced RPSL objects, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -290,3 +290,5 @@ CI runs on the YYJ self-hosted runners (`runs-on: [self-hosted, yyj]`) inside an
 [`arin_rdap_domains`](docs/data-sources/rdap_domains.md) searches reverse-domain hierarchies with `top`, `up`, `down`, and `bottom`. Optional active filtering is available for `top` and `up`; complete results are returned as a sorted list.
 
 [`arin_rdap_networks`](docs/data-sources/rdap_networks.md) and [`arin_rdap_asns`](docs/data-sources/rdap_asns.md) search registrations by handle/name or associated entity handle/name/email, with optional contact-role filters. Entity searches include associated resources; use `arin_networks` and `arin_asns` for direct-registrant inventories.
+
+[`arin_rdap_network_hierarchy`](docs/data-sources/rdap_network_hierarchy.md) searches IPv4/IPv6 ancestors and children using `top`, `up`, `down`, and `bottom`. Address and prefix queries are supported, with optional active filtering for `top` and `up`. Results preserve enclosing networks alongside children when ARIN returns both.

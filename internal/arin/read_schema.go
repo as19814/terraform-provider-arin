@@ -289,6 +289,11 @@ func (s ReadSpec) Validate(params map[string]string) error {
 			return err
 		}
 	}
+	if s.Name == "rdap_network_hierarchy" {
+		if err := validateRDAPNetworkRelation(params["relation"], params["active_only"] == "true"); err != nil {
+			return err
+		}
+	}
 	if s.Name == "rdap_domains" {
 		if err := validateRDAPDomainRelation(params["relation"], params["active_only"] == "true"); err != nil {
 			return err

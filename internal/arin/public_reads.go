@@ -17,6 +17,7 @@ var asnFields = []Field{
 
 func PublicReads() []ReadSpec {
 	return []ReadSpec{
+		{Name: "rdap_network_hierarchy", Public: true, Collection: true, Output: "networks", Description: "Search public IPv4/IPv6 network hierarchy: top (least-specific covering network), up (strict parent), down (immediate children), or bottom (most-specific networks, including enclosing registrations where needed). All relations return a list sorted by handle; confirmed no matches return an empty list. No API key is sent. Partial results and referrals are rejected.", Inputs: []Input{input("query", "ip_network", "192.0.2.0/24", "Canonical IPv4/IPv6 address or network prefix without host bits."), input("relation", "name", "up", "Hierarchy relation: top, up, down or bottom."), optional(input("active_only", "bool", "false", "Apply ARIN status=active filtering. Supported only for top and up; ARIN determines which records are active."), "false")}, Fields: joinFields(rdapNetworkFields, []Field{{Name: "rdap_json", Kind: StringKind, Description: "Complete JSON for this network, including nested entities and extensions. No links are followed."}})},
 		rdapResourceSearchSpec("rdap_networks", "networks", rdapNetworkFields),
 		rdapResourceSearchSpec("rdap_asns", "asns", asnFields),
 		{Name: "rdap_domains", Public: true, Collection: true, Output: "domains", Description: "Search public reverse-domain hierarchy: top (least-specific covering domain), up (parent), down (immediate children), or bottom (most-specific domains, including an enclosing domain when needed). Returns a list for all relations, including an empty list for confirmed no matches. No API key is sent; incomplete results and referrals are rejected.", Inputs: []Input{input("name", "rdap_domain", "2.0.192.in-addr.arpa.", "Reverse DNS domain to search relative to; case and an optional trailing dot are normalized."), input("relation", "name", "up", "Hierarchy relation: top, up, down or bottom."), optional(input("active_only", "bool", "false", "Apply ARIN status=active filtering. Supported only for top and up; ARIN determines which records are active."), "false")}, Fields: rdapDomainFields},
@@ -144,6 +145,9 @@ func (c *Client) readPublic(ctx context.Context, spec ReadSpec, p map[string]str
 	}
 	if spec.Name == "rdap_networks" || spec.Name == "rdap_asns" {
 		return c.searchRDAPResources(ctx, spec.Name, p["search_by"], p["query"], p["role"])
+	}
+	if spec.Name == "rdap_network_hierarchy" {
+		return c.searchRDAPNetworkHierarchy(ctx, p["query"], p["relation"], p["active_only"] == "true")
 	}
 	if spec.Name == "rdap_domains" {
 		return c.searchRDAPDomains(ctx, p["name"], p["relation"], p["active_only"] == "true")
