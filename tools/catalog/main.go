@@ -24,6 +24,7 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 
 | Data source | API | Purpose |
 | --- | --- | --- |
+| [arin_rpki_setup_request](../data-sources/rpki_setup_request.md) | Local RFC 8183 | Generate child and publisher setup requests from an existing BPKI certificate, without submitting them. |
 | [arin_rpki_setup](../data-sources/rpki_setup.md) | Local RFC 8183 | Inspect delegated RPKI and publication setup XML, BPKI certificates and referrals without network access. |
 | [arin_bulk_whois](../data-sources/bulk_whois.md) | Account downloads | Read an approved Bulk Whois artifact with optional object selection and ZIP/XML/text format. |
 | [arin_invalid_pocs](../data-sources/invalid_pocs.md) | Account downloads | Read the approved invalid-POC ZIP report. |

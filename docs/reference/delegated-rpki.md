@@ -82,7 +82,29 @@ reconcile against inventory before another write. No resource may take ownership
 of an entire active CA repository by implication. External CA automation must not
 manage the same certificates, manifests, CRLs or object URIs concurrently.
 
-Remaining work includes request generation, CMS verification/signing, protocol
+Remaining work includes CMS verification/signing, protocol
 clients, resource ownership/recovery implementation, fake-server tests and native
 enrollment plus disposable lifecycles. The local data source is a prerequisite,
 not evidence that signed provisioning or publication is implemented.
+
+## Setup request generation
+
+`arin_rpki_setup_request` generates child and publisher requests from an existing
+public BPKI CA certificate. It accepts one PEM certificate, rejects extra PEM
+blocks or surrounding content, and reuses the reader's CA/self-signature checks.
+It neither generates nor accepts a private key. The CA software must retain the
+key corresponding to the certificate for subsequent protocol operations.
+
+Output is deterministic XML with a SHA-256 ID. Tags retain absent/empty semantics
+and normalize XML token whitespace. Publisher requests preserve ordered referral
+handles and opaque authorization tokens; child requests reject referrals. Tokens
+are base64-validated, not CMS-verified. Generated XML is sensitive in Terraform
+and retained in state. Generation makes no network requests or enrollment changes.
+As with document inspection, current certificate validity is not checked.
+
+Unit tests independently decode generated XML and check identities, certificate
+bytes, referral ordering, tag escaping and repeatability. Invalid PEM, tags,
+handles, request types and referrals are rejected. Terraform acceptance connects
+both request types to `arin_rpki_setup`, verifies decoded output, refreshes a changed
+handle, and checks clean plans before and after the change. No native enrollment
+request was submitted; ARIN acceptance remains unverified without sandbox setup.
