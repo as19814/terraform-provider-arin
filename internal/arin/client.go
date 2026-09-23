@@ -159,14 +159,31 @@ func (c *Client) fetch(ctx context.Context, origin, path, accept string, authent
 	return c.request(ctx, http.MethodGet, origin, path, accept, authenticated, nil)
 }
 
-// request performs one attempt. Mutations are never replayed automatically.
+// request makes one application-level call. Ticket-creating report GETs use
+// requestReport to also prevent transport-level replay after a lost response.
 func (c *Client) request(ctx context.Context, method, origin, path, accept string, authenticated bool, payload []byte) (*readResponse, error) {
+	return c.doRequest(ctx, method, origin, path, accept, authenticated, payload, true)
+}
+
+// requestReport uses a non-rewindable empty body so Go's HTTP transport does not
+// replay a ticket-creating GET after a reused connection loses its response.
+func (c *Client) requestReport(ctx context.Context, path string) (*readResponse, error) {
+	return c.doRequest(ctx, http.MethodGet, c.baseURL, path, "application/xml", true, nil, false)
+}
+
+func (c *Client) doRequest(ctx context.Context, method, origin, path, accept string, authenticated bool, payload []byte, replayable bool) (*readResponse, error) {
 	if authenticated && c.apiKey == "" {
 		return nil, errors.New("api_key or ARIN_API_KEY is required for Reg-RWS operations")
 	}
 	req, err := http.NewRequestWithContext(ctx, method, origin+path, bytes.NewReader(payload))
 	if err != nil {
 		return nil, errors.New("could not construct ARIN request")
+	}
+	if !replayable {
+		// Do not use http.NoBody or a rewindable bytes.Reader here. Both make
+		// GET eligible for transport retries. The body emits zero wire bytes.
+		req.Body = io.NopCloser(bytes.NewReader(nil))
+		req.GetBody = nil
 	}
 	if authenticated {
 		req.Header.Set("Authorization", "ApiKey "+c.apiKey)
