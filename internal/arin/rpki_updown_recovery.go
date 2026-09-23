@@ -1,11 +1,7 @@
 package arin
 
 import (
-	"crypto/sha1"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/asn1"
-	"encoding/base64"
 	"encoding/json"
 	"strings"
 	"time"
@@ -97,16 +93,11 @@ func classifyRevocationInventory(plan rpkiRevocationRecoveryPlan, classes []rpki
 			if err != nil || !cert.IsCA || !cert.BasicConstraintsValid {
 				return "", errRPKIUpDown
 			}
-			var spki struct {
-				Algorithm pkix.AlgorithmIdentifier
-				Key       asn1.BitString
+			identifier, err := rpkiPublicKeyIdentifier(cert.RawSubjectPublicKeyInfo)
+			if err != nil {
+				return "", err
 			}
-			if !rpkiCSRDER(cert.RawSubjectPublicKeyInfo, &spki) || spki.Key.BitLength == 0 || spki.Key.BitLength != len(spki.Key.Bytes)*8 {
-				return "", errRPKIUpDown
-			}
-			// RFC 5280 method 1 identifies the key; do not trust an arbitrary SKI extension.
-			hash := sha1.Sum(spki.Key.Bytes)
-			if class.Name == plan.Class && base64.RawURLEncoding.EncodeToString(hash[:]) == ski {
+			if class.Name == plan.Class && identifier == ski {
 				present = true
 			}
 		}

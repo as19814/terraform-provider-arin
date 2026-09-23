@@ -87,11 +87,27 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 			if mode == "insecure_url" {
 				validation.Notifications[0] = "http://example.test/notification.xml"
 			}
+			apiConfig := certificateTestConfig(t, exchange)
+			apiValidation := RPKICertificateValidation{AnchorPEM: certificateTestPEM("CERTIFICATE", validation.Anchor.Raw), Notifications: validation.Notifications, CacheDirectory: validation.CacheDirectory, HistoryDirectory: validation.HistoryDirectory}
+			for _, issuer := range validation.Issuers {
+				apiValidation.IssuerChainPEM += certificateTestPEM("CERTIFICATE", issuer.Raw)
+			}
 			valid := mode == "valid"
 			for attempt := 0; attempt < 2; attempt++ {
-				got, err := client.IssueWithRRDP(context.Background(), rpkiIssueRequest{Class: "class", CSRDER: csr}, validation)
-				if (err == nil) != valid || (got != nil) != valid {
-					t.Fatalf("mode=%s result=%v err=%v", mode, got != nil, err)
+				var result bool
+				var err error
+				if attempt == 0 {
+					got, issueErr := client.IssueWithRRDP(context.Background(), rpkiIssueRequest{Class: "class", CSRDER: csr}, validation)
+					result, err = got != nil, issueErr
+				} else {
+					got, issueErr := issueRPKICertificate(context.Background(), apiConfig, RPKICertificateRequest{Class: "class", CSRPEM: certificateTestPEM("CERTIFICATE REQUEST", csr)}, apiValidation, cmsTrustNow, validation.Client)
+					result, err = got != nil, issueErr
+					if got != nil && (got.Class != "class" || got.SKI != base64.RawURLEncoding.EncodeToString(f.certs[0].SubjectKeyId) || got.CertificatePEM != certificateTestPEM("CERTIFICATE", f.certs[0].Raw) || got.IssuerPEM != certificateTestPEM("CERTIFICATE", f.certs[1].Raw) || got.CertificateURLs != pubs[0].ChildURI || got.NotAfter != f.certs[0].NotAfter.UTC().Format(time.RFC3339)) {
+						t.Fatal("API lost certificate identity")
+					}
+				}
+				if (err == nil) != valid || result != valid {
+					t.Fatalf("mode=%s result=%v err=%v", mode, result, err)
 				}
 			}
 			scope, _ := json.Marshal([]string{"child", "parent"})

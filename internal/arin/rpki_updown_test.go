@@ -118,8 +118,14 @@ func TestUpDownRevokeExchange(t *testing.T) {
 			defer server.Close()
 			config := rpkiHTTPExchange{Endpoint: server.URL, MediaType: "application/rpki-updown", Directory: privateExchangeDir(t), Identity: local, PeerAnchor: remote.Anchor, Clock: cmsTrustNow}
 			client := rpkiUpDownClient{Exchange: config, Child: "child", Parent: "parent"}
+			apiConfig := certificateTestConfig(t, config)
 			for i := 0; i < 2; i++ {
-				err := client.Revoke(context.Background(), "class", ski)
+				var err error
+				if i == 0 {
+					err = client.Revoke(context.Background(), "class", ski)
+				} else {
+					err = revokeRPKICertificate(context.Background(), apiConfig, "class", ski, cmsTrustNow)
+				}
 				switch mode {
 				case "success":
 					if err != nil {

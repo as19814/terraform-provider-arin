@@ -1295,3 +1295,28 @@ publication. It is not yet an end-to-end recovery path for a Terraform
 certificate resource. Signed local API tests verify report mapping and unchanged
 pending state; CLI tests verify mode isolation, error handling and rejection of
 commit flags. Native delegated verification still requires sandbox enrollment.
+
+### Certificate management client API
+
+`IssueRPKICertificate` now accepts the provider's file-backed BPKI configuration,
+a PEM CA CSR, resource class, optional resource subsets, and separate resource
+trust configuration. The latter requires a PEM anchor, an ordered issuer chain
+(immediate issuer through that anchor), one HTTPS RRDP notification URL per
+issuer, and existing private cache/history directories. It uses the existing
+manifest-backed issuance gate before completing the exchange journal. Private
+resource keys are never required or returned; the caller supplies a signed CSR.
+
+The result contains the certificate and issuer PEM, publication URLs, class,
+method-1 public-key identifier and the issued certificate's expiry. Omitted
+resource subsets remain distinct from explicitly empty subsets. Revocation uses
+`RevokeRPKICertificate` with a class and key identifier and the same transport
+configuration. Uncertain or scheduled responses preserve pending state and block
+subsequent mutations; no client-side automatic resubmission is added.
+
+Signed issuance/RRDP tests now also exercise the file-backed API, including exact
+returned certificate identity, cache/history reuse and blocked retry following
+failed validation. Signed revocation tests cover confirmed responses, protocol
+rejection, wrong keys and scheduled processing through that API. Cancellation
+and malformed-input checks run before loading signing keys. These are synthetic
+fixtures, not native delegated interoperability evidence. Terraform certificate
+schema, lifecycle/import and complete uncertainty recovery remain unfinished.
