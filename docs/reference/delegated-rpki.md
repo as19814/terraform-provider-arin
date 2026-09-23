@@ -1165,3 +1165,66 @@ The observation describes current hashes, not proof of transaction history.
 
 The mechanism remains internal. CLI/provider exposure, recovery of issuance and
 revocation, crash-lock handling and native delegated verification remain unfinished.
+
+## Publication recovery CLI
+
+`tools/rpki-journal` now exposes publication observation and explicit reconciliation.
+The configuration is a private regular JSON file (0600, absolute path, at most
+16 MiB) using these Terraform attribute names:
+
+- Required: `endpoint`, `publisher_handle`, `journal_directory`,
+  `signing_key_file`, `signing_certificate_pem`, `signing_ca_pem`,
+  `signing_crls_pem`, and `peer_ca_pem`.
+- Optional: `signing_intermediates_pem` and `peer_intermediates_pem`.
+
+All values are strings. Certificate/CRL values contain PEM text. The signing key
+field contains only a private local file path. Unlike the import manifest, this
+file contains no `objects` or `id`. Unknown or duplicate fields, non-string
+values, symlinks and permissive file permissions are rejected. Keep the file out
+of Git.
+
+First inspect the existing journal locally to obtain `pending.request_sha256`:
+
+```sh
+go run ./tools/rpki-journal -directory /private/arin-rpki -peer PEER_ID
+```
+
+Then obtain an authenticated inventory comparison without clearing the mutation:
+
+```sh
+go run ./tools/rpki-journal \
+  -publication-config /absolute/path/publication-recovery.json \
+  -request-sha256 REQUEST_SHA256
+```
+
+The JSON report includes before/after hash maps, the observed outcome, recovery
+peer ID, signing timestamps and `committed: false`. Empty hashes represent absent
+objects. No certificate or private-key contents are returned in this report.
+To explicitly commit a selected matching outcome, perform a new authenticated
+read with `-expect matches_after` or `-expect matches_before`:
+
+```sh
+go run ./tools/rpki-journal \
+  -publication-config /absolute/path/publication-recovery.json \
+  -request-sha256 REQUEST_SHA256 \
+  -expect matches_after
+```
+
+Success returns `committed: true`. A changed, ambiguous or conflicting observation
+fails without clearing the mutation. Neither mode sends publication mutations.
+The command cannot bypass crash locks or reconcile issuance/revocation. A failed
+recovery list remains pending in its separate recovery journal; failures report
+the recovery journal peer ID. Inspect that journal and use exact read-only
+abandonment before trying again.
+
+After successful reconciliation, run Terraform refresh/plan before further
+changes. An uncertain create whose objects exist may need exact-content import;
+reconciliation does not invent Terraform state. Updates and deletes use the next
+refreshed inventory as usual. Retain the original journal directory and use a
+provider build that understands reconciliation receipts.
+
+CLI mode tests cover flag exclusivity, observation versus commit and error exit
+codes. File-loading tests cover configuration validation. A signed client test
+loads the existing signing identity, observes a pending batch, commits a match
+and verifies the report excludes identity material. Native ARIN verification
+still requires delegated enrollment and credentials unavailable in this sandbox.

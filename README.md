@@ -379,12 +379,12 @@ independently validate the returned resource certificates' RPKI trust paths.
 
 Interrupted delegated inventory reads can be inspected and explicitly abandoned
 with `go run ./tools/rpki-journal`. See [read recovery](docs/reference/delegated-rpki.md#recovering-an-interrupted-inventory-read).
-The command cannot clear uncertain mutations or bypass process locks.
+Publication mutations have a separate [authenticated reconciliation mode](docs/reference/delegated-rpki.md#publication-recovery-cli). The command cannot bypass process locks.
 
 
 [`arin_rpki_publication_bundle`](docs/resources/rpki_publication_bundle.md)
 manages caller-supplied signed objects and manifests in atomic publication
 batches. It uses inventory hashes for replacement and withdrawal, restores drift,
-and preserves unmanaged URLs. Import verifies exact contents from a private JSON manifest. Uncertain-mutation
-recovery remains unfinished; native delegated verification requires existing
-sandbox enrollment.
+and preserves unmanaged URLs. Import verifies exact contents from a private JSON manifest. Publication
+reconciliation is available through the recovery CLI; native delegated
+verification still requires existing sandbox enrollment.
