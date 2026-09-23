@@ -3,6 +3,7 @@ package arin
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/xml"
 	"errors"
 	"io"
@@ -20,6 +21,28 @@ var errRPKIRRDP = errors.New("invalid or inconsistent RPKI repository data")
 // Returned objects are transport data, not authenticated RPKI objects. Callers
 // still need manifest/path validation and persistent session/serial tracking.
 func parseRRDPSnapshot(body []byte, session, serial string, digest [sha256.Size]byte) (map[string][]byte, error) {
+	changes, err := parseRRDPObjectFile(body, session, serial, digest, false)
+	if err != nil {
+		return nil, err
+	}
+	objects := make(map[string][]byte, len(changes))
+	for _, c := range changes {
+		if _, exists := objects[c.URI]; exists {
+			return nil, errRPKIRRDP
+		}
+		objects[c.URI] = c.Data
+	}
+	return objects, nil
+}
+
+type rrdpChange struct {
+	URI      string
+	OldHash  *[sha256.Size]byte
+	Withdraw bool
+	Data     []byte
+}
+
+func parseRRDPObjectFile(body []byte, session, serial string, digest [sha256.Size]byte, delta bool) ([]rrdpChange, error) {
 	if len(body) == 0 || len(body) > 128<<20 || !rrdpSession.MatchString(session) || !rrdpSerial.MatchString(serial) || sha256.Sum256(body) != digest {
 		return nil, errRPKIRRDP
 	}
@@ -27,10 +50,14 @@ func parseRRDPSnapshot(body []byte, session, serial string, digest [sha256.Size]
 	if err != nil {
 		return nil, err
 	}
-	objects := make(map[string][]byte)
+	var changes []rrdpChange
 	depth, total := 0, 0
 	started, ended := false, false
-	var uri string
+	var change rrdpChange
+	rootName := "snapshot"
+	if delta {
+		rootName = "delta"
+	}
 	var content strings.Builder
 	for {
 		token, err := decoder.Token()
@@ -51,18 +78,39 @@ func parseRRDPSnapshot(body []byte, session, serial string, digest [sha256.Size]
 					return nil, errRPKIRRDP
 				}
 				started = true
-				a, err := rrdpAttributes(t, "snapshot", "version", "session_id", "serial")
+				a, err := rrdpAttributes(t, rootName, "version", "session_id", "serial")
 				if err != nil || a["version"] != "1" || a["session_id"] != session || a["serial"] != serial {
 					return nil, errRPKIRRDP
 				}
 			case 1:
-				a, err := rrdpAttributes(t, "publish", "uri")
-				if err != nil || len(objects) >= 10000 || !publicationURI(a["uri"]) || strings.HasSuffix(a["uri"], "/") {
+				required := []string{"uri"}
+				withdraw := delta && t.Name.Local == "withdraw"
+				if withdraw {
+					required = append(required, "hash")
+				} else if delta {
+					for _, a := range t.Attr {
+						if a.Name.Space == "" && a.Name.Local == "hash" {
+							required = append(required, "hash")
+							break
+						}
+					}
+				}
+				name := "publish"
+				if withdraw {
+					name = "withdraw"
+				}
+				a, err := rrdpAttributes(t, name, required...)
+				if err != nil || len(changes) >= 10000 || !publicationURI(a["uri"]) || strings.HasSuffix(a["uri"], "/") {
 					return nil, errRPKIRRDP
 				}
-				uri = a["uri"]
-				if _, exists := objects[uri]; exists {
-					return nil, errRPKIRRDP
+				change = rrdpChange{URI: a["uri"], Withdraw: withdraw}
+				if value, present := a["hash"]; present {
+					hash, err := hex.DecodeString(value)
+					if err != nil || len(hash) != sha256.Size {
+						return nil, errRPKIRRDP
+					}
+					h := [sha256.Size]byte(hash)
+					change.OldHash = &h
 				}
 				content.Reset()
 			default:
@@ -71,19 +119,26 @@ func parseRRDPSnapshot(body []byte, session, serial string, digest [sha256.Size]
 			depth++
 		case xml.EndElement:
 			if depth == 2 {
-				encoded := content.String()
-				if base64.StdEncoding.DecodedLen(len(encoded)) > (4<<20)+2 {
-					return nil, errRPKIRRDP
+				if change.Withdraw {
+					if content.Len() != 0 {
+						return nil, errRPKIRRDP
+					}
+				} else {
+					encoded := content.String()
+					if base64.StdEncoding.DecodedLen(len(encoded)) > (4<<20)+2 {
+						return nil, errRPKIRRDP
+					}
+					data, err := base64.StdEncoding.Strict().DecodeString(encoded)
+					if err != nil || len(data) == 0 || len(data) > 4<<20 {
+						return nil, errRPKIRRDP
+					}
+					total += len(data)
+					if total > 64<<20 {
+						return nil, errRPKIRRDP
+					}
+					change.Data = data
 				}
-				data, err := base64.StdEncoding.Strict().DecodeString(encoded)
-				if err != nil || len(data) == 0 || len(data) > 4<<20 {
-					return nil, errRPKIRRDP
-				}
-				total += len(data)
-				if total > 64<<20 {
-					return nil, errRPKIRRDP
-				}
-				objects[uri] = data
+				changes = append(changes, change)
 			} else if depth == 1 {
 				ended = true
 			} else {
@@ -108,10 +163,10 @@ func parseRRDPSnapshot(body []byte, session, serial string, digest [sha256.Size]
 			return nil, errRPKIRRDP
 		}
 	}
-	if !started || !ended || depth != 0 {
+	if !started || !ended || depth != 0 || (delta && len(changes) == 0) {
 		return nil, errRPKIRRDP
 	}
-	return objects, nil
+	return changes, nil
 }
 
 func rrdpAttributes(e xml.StartElement, name string, required ...string) (map[string]string, error) {

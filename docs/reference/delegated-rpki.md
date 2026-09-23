@@ -789,3 +789,23 @@ Persistent cache/session tracking, poll scheduling, delta processing, repository
 resolver wiring and native retrieval evidence remain unfinished. Retrieved
 objects still require manifest/resource-path authentication before issuance
 acceptance.
+
+## RRDP delta application
+
+The bounded object-file decoder now supports delta publish/withdraw operations
+alongside snapshots. Delta application verifies the referenced file hash,
+notification URI, session and exact next serial before applying changes to a
+new repository map. New publication requires absence; replacement and withdrawal
+require an existing object with the supplied SHA-256 hash. Objects are scoped to
+one repository, and base maps/buffers remain unchanged even if a later operation
+fails. Successful results own their byte buffers.
+
+HTTPS delta retrieval now feeds this application step. Tests exercise creation,
+replacement, withdrawal, stale/missing preconditions, malformed payloads,
+repository/session mismatches, skipped/repeated serials, partial-update rejection
+and buffer isolation. Snapshot tests continue to enforce snapshot-only syntax
+and duplicate-object rejection through the shared decoder.
+
+Persistent repository storage, notification polling, delta-chain orchestration
+with snapshot fallback and issuance resolver wiring remain unfinished. These
+transport maps still require RPKI manifest/path validation before use.
