@@ -1707,3 +1707,56 @@ still use the previous bounded in-memory cache and cannot yet consume this large
 native repository. The new spool must not be substituted for persistent refresh
 without that work. Protocol reference: [RFC 8182](https://www.rfc-editor.org/rfc/rfc8182.html),
 particularly complete snapshot verification and consistent repository replacement.
+
+### Persistent disk repositories and certificate integration (2026-09-23)
+
+Certificate issuance, validated refresh and revocation evidence now use
+`RefreshDiskPersistent` through the shared path assembler. The repository cache
+keeps a private packed object file and a canonical version 2 JSON index containing
+URI, offset, size and SHA-256 metadata. Only the selected manifest files enter
+path-validation memory. Reads check individual object hashes. Reopening validates
+index scope, file privacy/identity, contiguous offsets, object/URI limits and
+packed-file size before returning a handle.
+
+Refresh holds the existing per-notification filesystem lease. It saves the
+polling attempt before HTTP, retains conditional request metadata, rejects serial
+rollback and changed snapshots at an unchanged serial, and uses complete ordered
+delta chains where available. Deltas operate on a private copy, check old hashes,
+and repack the completed result before publication. Any failed chain is discarded
+and may fall back to a full snapshot; failed retrieval retains the previous
+repository and the durable attempt timestamp. A new session requires a snapshot.
+
+The new packed file and containing directory are synced before an atomic index
+replacement. The prior generation is removed only after that replacement is
+synced. Existing open readers retain their old file handle. A failure after index
+rename may already have published the new generation, so its file is retained and
+the call reports failure. Crashes may leave an exclusive lock and unreferenced
+staging/generation files; these require explicit inspection and recovery, not an
+automatic replay or deletion of current state.
+
+Valid version 1 caches migrate under the same lease, preserving repository
+identity, objects, snapshot reference, conditional timestamp and polling attempt.
+Migration itself makes no network request and does not reset rollback protection.
+Unknown versions, malformed records and missing/insecure/symlinked object files
+stop before HTTP. Migration is one-way: older provider binaries reject version 2
+cache files. Preserve the complete cache directory when moving installations.
+
+Per-repository streaming limits remain 2 GiB XML, 1 GiB decoded objects, one million
+objects and 128 MiB URI text. A delta candidate may temporarily contain up to
+2 GiB of packed bytes before compaction. Across distinct repositories in one path,
+limits are 2 GiB decoded data, one million indexed objects and 128 MiB URI text;
+assembled manifest publications retain their 128 MiB memory limit. Index JSON is
+bounded to 256 MiB. Snapshot/candidate/generation staging can temporarily require
+multiple packed-file copies on disk.
+
+The native public repository test now runs the persistent refresh and the actual
+`RetrievePath` used by resources. It passed with 235,888 objects and 510,165,246
+decoded bytes in 18.43 seconds, including repeated persisted-cache reads, root
+manifest/CRL verification and reopening manifest history for the child CA path.
+This closes the native repository-size integration gap. Signed delegated
+provisioning/publication still lacks an enrolled sandbox identity.
+
+Regression tests cover persisted polling, 304, rollback, new sessions, preferred
+deltas, fallback, retained generations, old open readers, valid/empty v1 migration,
+format/scope/file corruption, two-delta replacement/withdrawal/publication chains,
+and rejection of late digest failures without exposing partial results.

@@ -24,6 +24,7 @@ type rrdpSnapshotSpool struct {
 	file    *os.File
 	entries map[string]rrdpSpoolEntry
 	size    int64
+	keep    bool
 }
 
 func spoolRRDPSnapshot(ctx context.Context, directory string, input io.Reader, n *rrdpNotification) (*rrdpSnapshotSpool, error) {
@@ -109,8 +110,10 @@ func (s *rrdpSnapshotSpool) Close() error {
 	err := s.file.Close()
 	s.file = nil
 	s.entries = nil
-	if e := os.Remove(name); e != nil {
-		err = e
+	if !s.keep {
+		if e := os.Remove(name); e != nil {
+			err = e
+		}
 	}
 	return err
 }

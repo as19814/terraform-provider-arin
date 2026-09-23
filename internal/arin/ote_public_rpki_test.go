@@ -32,10 +32,16 @@ func TestOTEPublicRPKIBootstrap(t *testing.T) {
 	if os.Getenv("ARIN_OTE_PUBLIC_TESTS") != "1" {
 		t.Skip("requires ARIN_OTE_PUBLIC_TESTS=1")
 	}
-	otePublicRPKIBootstrap(t)
+	_, _, uri := otePublicRPKIBootstrap(t)
+	client := rrdpHTTPClient{Transport: otePublicRPKITransport{}, Timeout: time.Minute}
+	result, err := client.FetchNotification(context.Background(), uri, time.Time{})
+	if err != nil || result.Notification == nil || result.NotModified {
+		t.Fatalf("notification: %v", err)
+	}
+	t.Log("parsed public RRDP notification")
 }
 
-func otePublicRPKIBootstrap(t *testing.T) (*x509.Certificate, string, *rrdpNotification) {
+func otePublicRPKIBootstrap(t *testing.T) (*x509.Certificate, string, string) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -84,15 +90,8 @@ func otePublicRPKIBootstrap(t *testing.T) (*x509.Certificate, string, *rrdpNotif
 	if manifestURI == "" || notificationURI == "" {
 		t.Fatal("missing trust anchor repository locations")
 	}
-	result, err := client.FetchNotification(ctx, notificationURI, time.Time{})
-	if err != nil {
-		t.Fatalf("notification: %v", err)
-	}
-	if result.Notification == nil || result.NotModified || result.Notification.Snapshot.URI == "" {
-		t.Fatal("missing initial repository snapshot")
-	}
-	t.Log("validated TAL-pinned trust anchor and parsed its RRDP notification")
-	return anchor, manifestURI, result.Notification
+	t.Log("validated TAL-pinned trust anchor")
+	return anchor, manifestURI, notificationURI
 }
 
 func TestOTEPublicRPKITransportGuard(t *testing.T) {
@@ -125,15 +124,18 @@ func TestOTEPublicRPKIRepository(t *testing.T) {
 	if os.Getenv("ARIN_OTE_REPOSITORY_TESTS") != "1" {
 		t.Skip("requires ARIN_OTE_REPOSITORY_TESTS=1")
 	}
-	anchor, manifestURI, notification := otePublicRPKIBootstrap(t)
+	anchor, manifestURI, notificationURI := otePublicRPKIBootstrap(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	client := rrdpHTTPClient{Transport: otePublicRPKITransport{}, Timeout: 5 * time.Minute}
-	spool, err := client.FetchSnapshotSpool(ctx, privateExchangeDir(t), notification)
+	directory := privateExchangeDir(t)
+	fetchedAt := time.Now().UTC()
+	cache, err := client.RefreshDiskPersistent(ctx, directory, notificationURI, fetchedAt)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer spool.Close()
+	defer cache.Close()
+	spool := cache.Objects
 	t.Logf("verified snapshot digest: %d objects, %d decoded bytes", len(spool.entries), spool.size)
 	manifestDER, err := spool.ReadObject(manifestURI)
 	if err != nil {
@@ -173,7 +175,11 @@ func TestOTEPublicRPKIRepository(t *testing.T) {
 		}
 		publication.ChildURI = prefix + name
 		for attempt := 0; attempt < 2; attempt++ {
-			if _, err := verifyAndRecordRPKIManifestPath(history, []*x509.Certificate{child, anchor}, anchor, []rpkiPathPublication{publication}, now); err != nil {
+			path, err := client.RetrievePath(ctx, directory, []*x509.Certificate{child, anchor}, []string{notificationURI}, fetchedAt)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := verifyAndRecordRPKIManifestPath(history, path.Certificates, anchor, path.Publications, now); err != nil {
 				t.Fatal(fmt.Errorf("published child path validation: %w", err))
 			}
 		}

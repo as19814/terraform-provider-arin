@@ -67,32 +67,46 @@ func (c rrdpHTTPClient) retrievePath(ctx context.Context, directory string, cert
 	}
 	// Keep repositories scoped to their notification URI, even when object URIs
 	// collide. Shared notifications are refreshed only once per resolution.
-	repositories := map[string]rrdpRepository{}
-	total, repositoryTotal := 0, 0
+	repositories := map[string]*rrdpDiskCache{}
+	defer func() {
+		for _, cache := range repositories {
+			cache.Close()
+		}
+	}()
+	total := 0
+	var repositoryTotal int64
+	repositoryObjects, repositoryURIBytes := 0, 0
 	for i, notification := range notifications {
 		if err := ctx.Err(); err != nil {
 			return rpkiIssuePath{}, err
 		}
 		repository, ok := repositories[notification]
 		if !ok {
-			cache, err := c.RefreshPersistent(ctx, directory, notification, now)
+			cache, err := c.RefreshDiskPersistent(ctx, directory, notification, now)
 			if err != nil && !errors.Is(err, errRPKIRRDPPoll) {
+				cache.Close()
 				return rpkiIssuePath{}, err
 			}
-			if cache.Repository.Session == "" {
+			if cache == nil || cache.Record.Session == "" {
+				cache.Close()
 				return fail()
 			}
-			repository = cache.Repository
-			for _, data := range repository.Objects {
-				repositoryTotal += len(data)
-				if repositoryTotal > 128<<20 {
-					return fail()
-				}
+			repository = cache
+			repositories[notification] = cache
+			repositoryTotal += cache.Record.Size
+			repositoryObjects += len(cache.Record.Entries)
+			for uri := range cache.Record.Entries {
+				repositoryURIBytes += len(uri)
 			}
-			repositories[notification] = repository
+			if repositoryTotal > 2<<30 || repositoryObjects > 1000000 || repositoryURIBytes > 128<<20 {
+				return fail()
+			}
 		}
 		manifestURI := manifests[i]
-		manifestDER := repository.Objects[manifestURI]
+		manifestDER, err := repository.Objects.ReadObject(manifestURI)
+		if err != nil {
+			return fail()
+		}
 		manifest, err := decodeRPKIManifest(manifestDER)
 		if err != nil {
 			return fail()
@@ -105,8 +119,8 @@ func (c rrdpHTTPClient) retrievePath(ctx context.Context, directory string, cert
 		publication.ManifestDER = bytes.Clone(manifestDER)
 		prefix := manifestURI[:strings.LastIndexByte(manifestURI, '/')+1]
 		for name := range manifest.Content.Files {
-			data, ok := repository.Objects[prefix+name]
-			if !ok {
+			data, err := repository.Objects.ReadObject(prefix + name)
+			if err != nil {
 				return fail()
 			}
 			total += len(data)
