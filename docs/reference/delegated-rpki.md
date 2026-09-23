@@ -875,3 +875,29 @@ repository substitution, CRL tampering and wrong anchors.
 
 Automatic issuer-chain discovery, issuance resolver configuration, recovery,
 Terraform integration and native delegated verification remain unfinished.
+
+
+## Issuance with RRDP verification
+
+The private up-down client now has an issuance entry point that connects RRDP
+retrieval to the existing manifest-backed validation gate. Configuration supplies
+an explicit issuer-to-anchor chain, a separate trust anchor, per-issuer HTTPS
+notification URLs, and private cache/history directories. Chain DER, issuer
+signatures, anchor equality, URL schemes and directory configuration are checked
+before dispatch. The response must identify the configured immediate issuer.
+
+After the signed issue response, the client retrieves the issued certificate's
+manifest publications, validates the anchored resource path and allocation,
+and persists manifest history before completing the exchange journal. Repository
+failure or verification failure leaves issuance pending and blocks resubmission.
+An unchanged recent cache can be reused; absence from that cache still fails
+verification and does not trigger another issuance request.
+
+Signed fake up-down and TLS repository tests cover successful completion and
+cache reuse, unavailable repositories, altered CRLs, issuer/anchor mismatches,
+insecure URLs and allocation mismatches. They inspect pending exchange state and
+manifest history, including a second call that must not retry failed issuance.
+
+This entry point remains internal. Terraform configuration/resources, automatic
+chain discovery, pending-operation recovery and native delegated enrollment and
+interoperability remain unfinished.
