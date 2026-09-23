@@ -37,6 +37,7 @@ data "arin_irr_aut_num" "example" {
 - `export_policy` (List of String) Ordered lines of export policy.
 - `import_policy` (List of String) Ordered lines of import policy.
 - `last_modified_date` (String) last modified date returned by ARIN.
+- `member_of` (List of String) member of returned by ARIN.
 - `mp_default_policy` (List of String) Ordered lines of mp default policy.
 - `mp_export_policy` (List of String) Ordered lines of mp export policy.
 - `mp_import_policy` (List of String) Ordered lines of mp import policy.

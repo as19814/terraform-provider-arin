@@ -88,3 +88,20 @@ addresses inside the test organization's registrations. The parent registration
 lookup checks ownership; `mostSpecificNet` is unsuitable for this preflight
 because it requires an existing registration with the exact start/end range.
 Production writes remain untested. Tests leave no disposable routes behind.
+
+## Simple IRR route sets and aut-num
+
+Route sets expose IPv4 members, multiprotocol members and MNT references as
+unordered Terraform sets. XML member attributes preserve RPSL prefix ranges;
+OT&E accepts `^+` despite the UI guide's contrary limitation. Collection clearing
+uses empty member containers and omitted empty remarks. Server-generated POC
+links and timestamps are computed.
+
+Aut-num writes include its AS name, description, remarks, six ordered policy
+collections, and repeated `<memberOf name="..."/>` entries. Empty optional policy
+elements are omitted. The canonical ASN is the resource/import ID, separate from
+its registration handle. The data source also exposes membership. OT&E tests
+only create an IRR record after confirming it is absent for an ASN registered to
+the test org. Cleanup deletes the new IRR object and its helper AS set, never the
+ASN registration. All non-report read and managed coverage is tracked in
+`implementation-status.md`; this is not a claim of full API coverage.

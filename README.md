@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Managed resources [`arin_irr_as_set`](docs/resources/irr_as_set.md) and [`arin_irr_route`](docs/resources/irr_route.md) support simple IRR AS sets and IPv4/IPv6 routes, with creation, updates, deletion, and import. The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Four managed resources cover simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -154,6 +154,25 @@ remarks, import, clean plan, deletion, and confirmation of absence. Mock tests a
 exercise drift repair, external deletion, origin replacement, and error handling.
 Production writes have not been performed.
 
+## Managed route sets and aut-num policies
+
+[`arin_irr_route_set`](docs/resources/irr_route_set.md) manages IPv4 `members`,
+IPv4/IPv6 `mp_members`, and `members_by_ref`, plus description and remarks. The
+import ID is its uppercase set name. Prefix range expressions are supported by
+the XML API; `^+` was verified in OT&E. Names and organization changes require
+replacement. POC links are computed. Omitting optional collections clears them.
+
+[`arin_irr_aut_num`](docs/resources/irr_aut_num.md) manages the IRR policy object
+for an ASN, not the ASN registration itself. It supports `as_name`, description,
+remarks, AS-set `member_of`, and all six policy collections: `import_policy`,
+`export_policy`, `default_policy`, and their `mp_` counterparts. Each policy is
+an ordered list of RPSL lines. Import by canonical `as_number`, such as `AS64496`.
+The ASN and organization are replacement fields; other configured fields update
+in place. Deletion removes the IRR object and leaves the ASN registration intact.
+
+Both resources pass mock and OT&E create/update/clear/import/delete lifecycles.
+Advanced RPSL objects remain in the implementation backlog.
+
 ## Next steps
 
 Extend managed-resource support to additional IRR objects, network metadata, and delegations, with explicit lifecycle semantics and OT&E validation. Network discovery and authenticated detail reads are implemented; network metadata management can build on those models. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
@@ -162,7 +181,7 @@ Start with the [API index](docs/reference/arin-api/README.md), [provider notes](
 
 ## OT&E write validation
 
-The AS-set and route lifecycles have a separate opt-in test command:
+The AS-set, route-set, aut-num and route lifecycles have a separate opt-in test command:
 
 ```sh
 ARIN_TEST_ORG_HANDLE=FT-684 make testote
@@ -181,6 +200,12 @@ held by the organization, confirms parent registration ownership, and confirms
 each prefix/origin pair is absent. It uses the documentation ASN AS64496. It then
 creates, updates, imports, verifies a clean plan, deletes, and checks absence for
 both families. Prefixes are printed for recovery if cleanup fails.
+The route-set test exercises IPv4/IPv6 membership, MNT references, prefix ranges,
+and collection clearing. The aut-num test discovers an ASN registered to the
+organization with no existing IRR aut-num, creates a disposable helper AS set,
+and exercises all policy fields and membership before deleting both IRR objects.
+The ASN registration remains unchanged. A lack of a suitable unused IRR identity
+fails preflight rather than changing an existing object.
 These tests never mutate an existing account object. Normal tests and CI skip them.
 
 OT&E account data and API keys are refreshed from production monthly. If the

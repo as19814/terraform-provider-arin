@@ -52,7 +52,7 @@ var delegationFields = []Field{
 }
 var irrCommon = []Field{text("org_handle", "orgHandle"), text("source", "source"), text("creation_date", "creationDate"), text("last_modified_date", "lastModifiedDate"), lines("description", "description"), lines("remarks", "remarks"), pocLinks}
 var routeFields = joinFields(irrCommon, []Field{required(text("prefix", "prefix")), required(text("origin_as", "originAS")), text("net_handle", "netHandle"), text("auto_linked_roa_handle", "autoLinkedRoaHandle")})
-var autnumFields = joinFields(irrCommon, []Field{required(text("as_number", "asNumber")), text("as_name", "asName"), lines("import_policy", "import"), lines("export_policy", "export"), lines("default_policy", "default"), lines("mp_import_policy", "mpImport"), lines("mp_export_policy", "mpExport"), lines("mp_default_policy", "mpDefault")})
+var autnumFields = joinFields(irrCommon, []Field{required(text("as_number", "asNumber")), text("as_name", "asName"), stringsField("member_of", "memberOf/@name"), lines("import_policy", "import"), lines("export_policy", "export"), lines("default_policy", "default"), lines("mp_import_policy", "mpImport"), lines("mp_export_policy", "mpExport"), lines("mp_default_policy", "mpDefault")})
 var setFields = joinFields(irrCommon, []Field{required(text("name", "name")), stringsField("members", "members/member/@name"), stringsField("members_by_ref", "membersByRef/memberByRef/@name"), stringsField("mp_members", "mpMembers/mpMember/@name")})
 var routeRefFields = []Field{required(text("prefix", "prefix")), required(text("origin_as", "originAS")), text("org_handle", "orgHandle"), text("entry_type", "@entry")}
 var roaFields = []Field{
