@@ -579,3 +579,24 @@ path-like names, missing or changed files, and freshness boundaries.
 These helpers do not authenticate CMS or EE certificates and are not yet called
 by issuance or Terraform operations. Persistent rollback checks, authenticated
 manifest/CRL selection and delegated native verification remain unfinished.
+
+## Manifest CMS signature checks
+
+The manifest decoder now verifies the RFC 6488 CMS envelope and RSA/SHA-256
+signature before parsing its eContent. The shared CMS implementation keeps the
+provisioning-message rules separate: manifests require one EE certificate,
+omit embedded CRLs, identify manifest content in both CMS locations, and allow
+signing-time attributes to be absent. Optional signing times do not determine
+manifest freshness or impose the provisioning protocol's time-agreement rule.
+Manifest signing keys require RSA-2048 with exponent 65537 under
+[RFC 7935](https://www.rfc-editor.org/rfc/rfc7935.html).
+
+Signed fixtures test accepted attributes and legacy signature identifiers,
+profile separation, extra certificates/CRLs, content-type mismatches, digest
+failures and signature tampering. OpenSSL independently verifies a fixture's
+CMS signature and payload. Existing provisioning CMS tests still pass.
+
+The decoder returns an explicitly untrusted manifest: a valid signature alone
+does not authenticate the EE or its issuer. EE extension/path validation, SIA
+binding, revocation, persistent rollback protection and provider integration
+remain required before these objects can authorize issuance or repository use.

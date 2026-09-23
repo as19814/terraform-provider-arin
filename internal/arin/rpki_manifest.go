@@ -2,6 +2,7 @@ package arin
 
 import (
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/asn1"
 	"errors"
 	"math/big"
@@ -124,4 +125,24 @@ func (m *rpkiManifestContent) checkFiles(now time.Time, files map[string][]byte)
 		return errRPKIManifest
 	}
 	return nil
+}
+
+// untrustedRPKIManifest has a valid CMS signature and parsed content, but no
+// authenticated signer. EE profile/path, revocation, SIA binding and persistent
+// rollback checks must succeed before its file set authorizes repository use.
+type untrustedRPKIManifest struct {
+	Content *rpkiManifestContent
+	Signer  *x509.Certificate
+}
+
+func decodeRPKIManifest(der []byte) (*untrustedRPKIManifest, error) {
+	cms, err := decodeRPKICMSProfile(der, true)
+	if err != nil {
+		return nil, err
+	}
+	content, err := parseRPKIManifestContent(cms.Content)
+	if err != nil {
+		return nil, err
+	}
+	return &untrustedRPKIManifest{Content: content, Signer: cms.Signer}, nil
 }

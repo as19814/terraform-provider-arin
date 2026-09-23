@@ -13,6 +13,7 @@ import (
 
 var (
 	cmsSignedDataOID  = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 7, 2}
+	cmsManifestOID    = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 16, 1, 26}
 	cmsXMLOID         = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 16, 1, 28}
 	cmsSHA256OID      = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 2, 1}
 	cmsRSAOID         = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 1}
@@ -95,6 +96,16 @@ func cmsAlgorithm(r asn1.RawValue, oids ...asn1.ObjectIdentifier) bool {
 // decodeRPKICMS checks the RFC 6492 CMS envelope and SHA-256/RSA signature.
 // Trust and revocation are deliberately separate from this private decoder.
 func decodeRPKICMS(der []byte) (*untrustedRPKICMS, error) {
+	return decodeRPKICMSProfile(der, false)
+}
+
+// The manifest profile has one EE, no CRLs and optional signing times.
+// These differences must not relax the provisioning-message profile.
+func decodeRPKICMSProfile(der []byte, manifest bool) (*untrustedRPKICMS, error) {
+	contentOID, fieldCount, certLimit, minAttrs := cmsXMLOID, 6, 32, 3
+	if manifest {
+		contentOID, fieldCount, certLimit, minAttrs = cmsManifestOID, 5, 1, 2
+	}
 	if len(der) == 0 || len(der) > 4<<20 {
 		return nil, errRPKICMS
 	}
@@ -111,7 +122,7 @@ func decodeRPKICMS(der []byte) (*untrustedRPKICMS, error) {
 		return nil, errRPKICMS
 	}
 	sd, err := cmsChildren(explicit[0], 0, 16, 6, false)
-	if err != nil || len(sd) != 6 || !cmsVersion3(sd[0]) {
+	if err != nil || len(sd) != fieldCount || !cmsVersion3(sd[0]) {
 		return nil, errRPKICMS
 	}
 	algorithms, err := cmsChildren(sd[1], 0, 17, 1, true)
@@ -119,7 +130,7 @@ func decodeRPKICMS(der []byte) (*untrustedRPKICMS, error) {
 		return nil, errRPKICMS
 	}
 	eci, err := cmsChildren(sd[2], 0, 16, 2, false)
-	if err != nil || len(eci) != 2 || !cmsOID(eci[0], cmsXMLOID) {
+	if err != nil || len(eci) != 2 || !cmsOID(eci[0], contentOID) {
 		return nil, errRPKICMS
 	}
 	wrapped, err := cmsChildren(eci[1], 2, 0, 1, false)
@@ -130,7 +141,7 @@ func decodeRPKICMS(der []byte) (*untrustedRPKICMS, error) {
 	if cmsValue(wrapped[0], &out.Content) != nil || len(out.Content) == 0 {
 		return nil, errRPKICMS
 	}
-	certs, err := cmsChildren(sd[3], 2, 0, 32, true)
+	certs, err := cmsChildren(sd[3], 2, 0, certLimit, true)
 	if err != nil || len(certs) == 0 {
 		return nil, errRPKICMS
 	}
@@ -151,21 +162,23 @@ func decodeRPKICMS(der []byte) (*untrustedRPKICMS, error) {
 	if eeCount != 1 {
 		return nil, errRPKICMS
 	}
-	crls, err := cmsChildren(sd[4], 2, 1, 32, true)
-	if err != nil || len(crls) == 0 {
-		return nil, errRPKICMS
-	}
-	for _, r := range crls {
-		if r.Class != 0 || r.Tag != 16 {
+	if !manifest {
+		crls, err := cmsChildren(sd[4], 2, 1, 32, true)
+		if err != nil || len(crls) == 0 {
 			return nil, errRPKICMS
 		}
-		crl, err := x509.ParseRevocationList(r.FullBytes)
-		if err != nil {
-			return nil, errRPKICMS
+		for _, r := range crls {
+			if r.Class != 0 || r.Tag != 16 {
+				return nil, errRPKICMS
+			}
+			crl, err := x509.ParseRevocationList(r.FullBytes)
+			if err != nil {
+				return nil, errRPKICMS
+			}
+			out.CRLs = append(out.CRLs, crl)
 		}
-		out.CRLs = append(out.CRLs, crl)
 	}
-	signers, err := cmsChildren(sd[5], 0, 17, 1, true)
+	signers, err := cmsChildren(sd[fieldCount-1], 0, 17, 1, true)
 	if err != nil || len(signers) != 1 {
 		return nil, errRPKICMS
 	}
@@ -189,7 +202,7 @@ func decodeRPKICMS(der []byte) (*untrustedRPKICMS, error) {
 		return nil, errRPKICMS
 	}
 	attrs, err := cmsChildren(si[3], 2, 0, 4, true)
-	if err != nil || len(attrs) < 3 {
+	if err != nil || len(attrs) < minAttrs {
 		return nil, errRPKICMS
 	}
 	seen := map[string]bool{}
@@ -211,7 +224,7 @@ func decodeRPKICMS(der []byte) (*untrustedRPKICMS, error) {
 		}
 		switch {
 		case oid.Equal(cmsContentTypeOID):
-			if !cmsOID(vals[0], cmsXMLOID) {
+			if !cmsOID(vals[0], contentOID) {
 				return nil, errRPKICMS
 			}
 		case oid.Equal(cmsDigestOID):
@@ -244,15 +257,15 @@ func decodeRPKICMS(der []byte) (*untrustedRPKICMS, error) {
 			return nil, errRPKICMS
 		}
 	}
-	if !seen[cmsContentTypeOID.String()] || !seen[cmsDigestOID.String()] || (signing == nil && binary == nil) {
+	if !seen[cmsContentTypeOID.String()] || !seen[cmsDigestOID.String()] || (!manifest && signing == nil && binary == nil) {
 		return nil, errRPKICMS
 	}
-	if signing != nil && binary != nil && !signing.Equal(*binary) {
+	if !manifest && signing != nil && binary != nil && !signing.Equal(*binary) {
 		return nil, errRPKICMS
 	}
 	if signing != nil {
 		out.SigningTime = *signing
-	} else {
+	} else if binary != nil {
 		out.SigningTime = *binary
 	}
 	var signature []byte
@@ -261,6 +274,9 @@ func decodeRPKICMS(der []byte) (*untrustedRPKICMS, error) {
 	}
 	key, ok := out.Signer.PublicKey.(*rsa.PublicKey)
 	if !ok || key.N.BitLen() < 2048 || key.N.BitLen() > 8192 {
+		return nil, errRPKICMS
+	}
+	if manifest && (key.N.BitLen() != 2048 || key.E != 65537) {
 		return nil, errRPKICMS
 	}
 	// CMS signs a DER SET OF, not the context-specific signedAttrs tag.
