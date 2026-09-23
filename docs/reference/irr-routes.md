@@ -45,12 +45,45 @@ References: [ARIN IRR API guide](https://www.arin.net/resources/manage/irr/irr-r
 [RoutePayload schema](arin-api/schemas/extracted/RoutePayload.rnc),
 [routeSetRef schema](arin-api/schemas/extracted/utils/routeSetRef.rnc).
 
-## Remaining field audit
+## Simple XML endpoint and field audit
 
-The simple XML guide lists `pocLinks` and `netHandle` without marking them ignored,
-while the current simple route client treats both as server-generated metadata.
-Verify their write behavior on disposable routes before closing this family's
-field audit. The AS-set POC rejection evidence alone does not establish route or
-route6 behavior. The guide explicitly marks creation/modified dates and version
-as ignored and fixes source to ARIN. Description, remarks, route-set membership,
-identity and ROA-linked lifecycle have the native evidence described above.
+Both IP families use `/rest/irr/route/IP/PREFIXLENGTH/ORIGINAS` for POST, GET,
+PUT and DELETE. `arin_irr_route` implements the unlinked lifecycle;
+`arin_irr_route_metadata` manages metadata on existing routes, while
+`arin_irr_linked_route` explicitly imports ownership of linked routes and supports
+independent deletion. Linked creation belongs to hosted RPKI. Advanced RPSL
+objects use their separate resource and data source.
+
+The remaining list endpoints map to `arin_irr_routes` (organization routes) and
+`arin_net_routes` (network routes). The latter exposes `include_reassignments`
+for the documented `reassignments` query parameter. Collection entries preserve
+entry type, organization, origin ASN and prefix. Path tests cover these endpoints;
+the existing live Terraform read suite exercises organization and direct network
+lists. A direct-list read does not prove downstream reassignment inclusion.
+
+| Simple payload field | Provider behavior and evidence |
+| --- | --- |
+| prefix, originAS, orgHandle | Managed identity; resource replacement fields; both IP families pass native lifecycle and import |
+| description, remarks, memberOf | Writable metadata; native updates, clearing and route-set membership verified |
+| source | Fixed to ARIN, as required by the guide |
+| creationDate, lastModifiedDate, version | Guide explicitly marks inputs ignored; dates exposed as computed metadata |
+| netHandle | Derived network; computed output; native POST and PUT ignore a nonexistent supplied handle |
+| pocLinks | Generated POCs; computed output; native POST and PUT reject partial baseline POC sets as changes to system-generated fields |
+| autoLinkedRoaHandle | Computed linkage controlled through hosted RPKI; scoped metadata and independent deletion have separate native evidence |
+
+`TestOTERPKIClientLifecycle` now audits generated route fields inside its
+journaled disposable IPv4/IPv6 fixture. Unlinked POST accepts complete or empty
+POC containers and a nonexistent network handle, deriving the original POCs and
+correct network. Unlinked and linked PUT accept complete or empty POC containers,
+and echoed, empty or nonexistent network handles, preserving the derived fields.
+Partial POC sets return HTTP 400 with a system-generated-value validation error
+for both methods and both IP families. Rejected POST leaves the route absent;
+the fixture recreates it normally before continuing. Linked POST is not inferred
+from these tests: linked routes are created through RPKI.
+
+The audit rereads identity, organization, network, POCs, description, remarks,
+membership and ROA linkage after each probe. Generated timestamps are excluded
+from equality checks because the POST probes recreate objects. The enclosing
+fixture restores the original RPKI inventories and removes disposable routes.
+These results resolve the guide's ambiguity about writable `pocLinks` and
+`netHandle` without relying on behavior from other IRR object types.

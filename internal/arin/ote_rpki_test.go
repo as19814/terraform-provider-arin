@@ -537,6 +537,7 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		auditOTERouteFields(t, ctx, c, manual)
 		manualRoutes[manual.ID()] = manual
 	}
 	linkedRequest := request
@@ -550,6 +551,7 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 		if err != nil || route.AutoLinkedROAHandle != firstLinked.ROAs[0].Handle {
 			t.Fatalf("manual route adoption failed: %v", err)
 		}
+		auditOTERouteFields(t, ctx, c, route)
 		manual := manualRoutes[id]
 		if !slices.Equal(route.Description, manual.Description) || !slices.Equal(route.POCs, manual.POCs) || route.NetHandle != manual.NetHandle || route.OrgHandle != manual.OrgHandle {
 			t.Fatal("manual route adoption changed registration metadata")
