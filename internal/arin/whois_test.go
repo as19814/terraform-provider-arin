@@ -153,3 +153,45 @@ func TestWhoisInvalidTypedFields(t *testing.T) {
 		})
 	}
 }
+
+func TestWhoisPOCDescriptions(t *testing.T) {
+	var spec ReadSpec
+	for _, s := range WhoisRecordReads() {
+		if s.Name == "whois_poc" {
+			spec = s
+		}
+	}
+	for _, mode := range []string{"present", "absent", "foreign"} {
+		t.Run(mode, func(t *testing.T) {
+			extra := `<pocType><type>P</type><description>Person</description></pocType><status><code>V</code><description>Validated</description></status>`
+			phone := `<description>Office</description>`
+			if mode == "absent" {
+				extra = ""
+				phone = ""
+			}
+			if mode == "foreign" {
+				extra = strings.ReplaceAll(extra, "<description>", `<description xmlns="urn:other">`)
+				phone = strings.ReplaceAll(phone, "<description>", `<description xmlns="urn:other">`)
+			}
+			body := whoisFixture("poc", strings.Replace(whoisFixtures()["poc"], "<code>O</code>", "<code>O</code>"+phone, 1)+extra)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, body) }))
+			defer server.Close()
+			c, _ := New(Config{WhoisBaseURL: server.URL})
+			out, err := c.ReadRegistration(context.Background(), spec, map[string]string{"handle": "EXAMPLE-ARIN"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			description := out["phones"].([]any)[0].(map[string]any)["description"]
+			if mode == "present" {
+				if description != "Office" || out["poc_type_description"] != "Person" || out["status_description"] != "Validated" {
+					t.Fatal("public POC descriptions lost")
+				}
+			} else if description != nil || out["poc_type_description"] != nil || out["status_description"] != nil {
+				t.Fatal("unpublished or foreign metadata became typed output")
+			}
+			if out["whois_xml"] != body {
+				t.Fatal("complete XML changed")
+			}
+		})
+	}
+}

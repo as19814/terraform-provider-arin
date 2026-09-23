@@ -10,7 +10,7 @@ public lookup service, separate from authenticated Reg-RWS and from RDAP.
 | --- | --- | --- |
 | `arin_whois_org` | `/rest/org/HANDLE` | Handle, name, address, can-allocate flag, dates, comments, references |
 | `arin_whois_customer` | `/rest/customer/HANDLE` | Handle, name, address, parent org, can-allocate flag, dates, comments, references |
-| `arin_whois_poc` | `/rest/poc/HANDLE` | Handle, names, company, address, role-account flag, POC type/status, email, phone, dates, comments, references |
+| `arin_whois_poc` | `/rest/poc/HANDLE` | Handle, names, company, address, role-account flag, POC type/status and descriptions, email, phone type/description, dates, comments, references |
 | `arin_whois_asn` | `/rest/asn/HANDLE` | Handle, name, ASN range, org handle, dates, comments, references |
 | `arin_whois_net` | `/rest/net/HANDLE` | Handle, name, address range, family, blocks/CIDR lengths, org/customer/parent handles, dates, comments, references |
 | `arin_whois_delegation` | `/rest/rdns/NAME` | Delegation name, nameservers, DS records, update date, references |
@@ -25,6 +25,13 @@ Optional `show_details = true` sends `showDetails=true`. Additional inline recor
 remain in the complete XML. Any nested `limitExceeded=true` rejects the entire
 response, even when the primary record appears complete. Invalid limit flags also
 remain errors. Search data sources are described below.
+
+POC outputs include `poc_type_description`, `status_description`, and each
+phone's `description` from its type metadata. These fields are also available in
+full-detail POC search and relationship results; reference-only results do not
+invent them. Missing or foreign-namespace descriptions remain null, while the
+complete XML retains the original response. Mock lookup/search/relationship
+acceptance and read-only Terraform lookups on both origins passed on 2026-09-23.
 
 ## Relationships
 
@@ -96,11 +103,34 @@ and rejection of an over-limit `A*` org search passed. `TestLiveWhoisSearches`
 retains these checks; fixtures and state contain no committed live payloads.
 
 The guide lists `/rdns` with a "delegation name" parameter without spelling out
-a matrix key. Native `/rest/rdns;name=...`, `;dname=...` and `;delegationName=...`
-returned HTTP 400 on both origins, while `/rest/rdns/NAME` returned the individual
-delegation. OT&E `/rest/rdns/NAME*` returned 404. A separate delegation search is
-not claimed as supported; the existing delegation lookup and network-to-delegation
-relationship are available. Keep this ambiguity in the final endpoint audit.
+a matrix key. A bounded probe, rerun on 2026-09-23, produced these results on
+both OT&E and production for a known delegation (`NAME` below):
+
+| Request | Observed result |
+| --- | --- |
+| `/rest/rdns/NAME` and `/rest/rdns/NAME.` | HTTP 200, expected individual delegation |
+| `/rest/rdns/NAME*` | HTTP 404 |
+| `/rest/rdns;name=NAME` | HTTP 400 |
+| `/rest/rdns;dname=NAME` | HTTP 400 |
+| `/rest/rdns;delegationName=NAME` | HTTP 400 |
+| `/rest/rdns;delegation%20name=NAME` | HTTP 400 |
+| `/rest/rdns?name=NAME` | HTTP 400 |
+| `/rest/rdns/NAME;name=does-not-exist.invalid` | HTTP 200, original delegation; matrix predicate ignored |
+
+Reproduce with `python3 tools/probe-whois-delegations/probe.py`. It uses public
+GETs, fixed origins, no credentials, no redirects, two workers and bounded
+response reads. It prints status and root/identity checks rather than payloads.
+Transport errors are recorded separately and are not evidence of an HTTP result;
+failed search requests were retried individually for the table above. The network
+relationship control succeeded on OT&E; the production control encountered a
+transport error in this probe, with previous native relationship evidence retained.
+
+A successful lookup with an ignored matrix parameter does not establish search
+support. A separate delegation search remains unproven, rather than declared
+unsupported. Existing exact delegation lookup and network-to-delegation queries
+remain available. The current guide and its linked schema archive were rechecked:
+the archive still contains Reg-RWS payload schemas, so it cannot resolve this
+public Whois-RWS ambiguity. Keep it in the final endpoint audit.
 
 ## Origins and XML handling
 

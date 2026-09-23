@@ -72,6 +72,26 @@ func TestLiveWhoisLookups(t *testing.T) {
 						checks = append(checks, resource.TestCheckResourceAttrSet(address, field))
 					}
 				}
+				if tc.kind == "poc" {
+					for _, field := range []string{"poc_type_description", "status_description"} {
+						value, ok := expected[field].(string)
+						if !ok || value == "" {
+							t.Fatal("native POC description missing")
+						}
+						checks = append(checks, resource.TestCheckResourceAttr(address, field, value))
+					}
+					phones := expected["phones"].([]any)
+					if len(phones) == 0 {
+						t.Fatal("native POC has no phone metadata")
+					}
+					for i, phone := range phones {
+						value, ok := phone.(map[string]any)["description"].(string)
+						if !ok || value == "" {
+							t.Fatal("native phone description missing")
+						}
+						checks = append(checks, resource.TestCheckResourceAttr(address, fmt.Sprintf("phones.%d.description", i), value))
+					}
+				}
 				if tc.label == "signed_domain" {
 					if len(expected["ds_records"].([]any)) == 0 {
 						t.Fatal("native DNSSEC reference has no DS records")

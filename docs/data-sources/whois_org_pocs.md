@@ -56,6 +56,7 @@ Read-Only:
 - `phones` (Attributes List) phones returned by ARIN. (see [below for nested schema](#nestedatt--pocs--phones))
 - `poc_functions` (List of String) Sorted POC association function codes. Reference links retain their function; expanded POCs collect functions from inline links to the requested owner.
 - `poc_type` (String) poc type returned by ARIN.
+- `poc_type_description` (String) poc type description returned by ARIN.
 - `postal_code` (String) postal code returned by ARIN.
 - `rdap_ref` (String) rdap ref returned by ARIN.
 - `ref` (String) ref returned by ARIN.
@@ -65,6 +66,7 @@ Read-Only:
 - `related_poc_name` (String) related poc name returned by ARIN.
 - `state` (String) state returned by ARIN.
 - `status` (String) status returned by ARIN.
+- `status_description` (String) status description returned by ARIN.
 - `street_address` (List of String) Ordered lines of street address.
 - `update_date` (String) update date returned by ARIN.
 
@@ -73,5 +75,6 @@ Read-Only:
 
 Read-Only:
 
+- `description` (String) description returned by ARIN.
 - `number` (String) number returned by ARIN.
 - `type` (String) type returned by ARIN.

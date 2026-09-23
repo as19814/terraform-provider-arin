@@ -42,6 +42,9 @@ func TestAccWhoisSearches(t *testing.T) {
 			label := fmt.Sprint(details)
 			config += fmt.Sprintf("data %q %q {\n filters=%s\n show_details=%t\n}\n", "arin_"+spec.Name, label, spec.Inputs[0].Example, details)
 			address := "data.arin_" + spec.Name + "." + label
+			if kind == "poc" && details {
+				checks = append(checks, whoisPOCMetadataChecks(address, "pocs.0.")...)
+			}
 			checks = append(checks, resource.TestCheckResourceAttr(address, spec.Output+".#", "1"), resource.TestCheckResourceAttr(address, spec.Output+".0.handle", handle), resource.TestCheckResourceAttrSet(address, "whois_xml"))
 		}
 	}

@@ -46,12 +46,14 @@ data "arin_whois_poc" "example" {
 - `last_name` (String) last name returned by ARIN.
 - `phones` (Attributes List) phones returned by ARIN. (see [below for nested schema](#nestedatt--phones))
 - `poc_type` (String) poc type returned by ARIN.
+- `poc_type_description` (String) poc type description returned by ARIN.
 - `postal_code` (String) postal code returned by ARIN.
 - `rdap_ref` (String) rdap ref returned by ARIN.
 - `ref` (String) ref returned by ARIN.
 - `registration_date` (String) registration date returned by ARIN.
 - `state` (String) state returned by ARIN.
 - `status` (String) status returned by ARIN.
+- `status_description` (String) status description returned by ARIN.
 - `street_address` (List of String) Ordered lines of street address.
 - `update_date` (String) update date returned by ARIN.
 - `whois_xml` (String) Complete Whois-RWS XML, preserving references, metadata and extensions. No links are followed.
@@ -61,5 +63,6 @@ data "arin_whois_poc" "example" {
 
 Read-Only:
 
+- `description` (String) description returned by ARIN.
 - `number` (String) number returned by ARIN.
 - `type` (String) type returned by ARIN.

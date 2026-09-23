@@ -62,6 +62,7 @@ func TestAccWhoisLookups(t *testing.T) {
 		config += fmt.Sprintf("data %q \"test\" {\n %s=%q\n show_details=true\n}\n", "arin_"+spec.Name, in.Name, in.Example)
 		checks = append(checks, resource.TestCheckResourceAttrSet("data.arin_"+spec.Name+".test", "whois_xml"))
 	}
+	checks = append(checks, whoisPOCMetadataChecks("data.arin_whois_poc.test", "")...)
 	checks = append(checks, resource.TestCheckResourceAttr("data.arin_whois_org.test", "street_address.0", "First"), resource.TestCheckResourceAttr("data.arin_whois_net.test", "ip_version", "v4"), resource.TestCheckResourceAttr("data.arin_whois_net.test", "net_blocks.0.cidr_length", "24"), resource.TestCheckResourceAttr("data.arin_whois_poc.test", "phones.0.type", "O"), resource.TestCheckResourceAttr("data.arin_whois_asn.test", "start_asn", "64496"), resource.TestCheckResourceAttr("data.arin_whois_delegation.test", "ds_records.0.key_tag", "12345"))
 	resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("test")())}, Steps: []resource.TestStep{{Config: config, Check: resource.ComposeAggregateTestCheckFunc(checks...)}, {Config: config, PreConfig: func() { changed.Store(true) }, Check: resource.TestCheckResourceAttr("data.arin_whois_org.test", "name", "Updated Example")}, {Config: config, PlanOnly: true}}})
 }
@@ -83,5 +84,13 @@ func TestAccWhoisErrors(t *testing.T) {
 			config := fmt.Sprintf("provider \"arin\" { whois_base_url=%q }\ndata \"arin_whois_org\" \"test\" { handle=\"EXAMPLE-1\" }", server.URL)
 			resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("test")())}, Steps: []resource.TestStep{{Config: config, ExpectError: regexp.MustCompile(tc.pattern)}}})
 		})
+	}
+}
+
+func whoisPOCMetadataChecks(address, prefix string) []resource.TestCheckFunc {
+	return []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(address, prefix+"poc_type_description", "Person"),
+		resource.TestCheckResourceAttr(address, prefix+"status_description", "Validated"),
+		resource.TestCheckResourceAttr(address, prefix+"phones.0.description", "Office"),
 	}
 }
