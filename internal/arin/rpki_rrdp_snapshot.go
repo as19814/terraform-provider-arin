@@ -1,7 +1,6 @@
 package arin
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/xml"
@@ -15,7 +14,7 @@ const rrdpNamespace = "http://www.ripe.net/rpki/rrdp"
 
 var rrdpSession = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
 var rrdpSerial = regexp.MustCompile(`^[1-9][0-9]{0,127}$`)
-var errRPKIRRDP = errors.New("invalid or inconsistent RPKI repository snapshot")
+var errRPKIRRDP = errors.New("invalid or inconsistent RPKI repository data")
 
 // parseRRDPSnapshot verifies the notification's exact file digest and identity.
 // Returned objects are transport data, not authenticated RPKI objects. Callers
@@ -24,17 +23,9 @@ func parseRRDPSnapshot(body []byte, session, serial string, digest [sha256.Size]
 	if len(body) == 0 || len(body) > 128<<20 || !rrdpSession.MatchString(session) || !rrdpSerial.MatchString(serial) || sha256.Sum256(body) != digest {
 		return nil, errRPKIRRDP
 	}
-	for _, b := range body {
-		if b > 127 {
-			return nil, errRPKIRRDP
-		}
-	}
-	decoder := xml.NewDecoder(bytes.NewReader(body))
-	decoder.CharsetReader = func(label string, input io.Reader) (io.Reader, error) {
-		if strings.EqualFold(label, "us-ascii") {
-			return input, nil
-		}
-		return nil, errRPKIRRDP
+	decoder, err := rrdpXMLDecoder(body)
+	if err != nil {
+		return nil, err
 	}
 	objects := make(map[string][]byte)
 	depth, total := 0, 0

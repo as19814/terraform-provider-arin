@@ -747,3 +747,21 @@ not RPKI authentication. Notification fetching/parsing, delta/cache processing,
 persistent RRDP session tracking and resolver integration remain unfinished.
 The existing manifest/resource-path checks are still required before accepting
 any retrieved object. No native RRDP repository was fetched in this increment.
+
+## RRDP notification decoding
+
+The private notification parser now validates session/version/serial metadata,
+exactly one snapshot reference and any advertised delta sequence. It accepts
+unordered deltas, sorts them numerically, and requires a unique contiguous
+sequence ending at the advertised current serial. Arithmetic supports the full
+configured 128-digit bound without uint64 truncation. File references require
+HTTPS URLs and exactly 32 decoded SHA-256 bytes; mixed-case hex is accepted.
+
+Notifications are bounded to 4 MiB and 10,000 delta references. Both RRDP parsers
+share ASCII XML decoding. Tests cover large serials, duplicate/gapped/future
+sequences, malformed attributes, hashes, locations and documents, plus passing
+a notification's identity/hash directly into snapshot decoding.
+
+HTTP retrieval, conditional polling, delta application, persistent cache/session
+tracking and issuance resolver wiring remain unfinished. Notification checks do
+not authenticate the RPKI objects referenced by the repository.
