@@ -387,3 +387,24 @@ SIA in both CSR and certificate. Complete CSR attribute/extension and algorithm
 profile checks, RPKI certificate/path/resource validation and native evidence
 remain outstanding. This increment checks publication locations, not the entire
 RFC 6487 profile.
+
+## CA request profile preflight
+
+The private issuance client now checks PKCS#10 version zero, RSA-2048 with
+exponent 65537, SHA-256/PKCS#1 v1.5 signatures and the required RSA algorithm
+parameters. It accepts exactly one extensionRequest attribute and rejects other
+attributes, duplicate extensions and extensions outside the RFC 6487 request
+allowlist. CA Basic Constraints must be critical and true, without a path-length
+constraint. Optional Key Usage is restricted to certificate/CRL signing; optional
+Extended Key Usage must be a nonempty, well-formed OID sequence. Required SIA
+validation and preservation remain enforced.
+
+Tests sign actual requests covering valid inputs, optional Key Usage, disallowed
+attributes and extensions, weak/non-RSA keys, RSA-PSS/SHA-384 signatures, CA/EE
+constraints and path-length rejection. Request DER is checked for unconsumed and
+noncanonical fields. Existing issuance and SIA tests use the stricter preflight.
+
+Subject-name reuse remains governed by the parent's issuance policy. These checks
+do not assert that an enrolled ARIN parent accepts every optional request field.
+Native CSR interoperability, complete issued-certificate profile/path/resource
+validation, asynchronous recovery and Terraform integration remain unfinished.

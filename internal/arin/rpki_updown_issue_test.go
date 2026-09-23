@@ -27,7 +27,7 @@ func upDownIssueFixture(t *testing.T, certSIAMode ...string) (rpkiIssueRequest, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	csr, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{Subject: pkix.Name{CommonName: "child resource CA"}, ExtraExtensions: []pkix.Extension{rpkiSIATestExtension(t)}}, key)
+	csr, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{Subject: pkix.Name{CommonName: "child resource CA"}, ExtraExtensions: rpkiCSRTestExtensions(t)}, key)
 	if err != nil {
 		t.Fatal(err)
 	}

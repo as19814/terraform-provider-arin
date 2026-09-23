@@ -68,7 +68,7 @@ func TestRPKICASIA(t *testing.T) {
 
 func TestUpDownIssueRequiresSIA(t *testing.T) {
 	identity, _ := cmsSigningFixture(t)
-	for _, extensions := range [][]pkix.Extension{nil, {rpkiSIATestExtension(t)}} {
+	for _, extensions := range [][]pkix.Extension{nil, rpkiCSRTestExtensions(t)} {
 		csr, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{ExtraExtensions: extensions}, identity.Signer)
 		if err != nil {
 			t.Fatal(err)

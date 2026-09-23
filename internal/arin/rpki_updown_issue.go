@@ -54,12 +54,9 @@ func buildUpDownIssue(child, parent string, input rpkiIssueRequest) ([]byte, err
 	if !upDownLabel(input.Class) || len(input.CSRDER) < 4 || len(input.CSRDER) > 512000 {
 		return nil, errRPKIUpDown
 	}
-	csr, err := x509.ParseCertificateRequest(input.CSRDER)
-	if err != nil || csr.CheckSignature() != nil {
+	_, err := parseRPKICACSR(input.CSRDER)
+	if err != nil {
 		return nil, errRPKIUpDown
-	}
-	if _, err := rpkiCASIA(csr.Extensions); err != nil {
-		return nil, err
 	}
 	for _, r := range []struct {
 		value  *string
