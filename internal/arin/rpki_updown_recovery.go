@@ -1,6 +1,11 @@
 package arin
 
 import (
+	"crypto/sha1"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/base64"
 	"encoding/json"
 	"strings"
 	"time"
@@ -59,4 +64,58 @@ func parseRevocationRecoveryPlan(body []byte, child, parent string) (rpkiRevocat
 		return fail()
 	}
 	return rpkiRevocationRecoveryPlan{Child: child, Parent: parent, Class: class, SKI: ski}, nil
+}
+
+// classifyRevocationInventory consumes an authenticated, parsed parent list.
+// Presence may mean scheduled processing; absence is not proof of CRL publication.
+func classifyRevocationInventory(plan rpkiRevocationRecoveryPlan, classes []rpkiResourceClass) (string, error) {
+	ski, err := upDownSKI(plan.SKI)
+	if err != nil || ski != plan.SKI || !upDownLabel(plan.Class) || upDownToken(plan.Class) != plan.Class || len(classes) > 10000 {
+		return "", errRPKIUpDown
+	}
+	seen := map[string]bool{}
+	found, present := false, false
+	total, count := 0, 0
+	for _, class := range classes {
+		if !upDownLabel(class.Name) || upDownToken(class.Name) != class.Name || seen[class.Name] {
+			return "", errRPKIUpDown
+		}
+		seen[class.Name] = true
+		count += len(class.Certificates)
+		if count > 10000 {
+			return "", errRPKIUpDown
+		}
+		if class.Name == plan.Class {
+			found = true
+		}
+		for _, item := range class.Certificates {
+			total += len(item.DER)
+			if len(item.DER) > 512000 || total > 4<<20 {
+				return "", errRPKIUpDown
+			}
+			cert, err := x509.ParseCertificate(item.DER)
+			if err != nil || !cert.IsCA || !cert.BasicConstraintsValid {
+				return "", errRPKIUpDown
+			}
+			var spki struct {
+				Algorithm pkix.AlgorithmIdentifier
+				Key       asn1.BitString
+			}
+			if !rpkiCSRDER(cert.RawSubjectPublicKeyInfo, &spki) || spki.Key.BitLength == 0 || spki.Key.BitLength != len(spki.Key.Bytes)*8 {
+				return "", errRPKIUpDown
+			}
+			// RFC 5280 method 1 identifies the key; do not trust an arbitrary SKI extension.
+			hash := sha1.Sum(spki.Key.Bytes)
+			if class.Name == plan.Class && base64.RawURLEncoding.EncodeToString(hash[:]) == ski {
+				present = true
+			}
+		}
+	}
+	if present {
+		return "key_present", nil
+	}
+	if !found {
+		return "class_absent", nil
+	}
+	return "key_absent", nil
 }

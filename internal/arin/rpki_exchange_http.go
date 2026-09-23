@@ -47,7 +47,7 @@ func (c rpkiHTTPExchange) peerID() (string, error) {
 	if c.Identity.Anchor == nil || c.PeerAnchor == nil || len(c.Identity.Anchor.Raw) == 0 || len(c.PeerAnchor.Raw) == 0 {
 		return "", errors.New("RPKI exchange requires local and peer trust anchors")
 	}
-	if c.RecoveryOf != "" && (c.MediaType != "application/rpki-publication" || !exchangeDigest.MatchString(c.RecoveryOf)) {
+	if c.RecoveryOf != "" && ((c.MediaType != "application/rpki-publication" && c.MediaType != "application/rpki-updown") || !exchangeDigest.MatchString(c.RecoveryOf)) {
 		return "", errors.New("invalid RPKI recovery scope")
 	}
 	// Bind history to the protocol, endpoint, configured peer handles and stable

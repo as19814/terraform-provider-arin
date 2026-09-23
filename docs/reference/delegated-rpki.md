@@ -1244,3 +1244,24 @@ parser tests reject malformed or mismatched revocation payloads. These tests use
 synthetic BPKI identities. Remote outcome verification, scheduled-revocation
 handling, durable reconciliation and Terraform certificate resources remain
 unfinished. No native delegated enrollment is available for verification.
+
+### Revocation recovery inventory
+
+The private recovery reader now holds the original mutation journal lease while
+issuing a signed up-down list through a separate journal scoped to the original
+request digest. The probe uses a newer request signing time and preserves the
+original and recovery response-time floors. Failed probes remain pending and
+cannot be retried implicitly. The original mutation journal stays unchanged.
+
+Inventory classification distinguishes `key_present`, `key_absent` and
+`class_absent`, comparing the RFC 5280 method-1 public-key hash within the target
+resource class. An arbitrary certificate SKI extension cannot substitute for
+that hash. Signed server tests cover each outcome, original locking, stale
+responses, wrong signers, unavailable/scheduled replies and probe retry blocking.
+Malformed inventories and duplicate classes fail classification.
+
+This is an observation primitive, not completed revocation recovery. A missing
+key does not prove CRL publication; a present key can still be scheduled for
+revocation. No outcome clears the original journal or permits mutation replay.
+Durable outcome reconciliation, resource-path/CRL evidence and provider lifecycle
+integration remain to be implemented and verified with native delegated setup.
