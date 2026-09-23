@@ -17,9 +17,14 @@ func testDelegation() Delegation {
 }
 func TestDelegationPayloadAndRoundTrip(t *testing.T) {
 	d := testDelegation()
+	d.DSRecords[0].AlgorithmName = "response-only-algorithm"
+	d.DSRecords[0].DigestTypeName = "response-only-digest"
 	body, err := d.marshal()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if strings.Contains(string(body), "response-only") {
+		t.Fatal("response metadata sent in delegation write")
 	}
 	root, err := parseXML(body)
 	if err != nil {
@@ -43,12 +48,17 @@ func TestDelegationPayloadAndRoundTrip(t *testing.T) {
 	if !foundTTL || !strings.Contains(string(body), "<name>"+d.Name+"</name>") {
 		t.Fatal("missing DS TTL or immutable zone name")
 	}
+	body = []byte(strings.ReplaceAll(string(body), "<algorithm>", `<algorithm name="ECDSAP256SHA256">`))
+	body = []byte(strings.ReplaceAll(string(body), "<digestType>", `<digestType name="SHA-256">`))
 	decoded, err := decodeDelegation(body, d.Name)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(decoded.Nameservers) != 2 || decoded.Nameservers[0].TTL == nil || *decoded.Nameservers[0].TTL != 3600 || decoded.Nameservers[1].TTL != nil || len(decoded.DSRecords) != 1 || decoded.DSRecords[0].TTL == nil || *decoded.DSRecords[0].TTL != 3600 {
 		t.Fatalf("bad round trip: %+v", decoded)
+	}
+	if decoded.DSRecords[0].AlgorithmName != "ECDSAP256SHA256" || decoded.DSRecords[0].DigestTypeName != "SHA-256" {
+		t.Fatal("lost DS response metadata")
 	}
 	empty := Delegation{Name: d.Name}
 	body, err = empty.marshal()

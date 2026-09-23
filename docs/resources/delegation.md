@@ -68,6 +68,11 @@ Optional:
 
 - `ttl` (Number) TTL in seconds. Omission preserves an existing record's TTL; new records inherit TTL. To reset an existing explicit TTL to inheritance, remove that DS record in one apply and add it without TTL in a subsequent apply.
 
+Read-Only:
+
+- `algorithm_name` (String) DNSSEC algorithm name returned by ARIN.
+- `digest_type_name` (String) DS digest type name returned by ARIN.
+
 ## Import
 
 Import is supported using the following syntax:

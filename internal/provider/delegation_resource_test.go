@@ -33,13 +33,14 @@ func delegationSteps(zone string) []resource.TestStep {
 	}
 	first := delegationConfig(zone, `[{name="ns1.example.net",ttl=3600},{name="ns2.example.net"}]`, ds(",ttl=3600"))
 	second := delegationConfig(zone, `[{name="ns2.example.net",ttl=7200},{name="ns1.example.net"}]`, ds(""))
-	inherited := delegationConfig(zone, `[{name="ns2.example.net"}]`, strings.Replace(ds(""), "12345", "12346", 1))
+	inheritedDS := strings.NewReplacer("12345", "12346", "algorithm=13", "algorithm=14", "digest_type=2", "digest_type=4", strings.Repeat("AB", 32), strings.Repeat("CD", 48)).Replace(ds(""))
+	inherited := delegationConfig(zone, `[{name="ns2.example.net"}]`, inheritedDS)
 	return []resource.TestStep{
-		{Config: first, Check: resource.TestCheckResourceAttr("arin_delegation.test", "id", zone)},
+		{Config: first, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_delegation.test", "id", zone), resource.TestCheckResourceAttrSet("arin_delegation.test", "ds_records.0.algorithm_name"), resource.TestCheckResourceAttrSet("arin_delegation.test", "ds_records.0.digest_type_name"))},
 		{ResourceName: "arin_delegation.test", ImportState: true, ImportStateId: zone, ImportStateVerify: true},
 		{Config: second, Check: resource.TestCheckTypeSetElemNestedAttrs("arin_delegation.test", "ds_records.*", map[string]string{"key_tag": "12345", "ttl": "3600"})},
 		{Config: second, PlanOnly: true},
-		{Config: inherited},
+		{Config: inherited, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_delegation.test", "ds_records.0.algorithm", "14"), resource.TestCheckResourceAttr("arin_delegation.test", "ds_records.0.digest_type", "4"), resource.TestMatchResourceAttr("arin_delegation.test", "ds_records.0.algorithm_name", regexp.MustCompile("384")), resource.TestMatchResourceAttr("arin_delegation.test", "ds_records.0.digest_type_name", regexp.MustCompile("384")))},
 		{Config: inherited, PlanOnly: true},
 		{Config: delegationConfig(zone, "[]", "")},
 		{Config: first},
@@ -90,7 +91,14 @@ func TestAccDelegationResourceLifecycle(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/xml")
-		_ = xml.NewEncoder(w).Encode(current)
+		body, err := xml.Marshal(current)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		body = []byte(strings.NewReplacer("<algorithm>13</algorithm>", `<algorithm name="ECDSAP256SHA256">13</algorithm>`, "<algorithm>14</algorithm>", `<algorithm name="ECDSAP384SHA384">14</algorithm>`).Replace(string(body)))
+		body = []byte(strings.NewReplacer("<digestType>2</digestType>", `<digestType name="SHA-256">2</digestType>`, "<digestType>4</digestType>", `<digestType name="SHA-384">4</digestType>`).Replace(string(body)))
+		_, _ = w.Write(body)
 	}))
 	defer server.Close()
 	t.Setenv("ARIN_API_KEY", "acceptance-test-key")

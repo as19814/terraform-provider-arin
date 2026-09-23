@@ -20,11 +20,13 @@ type DelegationNameserver struct {
 	TTL  *int64 `xml:"http://www.arin.net/regrws/ttl/v1 ttl,attr,omitempty"`
 }
 type DelegationDS struct {
-	Algorithm  int64  `xml:"algorithm"`
-	Digest     string `xml:"digest"`
-	TTL        *int64 `xml:"http://www.arin.net/regrws/ttl/v1 ttl,omitempty"`
-	DigestType int64  `xml:"digestType"`
-	KeyTag     int64  `xml:"keyTag"`
+	AlgorithmName  string `xml:"-"`
+	DigestTypeName string `xml:"-"`
+	Algorithm      int64  `xml:"algorithm"`
+	Digest         string `xml:"digest"`
+	TTL            *int64 `xml:"http://www.arin.net/regrws/ttl/v1 ttl,omitempty"`
+	DigestType     int64  `xml:"digestType"`
+	KeyTag         int64  `xml:"keyTag"`
 }
 type Delegation struct {
 	Name        string
@@ -205,7 +207,7 @@ func decodeDelegation(body []byte, name string) (*Delegation, error) {
 		if err != nil {
 			return nil, err
 		}
-		d.DSRecords = append(d.DSRecords, DelegationDS{Algorithm: algorithm, DigestType: digestType, KeyTag: keyTag, Digest: strings.ToUpper(netString(k, "digest")), TTL: ttl(k["ttl"])})
+		d.DSRecords = append(d.DSRecords, DelegationDS{AlgorithmName: netString(k, "algorithm_name"), DigestTypeName: netString(k, "digest_type_name"), Algorithm: algorithm, DigestType: digestType, KeyTag: keyTag, Digest: strings.ToUpper(netString(k, "digest")), TTL: ttl(k["ttl"])})
 	}
 	if err := d.Validate(); err != nil {
 		return nil, fmt.Errorf("ARIN returned an invalid delegation: %w", err)

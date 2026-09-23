@@ -106,12 +106,36 @@ replacement, import, TTL changes/reset and preservation of unrelated NS/DS data.
 compares the complete original delegation after Terraform destroy. It uses the
 same durable recovery snapshot as the full-delegation tests.
 
-The collected method guide has no individual DS mutation endpoint. DS records
-are managed by `arin_delegation` through the full replacement endpoint; no
-separate read-modify-write DS resource is needed for that API coverage. The
-client also supports bulk nameserver deletion, while the full-zone resource
-represents empty desired collections through PUT. A final live-documentation
-endpoint and field audit remains part of the overall coverage audit. In particular,
-the data source exposes `algorithm_name` and `digest_type_name`, but the managed
-DS model currently keeps only their numeric IDs. Those response metadata fields
-still need resource-state coverage and native verification.
+## Endpoint and field audit
+
+Reconciled on 2026-09-23 with ARIN's
+[current methods](https://www.arin.net/resources/registry/regrws/methods/#delegations)
+and [payload guide](https://www.arin.net/resources/registry/regrws/payloads/#delegation-key-payload).
+
+| Operation | Implementation and evidence |
+| --- | --- |
+| GET `/rest/delegation/ZONE` | Individual data source and resource refresh; both OT&E families |
+| PUT `/rest/delegation/ZONE` | Full resource updates/clearing and snapshot restoration |
+| POST `/rest/delegation/ZONE/nameserver/HOST` | Individual nameserver resource create/update, including TTL inheritance reset |
+| DELETE `/rest/delegation/ZONE/nameserver/HOST` | Individual nameserver resource destroy with sibling preservation |
+| DELETE `/rest/delegation/ZONE/nameservers` | Client bulk deletion; full resource represents empty desired collections through PUT |
+| GET `/rest/net/HANDLE/delegations` | NET delegation-list data source and sandbox discovery |
+
+The complete delegation payload is represented: name, nameserver names and TTLs,
+and DS algorithm, digest type, key tag, digest and TTL. `algorithm_name` and
+`digest_type_name` are computed fields on each managed DS record as well as the
+existing data source. ARIN supplies these labels; outgoing XML contains numeric
+IDs and excludes response-only labels.
+
+Mock and native Terraform lifecycles verify an algorithm 13/SHA-256 DS record,
+then change to algorithm 14/SHA-384 with a different key tag and digest. The
+response labels refresh, import agrees with state, omitted TTLs retain the
+established semantics, and subsequent plans are empty. Native tests restore
+and compare the complete original delegation before deleting recovery files.
+These are representative algorithm tests, not a claim that every numeric ID is
+accepted by ARIN.
+
+The method guide documents no individual DS mutation endpoint or independent
+zone creation/deletion endpoint. Full-record management covers DS changes. The
+client and two resources cover the documented delegation operations; the
+broader implementation inventory remains open.

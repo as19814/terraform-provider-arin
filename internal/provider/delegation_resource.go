@@ -36,15 +36,17 @@ type delegationNSModel struct {
 	TTL  types.Int64  `tfsdk:"ttl"`
 }
 type delegationDSModel struct {
-	Algorithm  types.Int64  `tfsdk:"algorithm"`
-	DigestType types.Int64  `tfsdk:"digest_type"`
-	KeyTag     types.Int64  `tfsdk:"key_tag"`
-	Digest     types.String `tfsdk:"digest"`
-	TTL        types.Int64  `tfsdk:"ttl"`
+	AlgorithmName  types.String `tfsdk:"algorithm_name"`
+	DigestTypeName types.String `tfsdk:"digest_type_name"`
+	Algorithm      types.Int64  `tfsdk:"algorithm"`
+	DigestType     types.Int64  `tfsdk:"digest_type"`
+	KeyTag         types.Int64  `tfsdk:"key_tag"`
+	Digest         types.String `tfsdk:"digest"`
+	TTL            types.Int64  `tfsdk:"ttl"`
 }
 
 var delegationNSType = types.ObjectType{AttrTypes: map[string]attr.Type{"name": types.StringType, "ttl": types.Int64Type}}
-var delegationDSType = types.ObjectType{AttrTypes: map[string]attr.Type{"algorithm": types.Int64Type, "digest_type": types.Int64Type, "key_tag": types.Int64Type, "digest": types.StringType, "ttl": types.Int64Type}}
+var delegationDSType = types.ObjectType{AttrTypes: map[string]attr.Type{"algorithm_name": types.StringType, "digest_type_name": types.StringType, "algorithm": types.Int64Type, "digest_type": types.Int64Type, "key_tag": types.Int64Type, "digest": types.StringType, "ttl": types.Int64Type}}
 
 func NewDelegationResource() resource.Resource { return &delegationResource{} }
 func (r *delegationResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -59,11 +61,13 @@ func (r *delegationResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"ttl":  schema.Int64Attribute{Optional: true, Computed: true, MarkdownDescription: "TTL in seconds. Omission preserves an existing nameserver TTL; new nameservers inherit TTL. To reset an explicit TTL to inheritance, remove this nameserver in one apply and add it without TTL in a subsequent apply."},
 		}}},
 		"ds_records": schema.SetNestedAttribute{Optional: true, Computed: true, Default: setdefault.StaticValue(types.SetValueMust(delegationDSType, []attr.Value{})), MarkdownDescription: "Complete DS record collection. Omission or an empty set clears all DS records.", NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
-			"algorithm":   schema.Int64Attribute{Required: true, MarkdownDescription: "DNSSEC algorithm number."},
-			"digest_type": schema.Int64Attribute{Required: true, MarkdownDescription: "DS digest type, for example 2 for SHA-256."},
-			"key_tag":     schema.Int64Attribute{Required: true, MarkdownDescription: "DNSKEY tag, 0 through 65535."},
-			"digest":      schema.StringAttribute{Required: true, MarkdownDescription: "Uppercase hexadecimal DS digest."},
-			"ttl":         schema.Int64Attribute{Optional: true, Computed: true, MarkdownDescription: "TTL in seconds. Omission preserves an existing record's TTL; new records inherit TTL. To reset an existing explicit TTL to inheritance, remove that DS record in one apply and add it without TTL in a subsequent apply."},
+			"algorithm_name":   schema.StringAttribute{Computed: true, MarkdownDescription: "DNSSEC algorithm name returned by ARIN."},
+			"digest_type_name": schema.StringAttribute{Computed: true, MarkdownDescription: "DS digest type name returned by ARIN."},
+			"algorithm":        schema.Int64Attribute{Required: true, MarkdownDescription: "DNSSEC algorithm number."},
+			"digest_type":      schema.Int64Attribute{Required: true, MarkdownDescription: "DS digest type, for example 2 for SHA-256."},
+			"key_tag":          schema.Int64Attribute{Required: true, MarkdownDescription: "DNSKEY tag, 0 through 65535."},
+			"digest":           schema.StringAttribute{Required: true, MarkdownDescription: "Uppercase hexadecimal DS digest."},
+			"ttl":              schema.Int64Attribute{Optional: true, Computed: true, MarkdownDescription: "TTL in seconds. Omission preserves an existing record's TTL; new records inherit TTL. To reset an existing explicit TTL to inheritance, remove that DS record in one apply and add it without TTL in a subsequent apply."},
 		}}},
 	}}
 }
@@ -192,7 +196,7 @@ func delegationState(ctx context.Context, d *arin.Delegation) (delegationModel, 
 		names = append(names, delegationNSModel{Name: types.StringValue(n.Name), TTL: types.Int64PointerValue(n.TTL)})
 	}
 	for _, k := range d.DSRecords {
-		keys = append(keys, delegationDSModel{Algorithm: types.Int64Value(k.Algorithm), DigestType: types.Int64Value(k.DigestType), KeyTag: types.Int64Value(k.KeyTag), Digest: types.StringValue(k.Digest), TTL: types.Int64PointerValue(k.TTL)})
+		keys = append(keys, delegationDSModel{AlgorithmName: types.StringValue(k.AlgorithmName), DigestTypeName: types.StringValue(k.DigestTypeName), Algorithm: types.Int64Value(k.Algorithm), DigestType: types.Int64Value(k.DigestType), KeyTag: types.Int64Value(k.KeyTag), Digest: types.StringValue(k.Digest), TTL: types.Int64PointerValue(k.TTL)})
 	}
 	var diags, next diag.Diagnostics
 	m.Nameservers, next = types.SetValueFrom(ctx, delegationNSType, names)
