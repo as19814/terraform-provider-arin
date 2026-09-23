@@ -160,7 +160,8 @@ Equal times are allowed; this is a monotonic-time check, not complete replay
 prevention. Current certificate validity is checked independently of signing time.
 The caller must authenticate the setup exchange, validate XML message identities
 and response semantics, then persist the accepted timestamp per peer before later
-exchanges. Durable timestamp and CRL-number history are not implemented yet.
+exchanges. Durable timestamp storage is implemented below; protocol integration and
+CRL-number history remain outstanding.
 
 Tests cover direct and intermediate chains, configured intermediates, missing
 intermediate CRLs, revoked EEs/intermediates, wrong roots, expired anchors and EEs,
@@ -191,3 +192,32 @@ synthetic keys in memory and write only public certificates and CMS envelopes to
 temporary files. The helper is not yet connected to a provider configuration or
 HTTP client. Outgoing timestamp persistence, serialized exchanges, message
 correlation, recovery and native ARIN protocol evidence remain outstanding.
+
+## Durable exchange journal
+
+The private exchange lease now persists outgoing and accepted incoming signing
+times, plus the hash, operation name and time of an unfinished request. It requires
+an existing absolute private directory and an opaque 64-character peer hash.
+Peer-key derivation and provider configuration remain part of client integration.
+
+One atomically created lock directory serializes cooperating processes using the
+same peer and storage directory. State uses mode-0600 files, file fsync, atomic
+rename and directory fsync. Begin must succeed before HTTP dispatch. Complete
+requires the matching request hash and a nondecreasing received timestamp; the
+caller must first authenticate and correlate the response. Completed timestamps
+remain after closing and reopening. Keys, certificates and XML are not stored.
+
+Corrupt, noncanonical, oversized, mismatched or overly permissive files are
+rejected. A failed save disables the current lease. A crash retains its lock for
+explicit reconciliation; removing only that lock does not clear a pending record.
+The implementation never automatically deletes stale locks or retries pending
+operations. Tests cover separate processes, abrupt exit, reopen behavior, failed
+atomic replacement, timestamp rollback, file permissions and state corruption.
+
+This is local coordination, not a distributed lock or tamper-proof audit log.
+Deleting journals, losing the directory or choosing a different directory loses
+history. It requires filesystem support for directory fsync. Protocol clients
+still need to hold the lease across signing, dispatch, verification and durable
+completion, and implement explicit recovery for uncertain outcomes. Equal-time
+messages, CRL rollback history, response correlation and native ARIN exchanges
+remain outside this journal's guarantees. No protocol request has been sent.
