@@ -131,3 +131,27 @@ authentication and server errors never cause state removal.
 Extend managed-resource support to additional IRR objects, network metadata, and delegations, with explicit lifecycle semantics and OT&E validation. Network discovery and authenticated detail reads are implemented; network metadata management can build on those models. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
 
 Start with the [API index](docs/reference/arin-api/README.md), [provider notes](docs/reference/arin-api/PROVIDER-NOTES.md), and [schema findings](docs/reference/arin-api/schemas/README.md).
+
+## OT&E write validation
+
+The AS-set lifecycle has a separate opt-in test command:
+
+```sh
+ARIN_TEST_ORG_HANDLE=FT-684 make testote
+```
+
+Set `ARIN_OTE_API_KEY` in the shell, or let the test fall back to `ARIN_API_KEY`.
+The test pins both API origins to OT&E regardless of `ARIN_BASE_URL` and
+`ARIN_RDAP_BASE_URL`. It validates organization access before writing, discovers
+admin and technical POC links, and requires a technical POC for the contact update.
+It creates a randomly named `AS-TF-OTE-*` set, updates membership and contacts,
+clears remarks, imports into separate state, verifies a clean plan, deletes the
+set, and confirms it is absent. Cleanup also checks for an object left behind by
+a failed apply. The generated name is printed for recovery if cleanup fails.
+The test uses documentation ASNs AS64496 and AS64497 as disposable members.
+It never mutates an existing account object. Normal tests and CI skip this test.
+
+OT&E account data and API keys are refreshed from production monthly. If the
+preflight rejects a recently created production key, generate a key in
+[OT&E ARIN Online](https://www.ote.arin.net/) and use `ARIN_OTE_API_KEY`.
+See [ARIN's OT&E documentation](https://www.arin.net/reference/tools/testing/).
