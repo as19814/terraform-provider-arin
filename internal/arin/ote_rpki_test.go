@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -180,7 +181,7 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 	}
 	name := fmt.Sprintf("tf-ote-rpki-%x", nonce)
 	for _, r := range beforeROAs {
-		if r.Name == name {
+		if r.Name == name || r.Name == name+"-shared" {
 			t.Fatal("disposable ROA name already exists")
 		}
 	}
@@ -217,6 +218,11 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 		}
 		routeIDs = append(routeIDs, id)
 	}
+	for _, resource := range resources {
+		if _, err := c.request(ctx, http.MethodGet, c.baseURL, "/rest/irr/route/"+resource.Prefix+"/AS0", "application/xml", true, nil); !IsNotFound(err) {
+			t.Fatalf("AS0 route must be absent before testing: %v", err)
+		}
+	}
 	cache, err := os.UserCacheDir()
 	if err != nil {
 		t.Fatal(err)
@@ -233,7 +239,8 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 		ASPAs       []ASPA
 		Request     ROARequest
 		ChangedASPA ASPA
-	}{org, beforeROAs, beforeASPAs, request, changed})
+		Names       []string
+	}{org, beforeROAs, beforeASPAs, request, changed, []string{name, name + "-shared"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,7 +269,7 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 		}
 		cleanup := RPKITransaction{}
 		for _, r := range roas {
-			if r.Name == name {
+			if r.Name == name || r.Name == name+"-shared" {
 				cleanup.DeleteROAs = append(cleanup.DeleteROAs, ROADelete{Handle: r.Handle, AutoLink: true})
 			}
 		}
@@ -319,6 +326,12 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 			}
 			if _, err := c.GetIRRRoute(ctx, id); !IsNotFound(err) {
 				t.Errorf("disposable IRR route remains; retain %s: %v", snapshot, err)
+				return
+			}
+		}
+		for _, resource := range resources {
+			if _, err := c.request(ctx, http.MethodGet, c.baseURL, "/rest/irr/route/"+resource.Prefix+"/AS0", "application/xml", true, nil); !IsNotFound(err) {
+				t.Errorf("AS0 route cleanup unconfirmed; retain %s: %v", snapshot, err)
 				return
 			}
 		}
@@ -427,5 +440,126 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 		}
 		t.Logf("ROA delete autoLink=%t verified for IPv4 and IPv6 IRR routes", deleteLinked)
 	}
+	manualRoutes := map[string]*IRRRoute{}
+	for _, resource := range resources {
+		manual, err := c.CreateIRRRoute(ctx, IRRRoute{Prefix: resource.Prefix, OriginAS: fmt.Sprintf("AS%d", original.CustomerASN), OrgHandle: org, Description: []string{"Disposable manual route description"}, Remarks: []string{"Disposable manual route remark"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		manualRoutes[manual.ID()] = manual
+	}
+	linkedRequest := request
+	linkedRequest.AutoLink = true
+	firstLinked, err := c.ApplyRPKITransaction(ctx, org, RPKITransaction{AddROAs: []ROARequest{linkedRequest}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range routeIDs {
+		route, err := c.GetIRRRoute(ctx, id)
+		if err != nil || route.AutoLinkedROAHandle != firstLinked.ROAs[0].Handle {
+			t.Fatalf("manual route adoption failed: %v", err)
+		}
+		manual := manualRoutes[id]
+		if !slices.Equal(route.Description, manual.Description) || !slices.Equal(route.POCs, manual.POCs) || route.NetHandle != manual.NetHandle || route.OrgHandle != manual.OrgHandle {
+			t.Fatal("manual route adoption changed registration metadata")
+		}
+		if !slices.Contains(route.Remarks, manual.Remarks[0]) || len(route.Remarks) != len(manual.Remarks)+1 {
+			t.Fatal("linked manual route lost its original remarks or did not gain the link annotation")
+		}
+	}
+	beforeDuplicate, err := c.ListROAs(ctx, org)
+	if err != nil {
+		t.Fatal(err)
+	}
+	beforeDuplicateASPAs, err := c.ListASPAs(ctx, org)
+	if err != nil {
+		t.Fatal(err)
+	}
+	linkedRequest.Name = name + "-shared"
+	_, rejected = c.ApplyRPKITransaction(ctx, org, RPKITransaction{AddROAs: []ROARequest{linkedRequest}})
+	if !errors.As(rejected, &apiErr) || apiErr.StatusCode != 400 || !strings.Contains(apiErr.Message, "same origin AS") {
+		t.Fatalf("unexpected duplicate-origin/prefix result: %v", rejected)
+	}
+	afterDuplicate, err := c.ListROAs(ctx, org)
+	if err != nil {
+		t.Fatal(err)
+	}
+	afterDuplicateASPAs, err := c.ListASPAs(ctx, org)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(canonicalROAs(beforeDuplicate), canonicalROAs(afterDuplicate)) || !reflect.DeepEqual(canonicalASPAs(beforeDuplicateASPAs), canonicalASPAs(afterDuplicateASPAs)) {
+		t.Fatal("rejected duplicate ROA changed RPKI inventories")
+	}
+	for _, id := range routeIDs {
+		route, err := c.GetIRRRoute(ctx, id)
+		if err != nil || route.AutoLinkedROAHandle != firstLinked.ROAs[0].Handle {
+			t.Fatalf("rejected duplicate ROA changed the original IRR link: %v", err)
+		}
+	}
+	t.Log("duplicate origin/prefix ROA rejected without changing either inventory or existing IRR links")
+	if _, err := c.ApplyRPKITransaction(ctx, org, RPKITransaction{DeleteROAs: []ROADelete{{Handle: firstLinked.ROAs[0].Handle, AutoLink: false}}}); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range routeIDs {
+		route, err := c.GetIRRRoute(ctx, id)
+		if err != nil || route.AutoLinkedROAHandle != "" {
+			t.Fatalf("manual route was not preserved and unlinked: %v", err)
+		}
+		manual := manualRoutes[id]
+		if !slices.Equal(route.Description, manual.Description) || !slices.Equal(route.Remarks, manual.Remarks) || !slices.Equal(route.POCs, manual.POCs) || route.NetHandle != manual.NetHandle || route.OrgHandle != manual.OrgHandle {
+			t.Fatal("unlinking did not restore original manual route metadata")
+		}
+		if err := c.DeleteIRRRoute(ctx, id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Log("manual IPv4/IPv6 route adoption preserved metadata and added a remark; unlinking removed only that annotation")
+	// Deliberately bypass local validation to retain evidence of the API's
+	// silent AS0 normalization. Never use this raw path in provider writes.
+	as0 := roaRequestXML{Name: name, ASN: 0, AutoLink: true}
+	for _, resource := range resources {
+		p := netip.MustParsePrefix(resource.Prefix)
+		as0.Resources = append(as0.Resources, roaResourceXML{Start: p.Addr().String(), CIDR: p.Bits()})
+	}
+	body, err := xml.Marshal(rpkiTransactionXML{AddROAs: &roaAddListXML{Items: []roaRequestXML{as0}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	native, err := c.request(ctx, http.MethodPost, c.baseURL, "/rest/rpki/"+org, "application/xml", true, body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if native.StatusCode != http.StatusOK && native.StatusCode != http.StatusCreated {
+		t.Fatal("AS0 probe did not complete")
+	}
+	result, err = decodeRPKITransaction(native.Body)
+	if err != nil || len(result.ROAs) != 1 {
+		t.Fatalf("AS0 probe returned an incomplete transaction: %v", err)
+	}
+	next = request
+	next.ASN = 0
+	probeROAs, err := c.ListROAs(ctx, org)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, a := range probeROAs {
+		if a.Handle == result.ROAs[0].Handle {
+			if !ROAMatchesRequest(a, next) {
+				t.Fatal("AS0 did not normalize to an unlinked authorization")
+			}
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("accepted AS0 ROA missing from inventory")
+	}
+	for _, resource := range resources {
+		if _, err := c.request(ctx, http.MethodGet, c.baseURL, "/rest/irr/route/"+resource.Prefix+"/AS0", "application/xml", true, nil); !IsNotFound(err) {
+			t.Fatalf("unexpected AS0 IRR route: %v", err)
+		}
+	}
+	t.Log("native AS0 autoLink=true accepted as an unlinked ROA with no IRR objects; local validation rejects this combination")
 	t.Log("cleanup will verify restoration of both RPKI inventories and route absence")
 }

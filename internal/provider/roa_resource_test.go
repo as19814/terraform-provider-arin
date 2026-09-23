@@ -207,3 +207,15 @@ func TestAccROARecovery(t *testing.T) {
 		return nil
 	}})
 }
+func TestAccROARejectsAS0AutoLink(t *testing.T) {
+	f, _ := setupROAFake(t)
+	config := roaConfig("EXAMPLE-1", "AS0", 0, map[string]int64{"192.0.2.0/24": 24}, true, false)
+	resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("test")())}, Steps: []resource.TestStep{
+		{Config: config, ExpectError: regexp.MustCompile("AS0 ROAs cannot create IRR links")},
+	}})
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.posts != 0 {
+		t.Fatal("invalid AS0 auto-link configuration reached the API")
+	}
+}

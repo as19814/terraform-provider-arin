@@ -13,4 +13,4 @@ resource "arin_roa" "example" {
 }
 
 # Updates replace the ARIN handle in one atomic transaction.
-# Use asn = 0 for an AS0 authorization.
+# Use asn = 0 with auto_link = false for an AS0 authorization.

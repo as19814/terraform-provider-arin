@@ -72,6 +72,9 @@ func TestRPKIValidation(t *testing.T) {
 			t.Fatal("invalid ASPA accepted")
 		}
 	}
+	if (ROARequest{Name: "AS0", ASN: 0, AutoLink: true, Resources: []ROAResource{{Prefix: "2001:db8::/32"}}}).Validate() == nil {
+		t.Fatal("AS0 auto-link request accepted despite native silent normalization")
+	}
 	if (RPKITransaction{}).Validate() == nil {
 		t.Fatal("empty transaction accepted")
 	}

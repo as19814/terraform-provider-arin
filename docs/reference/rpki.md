@@ -36,7 +36,10 @@ confirms their effects on disposable IPv4 and IPv6 IRR routes.
 
 `arin_roa` imports as `ORG-HANDLE/ROA-HANDLE`. Its `prefixes` map contains
 canonical IPv4/IPv6 CIDRs and their maximum prefix lengths. An API record with
-omitted maxLength is read as the CIDR length. The `asn` field accepts AS0.
+omitted maxLength is read as the CIDR length. The `asn` field accepts AS0 with `auto_link=false`. Native OT&E accepts an AS0
+request with autoLink=true but silently creates an unlinked ROA and no IRR
+objects. Local validation rejects that combination before any write, preventing
+an unsatisfied Terraform plan and an unnecessary recovery journal.
 Updates atomically delete the old ROA and add the new authorization, so both
 `handle` and `id` change. A matching existing authorization requires import.
 A change only to the local deletion policy does not submit a new transaction.
@@ -48,7 +51,17 @@ is linked, including for imported objects. Updates always delete with
 Destroy also preserves routes by default. Set `delete_linked_routes=true` to
 remove them instead. This deletion policy is local and imports default to false.
 ARIN can adopt existing routes when auto-linking. Avoid managing those same
-objects through `arin_irr_route`; shared-route ownership still needs further audit.
+objects through `arin_irr_route`. OT&E rejects a second ROA with the same origin
+and prefixes, even under a different name, with HTTP 400 and a same-origin prefix
+validation error. The rejected transaction leaves both inventories and the
+original IRR links unchanged. Atomic replacement remains supported because the
+old authorization is removed in the same transaction.
+
+Adopting disposable manual IPv4/IPv6 routes preserved their descriptions,
+original remarks, POC links, network and organization. Linking added one remark;
+unlinking with `autoLink=false` removed that annotation and restored the original
+metadata. The provider does not promise to preserve arbitrary advanced RPSL
+extensions without further IRR coverage.
 
 An uncertain create or update stores `recovery_data`, including the requested
 authorization, the pre-write handles, and the previous handle for updates.
@@ -110,8 +123,12 @@ complete baseline inventories. The lifecycle also replaces the ROA with an AS0
 ROA containing IPv4 /31 with maxLength 32 and IPv6 /127 with maxLength 128.
 The expanded ranges are checked against the original owned parent before use.
 These non-default maximum lengths survive the transaction and inventory reads.
+A separate raw request intentionally bypasses local validation to verify the
+native AS0 auto-link normalization described above. It uses the same disposable
+prefixes, verifies no AS0 IRR routes exist, and deletes the resulting unlinked
+ROA during cleanup.
 
-The test then creates linked IPv4 /32 and IPv6 /128 IRR routes through a ROA,
+The test also creates linked IPv4 /32 and IPv6 /128 IRR routes through a ROA,
 verifies their `autoLinkedRoaHandle`, and exercises both deletion flags:
 
 - `autoLink=false` deletes the ROA and retains the routes with their ROA links
@@ -120,8 +137,8 @@ verifies their `autoLinkedRoaHandle`, and exercises both deletion flags:
 
 Each candidate route is proven absent before any mutation. Cleanup removes only
 these disposable routes, verifies their absence, and restores both complete RPKI
-inventories. This establishes behavior for newly created routes, not for adopting
-pre-existing manual routes, shared links, or AS0 combined with auto-linking.
+inventories. The manual-route adoption and duplicate-link checks described above
+cover pre-existing disposable routes and rejected duplicate authorizations as well.
 
 The Terraform ASPA lifecycle imports an existing sandbox record, changes its
 providers, verifies import and a clean plan, changes to an AS0-only declaration,
@@ -139,19 +156,20 @@ and must not enter Git. A surviving snapshot blocks another test against that
 organization. `make testote` runs packages sequentially to avoid overlapping tests.
 
 If cleanup fails, inspect the snapshot locally. Remove only the disposable ROAs
-identified by the saved request and restore the recorded customer ASPA. Delete
-the disposable ROAs with `autoLink=true`. Check each saved request prefix and ASN
+identified by the saved request or `Names` list and restore the recorded customer
+ASPA. Delete the disposable ROAs with `autoLink=true`. Check each saved request
+prefix and ASN
 for a leftover IRR route; remove it only if it is unlinked. The test proved those
-route identities absent before mutation. Verify both complete inventories and
-route absence before removing the snapshot. Do not replace unrelated
+route identities absent before mutation. Also verify the saved request prefixes
+have no AS0 IRR routes left by the native normalization probe. Verify both complete
+inventories and route absence before removing the snapshot. Do not replace unrelated
 objects or submit a second creation merely because the first response was lost.
 All test origins are pinned to OT&E; normal CI uses fake servers only.
 
 ## Remaining work
 
-Shared IRR link ownership, AS0 auto-link behavior and the final endpoint audit
-remain in the
-[implementation inventory](implementation-status.md). The shared transaction
+The final endpoint audit and broader combined-transaction resource requirements
+remain in the [implementation inventory](implementation-status.md). The shared transaction
 client already supports combined operations, while the ASPA resource manages a
 single customer identity. Any need for a declarative multi-object transaction
 resource must be reconciled during that audit.

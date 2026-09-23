@@ -67,6 +67,9 @@ func (r ROARequest) Validate() error {
 	if err := validateRPKIASN(r.ASN, true); err != nil {
 		return err
 	}
+	if r.ASN == 0 && r.AutoLink {
+		return errors.New("AS0 ROAs cannot create IRR links; set auto_link to false")
+	}
 	if len(r.Resources) == 0 {
 		return errors.New("ROA requires at least one resource prefix")
 	}
