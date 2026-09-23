@@ -1,7 +1,10 @@
 # Linked IRR route metadata and ownership
 
 Status: scoped client update/delete methods are implemented and pass IPv4/IPv6
-OT&E tests. Terraform metadata resource integration remains required.
+OT&E tests. `arin_irr_route_metadata` is implemented with fake-server Terraform
+lifecycle, import, drift repair, remark clearing and an owning-ROA dependency
+graph. Native Terraform metadata and linked route-set membership coverage remain
+required.
 
 ## Native evidence
 
@@ -41,9 +44,9 @@ malformed responses, changed response links, unconfirmed metadata and deletion,
 and uncertain responses without automatic replay. Native route-set membership
 changes on a linked object remain to be tested.
 
-## Terraform integration requirements
+## Terraform contract and remaining verification
 
-Implement an `arin_irr_route_metadata` resource for metadata on an existing route.
+`arin_irr_route_metadata` manages metadata on an existing linked or unlinked route.
 It must not create or delete the underlying route or change its ROA authorization.
 The owning ROA or bundle retains link and route deletion policy. Removing only
 this metadata resource releases its state while leaving the route intact.
@@ -76,3 +79,10 @@ needs a contract for deliberate linked-route deletion and resulting ROA drift;
 
 References: [ARIN ROA Auto-Manager](https://www.arin.net/resources/manage/rpki/roas/#irr-auto-manager),
 [IRR RESTful API guide](https://www.arin.net/resources/manage/irr/irr-restful/).
+
+The current Terraform tests cover IPv4/IPv6 in linked and unlinked modes,
+organization/link guards, uncertain PUT outcomes with retained identity, failed
+refreshes and a real Terraform graph replacing the owning ROA. Changing only
+the expected handle to a matching new link issues no metadata PUT when fields
+already match. Removing metadata ownership sends no DELETE. Native graph tests,
+including membership authorization through a managed route set, remain open.

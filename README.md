@@ -223,6 +223,12 @@ before retrying a failed apply.
 
 [`arin_rpki_bundle`](docs/resources/rpki_bundle.md) manages an explicit group of ROAs and ASPAs in one atomic transaction. Stable ROA labels survive handle replacements. Import uses an exact member manifest; recovery state blocks uncertain transaction replay. Terraform lifecycle and recovery pass fake-server tests. Native create/import, combined changes, linked-route cleanup and destroy pass OT&E with baseline restoration. See [bundle coverage](docs/reference/rpki-bundle.md).
 
+`arin_irr_route_metadata` manages description, user remarks and route-set membership
+on an existing route. Bind linked writes with `expected_roa_handle` referencing a
+ROA or bundle handle. Removing metadata ownership leaves the route intact. See
+[resource documentation](docs/resources/irr_route_metadata.md) and
+[verification status](docs/reference/irr-route-metadata.md).
+
 [`arin_report_request`](docs/resources/report_request.md) submits an associations, reassignment or WhoWas report and retains its ticket receipt. Refresh and ticket expiry never resubmit it; destroy only forgets the receipt. WhoWas requires account access. See [report lifecycle and recovery](docs/reference/reports-tickets.md).
 
 [`arin_ticket_status`](docs/resources/ticket_status.md) closes an existing resolved ticket, imports by ticket number, and avoids rewriting already closed tickets. Destroy leaves the server ticket intact. Open tickets cannot be closed through this operation.
