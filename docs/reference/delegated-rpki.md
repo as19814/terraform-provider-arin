@@ -1875,3 +1875,31 @@ wrong peers/classes/issuers/certificates, tampered evidence and nonpreceding
 requests fail closed. Recovery never repeats the revoke. Signed HTTP/TLS tests
 cover successful commit, observation, restart and these rejection cases. Native
 signed ARIN interoperability remains unverified without delegated enrollment.
+
+### Public OT&E certificate profile census, 2026-09-23
+
+The remaining profile audit concerns the alternative certificate policy and
+resource-extension OIDs in [RFC 8360](https://www.rfc-editor.org/rfc/rfc8360.html).
+The alternative policy is `1.3.6.1.5.5.7.14.3`; the alternative IP and AS resource
+extensions are `1.3.6.1.5.5.7.1.28` and `1.3.6.1.5.5.7.1.29`. Supporting them
+requires verified-resource intersection semantics, not merely accepting new OIDs.
+The current certificate validator supports the original policy and extensions
+and rejects the alternative profile.
+
+`TestOTEPublicRPKIRepository` now counts the policy/resource OID combinations of
+every standalone `.cer` in the digest-checked public sandbox snapshot. A fresh,
+credential-free run completed in 67.70 seconds with:
+
+- 235,888 repository objects and 510,146,033 decoded bytes.
+- 9,510 certificates advertising the original policy and resource extensions.
+- Zero alternative-profile, mixed-profile or unclassified certificates.
+- Successful TAL-pinned root, root manifest/CRL and one direct child CA path
+  validation, including reopening durable history.
+
+Reproduce with `make testoterepository`. The census parses certificate DER and
+checks each packed object's digest; it does not validate every certificate chain,
+inspect embedded EE certificates in signed objects, or prove that ARIN cannot
+issue an alternative-profile certificate. It describes this observed snapshot.
+The delegated service's native issuance profile remains unverified without
+sandbox enrollment. Alternative-profile semantics remain an implementation
+limitation, with no native example observed in this census.

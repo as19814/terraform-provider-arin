@@ -137,6 +137,49 @@ func TestOTEPublicRPKIRepository(t *testing.T) {
 	defer cache.Close()
 	spool := cache.Objects
 	t.Logf("verified snapshot digest: %d objects, %d decoded bytes", len(spool.entries), spool.size)
+	// This census reports advertised certificate profiles, not validation of
+	// every chain or CMS object in the repository.
+	original, reconsidered, mixed, unknown := 0, 0, 0, 0
+	for uri := range spool.entries {
+		if !strings.HasSuffix(uri, ".cer") {
+			continue
+		}
+		raw, err := spool.ReadObject(uri)
+		if err != nil {
+			t.Fatal("certificate census: corrupt repository object")
+		}
+		cert, err := x509.ParseCertificate(raw)
+		if err != nil {
+			t.Fatal("certificate census: malformed certificate")
+		}
+		oldPolicy, newPolicy, oldResources, newResources := false, false, false, false
+		for _, policy := range cert.PolicyIdentifiers {
+			oldPolicy = oldPolicy || policy.String() == "1.3.6.1.5.5.7.14.2"
+			newPolicy = newPolicy || policy.String() == "1.3.6.1.5.5.7.14.3"
+		}
+		for _, extension := range cert.Extensions {
+			switch extension.Id.String() {
+			case "1.3.6.1.5.5.7.1.7", "1.3.6.1.5.5.7.1.8":
+				oldResources = true
+			case "1.3.6.1.5.5.7.1.28", "1.3.6.1.5.5.7.1.29":
+				newResources = true
+			}
+		}
+		switch {
+		case (oldPolicy || oldResources) && (newPolicy || newResources):
+			mixed++
+		case oldPolicy && oldResources:
+			original++
+		case newPolicy && newResources:
+			reconsidered++
+		default:
+			unknown++
+		}
+	}
+	if original+reconsidered+mixed+unknown == 0 {
+		t.Fatal("certificate census found no certificates")
+	}
+	t.Logf("certificate profile census: original=%d reconsidered=%d mixed=%d unknown=%d", original, reconsidered, mixed, unknown)
 	manifestDER, err := spool.ReadObject(manifestURI)
 	if err != nil {
 		t.Fatal(err)
