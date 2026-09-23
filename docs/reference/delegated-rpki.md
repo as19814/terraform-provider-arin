@@ -765,3 +765,27 @@ a notification's identity/hash directly into snapshot decoding.
 HTTP retrieval, conditional polling, delta application, persistent cache/session
 tracking and issuance resolver wiring remain unfinished. Notification checks do
 not authenticate the RPKI objects referenced by the repository.
+
+## RRDP HTTPS retrieval
+
+The private repository HTTP client now fetches and parses notifications and
+referenced snapshots. Requests carry no ARIN API key or cookie state. It uses
+HTTPS with normal transport certificate verification, bounded response reads,
+a configurable timeout (30 seconds by default, at most five minutes), and redirect
+chains limited to five requests whose destinations must remain HTTPS.
+
+Notification retrieval supports Last-Modified/If-Modified-Since. A solicited
+304 returns an explicit unchanged result without replacing cached metadata;
+an unsolicited 304 fails. Snapshot downloads pass through the existing digest,
+identity and bounded XML checks. HTTP/transport failures return generic errors
+without response bodies or URLs.
+
+TLS fake-server tests cover successful retrieval, hash mismatches, conditional
+requests, unknown TLS trust, redirects, HTTPS downgrades, oversized declared and
+streamed bodies, cancellation, timeouts and error privacy. The client currently
+requires successful TLS verification; fallback behavior has not been added.
+
+Persistent cache/session tracking, poll scheduling, delta processing, repository
+resolver wiring and native retrieval evidence remain unfinished. Retrieved
+objects still require manifest/resource-path authentication before issuance
+acceptance.

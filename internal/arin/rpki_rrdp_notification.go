@@ -156,11 +156,7 @@ func parseRRDPNotification(body []byte) (*rrdpNotification, error) {
 func parseRRDPReference(a map[string]string) (rrdpFileReference, error) {
 	var out rrdpFileReference
 	s := a["uri"]
-	if !validRPKIProfileURI(s) {
-		return out, errRPKIRRDP
-	}
-	u, err := url.Parse(s)
-	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.Opaque != "" || strings.Contains(s, "#") {
+	if !validRRDPURL(s) {
 		return out, errRPKIRRDP
 	}
 	hash, err := hex.DecodeString(a["hash"])
@@ -170,4 +166,12 @@ func parseRRDPReference(a map[string]string) (rrdpFileReference, error) {
 	out.URI = s
 	copy(out.Hash[:], hash)
 	return out, nil
+}
+
+func validRRDPURL(s string) bool {
+	if !validRPKIProfileURI(s) {
+		return false
+	}
+	u, err := url.Parse(s)
+	return err == nil && u.Scheme == "https" && u.Hostname() != "" && u.User == nil && u.Opaque == "" && !strings.Contains(s, "#")
 }
