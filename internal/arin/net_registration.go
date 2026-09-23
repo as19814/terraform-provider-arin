@@ -360,21 +360,58 @@ func (c *Client) UpdateRegisteredNet(ctx context.Context, handle, name string, c
 	if err := validateNetMetadata(name, comments, origins); err != nil {
 		return nil, err
 	}
-	for _, p := range pocs {
-		if !handlePattern.MatchString(p.Handle) || !slices.Contains([]string{"T", "AB", "N", "R", "D"}, p.Function) {
-			return nil, errors.New("invalid NET POC link")
-		}
+	if err := ValidateNetMetadata(name, comments, pocs); err != nil {
+		return nil, err
+	}
+
+	patch := NetMetadataPatch{Name: &name, Comments: &comments}
+	if pocs != nil {
+		patch.POCs = &pocs
+	}
+	return c.UpdateNetMetadata(ctx, handle, patch)
+}
+
+// NetMetadataPatch preserves each omitted field from the latest authenticated
+// GET. A pointer to an empty collection explicitly clears that collection.
+type NetMetadataPatch struct {
+	Name     *string
+	Comments *[]string
+	POCs     *[]NetPOC
+}
+
+func (c *Client) UpdateNetMetadata(ctx context.Context, handle string, patch NetMetadataPatch) (*RegisteredNet, error) {
+	name := "EXAMPLE"
+	if patch.Name != nil {
+		name = *patch.Name
+	}
+	var comments []string
+	if patch.Comments != nil {
+		comments = *patch.Comments
+	}
+	var pocs []NetPOC
+	if patch.POCs != nil {
+		pocs = *patch.POCs
+	}
+	if err := ValidateNetMetadata(name, comments, pocs); err != nil {
+		return nil, err
 	}
 	n, err := c.GetRegisteredNet(ctx, handle)
 	if err != nil {
 		return nil, err
 	}
-	n.Name = name
-	n.Comments = comments
-	n.OriginASNs = origins
-	if pocs != nil {
-		n.POCs = pocs
+	if patch.Name != nil {
+		n.Name = *patch.Name
 	}
+	if patch.Comments != nil {
+		n.Comments = *patch.Comments
+	}
+	if patch.POCs != nil {
+		n.POCs = make([]NetPOC, len(*patch.POCs))
+		for i, p := range *patch.POCs {
+			n.POCs[i] = NetPOC{Handle: p.Handle, Function: p.Function}
+		}
+	}
+
 	body, err := n.marshal()
 	if err != nil {
 		return nil, err
@@ -504,4 +541,23 @@ func (c *Client) GetRegistrationTicket(ctx context.Context, number string) (*Reg
 		return &RegistrationTicket{Number: number, Status: netString(v, "ticket_status"), Resolution: netString(v, "resolution")}, nil
 	}
 	return nil, errors.New("ticket summary API is unavailable")
+}
+
+// ValidateNetMetadata validates writable fields without performing a request.
+func ValidateNetMetadata(name string, comments []string, pocs []NetPOC) error {
+	if err := validateNetMetadata(name, comments, nil); err != nil {
+		return err
+	}
+	seen := map[string]bool{}
+	for _, p := range pocs {
+		if !handlePattern.MatchString(p.Handle) || !slices.Contains([]string{"T", "AB", "N"}, p.Function) {
+			return errors.New("NET POC links require a valid handle and function AB, N or T")
+		}
+		key := p.Handle + "/" + p.Function
+		if seen[key] {
+			return errors.New("duplicate NET POC association")
+		}
+		seen[key] = true
+	}
+	return nil
 }

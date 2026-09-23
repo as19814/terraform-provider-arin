@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Six managed resources cover downstream network registrations, customer records, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Seven managed resources cover existing network metadata, downstream network registrations, customer records, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -189,8 +189,11 @@ detailed reassignments to organizations, and reallocations. Name and comments
 update in place; changes to parent, recipient, prefixes or creation mode replace
 the registration. Reference an `arin_customer` ID to establish deletion order.
 
-Import existing downstream registrations by NET handle. Direct-allocation
-metadata and network POC editing remain separate pending work. ARIN retired NET
+Import existing downstream registrations by NET handle. [`arin_net_metadata`](docs/resources/net_metadata.md) manages name, comments
+and explicit POC links on existing NETs, including direct allocations. Destroy
+removes metadata management and leaves the NET and its last values unchanged.
+When combining both resources, configure only POC links in the metadata resource
+so their managed fields do not overlap. ARIN retired NET
 Origin AS in July 2025; use `arin_irr_route` for routing announcements.
 
 Pending and uncertain writes retain recovery state. See the
@@ -234,7 +237,9 @@ fails preflight rather than changing an existing object.
 The NET tests select a free IPv4 /32 and IPv6 /64, then test customer
 reassignment, organization reassignment, and reallocation. They verify updates,
 import, clean plans and deletion, and remove their disposable customer records.
-These tests never mutate an existing account object. Normal tests and CI skip them.
+Metadata tests edit only disposable child NETs. The direct-allocation test
+sends an unchanged metadata payload to an owned parent and verifies identical
+before-and-after values. Normal tests and CI skip these sandbox tests.
 
 OT&E account data and API keys are refreshed from production monthly. If the
 preflight rejects a recently created production key, generate a key in

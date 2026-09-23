@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"net/netip"
@@ -27,6 +28,13 @@ func otePrefixEnd(p netip.Prefix) netip.Addr {
 	return address
 }
 func oteNetCandidate(t *testing.T, c *arin.Client, org, family string) (string, string) {
+	bits := 64
+	if family == "v4" {
+		bits = 32
+	}
+	return oteNetCandidateSize(t, c, org, family, bits)
+}
+func oteNetCandidateSize(t *testing.T, c *arin.Client, org, family string, bits int) (string, string) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -49,10 +57,6 @@ func oteNetCandidate(t *testing.T, c *arin.Client, org, family string) (string, 
 		for _, block := range detail.Blocks {
 			if block.Type != "DA" && block.Type != "A" {
 				continue
-			}
-			bits := 64
-			if family == "v4" {
-				bits = 32
 			}
 			if block.CIDRLength > bits {
 				continue
@@ -100,7 +104,9 @@ func oteNetCandidate(t *testing.T, c *arin.Client, org, family string) (string, 
 
 	return parent, prefix
 }
-func TestOTENetLifecycle(t *testing.T) {
+func TestOTENetLifecycle(t *testing.T)           { testOTENetLifecycle(t, false) }
+func TestOTENetMultiBlockLifecycle(t *testing.T) { testOTENetLifecycle(t, true) }
+func testOTENetLifecycle(t *testing.T, multi bool) {
 	if os.Getenv("ARIN_OTE_WRITE_TESTS") != "1" || os.Getenv("TF_ACC") != "1" {
 		t.Skip("requires explicit OT&E write opt-in")
 	}
@@ -115,7 +121,22 @@ func TestOTENetLifecycle(t *testing.T) {
 	t.Setenv("ARIN_API_KEY", key)
 	for _, family := range []string{"v4", "v6"} {
 		t.Run(family, func(t *testing.T) {
-			parent, prefix := oteNetCandidate(t, client, org, family)
+			bits := 64
+			if family == "v4" {
+				bits = 32
+			}
+			if multi {
+				bits -= 2
+			}
+			parent, prefix := oteNetCandidateSize(t, client, org, family, bits)
+			prefixes := []string{prefix}
+			if multi {
+				container := netip.MustParsePrefix(prefix)
+				first := netip.PrefixFrom(container.Addr(), container.Bits()+1)
+				second := netip.PrefixFrom(otePrefixEnd(first).Next(), container.Bits()+2)
+				prefixes = []string{first.String(), second.String()}
+			}
+			encodedPrefixes, _ := json.Marshal(prefixes)
 			var random [8]byte
 			if _, err := rand.Read(random[:]); err != nil {
 				t.Fatal(err)
@@ -134,7 +155,7 @@ func TestOTENetLifecycle(t *testing.T) {
 				defer cancel()
 				// Exact range and recipient/name checks recover an interrupted apply
 				// without deleting a preexisting registration.
-				a := arin.NetAssignment{ParentNetHandle: parent, Name: expectedName, CustomerHandle: recipientCustomer, OrgHandle: recipientOrg, Prefixes: []string{prefix}}
+				a := arin.NetAssignment{ParentNetHandle: parent, Name: expectedName, CustomerHandle: recipientCustomer, OrgHandle: recipientOrg, Prefixes: prefixes}
 				for _, reallocate := range []bool{false, true} {
 					a.Reallocate = reallocate
 					n, e := client.FindNetAssignment(ctx, a)
@@ -180,11 +201,11 @@ func TestOTENetLifecycle(t *testing.T) {
 resource "arin_net" "test" {
  parent_net_handle = %q
  name = %q
- prefixes = [%q]
+ prefixes = %s
  %s
  reallocate = %t
  %s
-}`, parent, netName, prefix, recipient, reallocate, extras)
+}`, parent, netName, encodedPrefixes, recipient, reallocate, extras)
 			}
 			capture := func(s *terraform.State) error {
 				record := s.RootModule().Resources["arin_net.test"]
@@ -205,7 +226,7 @@ resource "arin_net" "test" {
 					defer cancel()
 					if handle == "" {
 						// A failed first apply may never invoke its check callback.
-						a := arin.NetAssignment{ParentNetHandle: parent, Name: expectedName, CustomerHandle: recipientCustomer, OrgHandle: recipientOrg, Prefixes: []string{prefix}}
+						a := arin.NetAssignment{ParentNetHandle: parent, Name: expectedName, CustomerHandle: recipientCustomer, OrgHandle: recipientOrg, Prefixes: prefixes}
 						n, e := client.FindNetAssignment(ctx, a)
 						if e != nil || n != nil {
 							return fmt.Errorf("NET deletion unconfirmed after failed apply: %v", e)

@@ -17,7 +17,7 @@ again before declaring full coverage.
 | IRR route/route6 | Simple XML resource and individual/list data sources; IPv4/IPv6 OT&E lifecycle passes | memberOf support; advanced RPSL; coordinated ROA-linked lifecycle |
 | IRR route sets | Simple XML resource plus individual/list data sources; mock and OT&E lifecycle pass | Advanced RPSL capability |
 | IRR aut-num | Simple XML resource plus individual/list data sources; all six policies and membership pass OT&E | Advanced RPSL capability |
-| NET records | Read data sources and arin_net resource; IPv4/IPv6 simple, detailed and reallocation Terraform lifecycles pass OT&E; pending/uncertain recovery passes mocks | Live asynchronous ticket evidence, multi-block normalization, direct-allocation metadata, POC editing and remove-with-message workflow; see [evidence](net-registration.md) |
+| NET records | Read data sources, arin_net and arin_net_metadata; IPv4/IPv6 single/multi-block lifecycles, metadata and POC editing pass OT&E; pending recovery passes mocks | Live asynchronous ticket evidence and remove-with-message workflow; see [evidence](net-registration.md) |
 | Customers | Individual data source and managed recipient resource; mock and OT&E lifecycle pass | Network reassignment integration |
 | Organizations | Individual data source | Creation, update, deletion and POC associations; ticket semantics |
 | POCs | Individual and organization references data sources | Creation, update, deletion; phone/email suboperations |
@@ -56,6 +56,12 @@ again before declaring full coverage.
   ticket responses and persisted recovery state are covered by mocks and Terraform
   acceptance tests. NET Origin AS was retired in July 2025 and OT&E silently
   discards it on create and update; it is not exposed as a writable field.
+- Multi-block IPv4 and IPv6 NET lifecycles pass Terraform creation, update,
+  import, clean-plan and deletion checks for all three assignment modes.
+- Existing-NET metadata supports omission/preservation and explicit clearing.
+  OT&E accepts T, N and AB POC roles, and rejects R and D despite their presence
+  in the generic payload table. The direct-allocation metadata test submits
+  unchanged values and verifies the complete record remains identical.
 - OT&E keys may differ from production because snapshots refresh monthly.
 
 ## Verification commands

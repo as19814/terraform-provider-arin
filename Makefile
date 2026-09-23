@@ -29,4 +29,4 @@ testlive:
 # Explicitly opt-in writes, pinned to OT&E and disposable objects only.
 .PHONY: testote
 testote:
-	ARIN_OTE_WRITE_TESTS=1 TF_ACC=1 go test ./internal/arin ./internal/provider -run '^TestOTE(ASSet|IRRRoute|RouteSet|Autnum|Customer|Net|NetAssignmentClient)Lifecycle$$' -v -count=1 -timeout 10m
+	ARIN_OTE_WRITE_TESTS=1 TF_ACC=1 go test ./internal/arin ./internal/provider -run '^TestOTE(ASSet|IRRRoute|RouteSet|Autnum|Customer|Net|NetMultiBlock|NetMetadata|NetAssignmentClient)Lifecycle$$' -v -count=1 -timeout 10m

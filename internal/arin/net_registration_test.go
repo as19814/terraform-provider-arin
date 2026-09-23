@@ -335,3 +335,52 @@ func TestFindNetAssignmentUsesCompleteRange(t *testing.T) {
 		t.Fatalf("multi-block reconciliation failed: %+v %v calls=%d", found, err, calls)
 	}
 }
+
+func TestNetMetadataPatchPreservesOmittedFields(t *testing.T) {
+	current := testRegisteredNet()
+	current.POCs = []NetPOC{{Handle: "TECH-1", Function: "T", Description: "Tech"}}
+	body, _ := current.marshal()
+	writes := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			w.Write(body)
+			return
+		}
+		writes++
+		b, _ := io.ReadAll(r.Body)
+		var n registeredNetXML
+		if err := xml.Unmarshal(b, &n); err != nil {
+			t.Error(err)
+			w.WriteHeader(400)
+			return
+		}
+		if n.Name != "CHANGED" || n.CustomerHandle != current.CustomerHandle || n.RegistrationDate != current.RegistrationDate || len(n.POCs) != 1 || n.POCs[0].Handle != "TECH-1" || n.Comments == nil || n.Comments.Lines[0].Text != current.Comments[0] {
+			t.Error("omitted metadata or identity lost")
+		}
+		w.Write(b)
+	}))
+	defer server.Close()
+	c, _ := New(Config{BaseURL: server.URL, APIKey: "test-key"})
+	name := "CHANGED"
+	if _, err := c.UpdateNetMetadata(context.Background(), current.Handle, NetMetadataPatch{Name: &name}); err != nil {
+		t.Fatal(err)
+	}
+	if writes != 1 {
+		t.Fatal("unexpected mutations")
+	}
+}
+func TestNetPOCValidation(t *testing.T) {
+	for _, role := range []string{"AD", "R", "D", "unknown"} {
+		if ValidateNetMetadata("EXAMPLE", nil, []NetPOC{{Handle: "POC-1", Function: role}}) == nil {
+			t.Fatalf("accepted unsupported role %s", role)
+		}
+	}
+	for _, role := range []string{"T", "AB", "N"} {
+		if err := ValidateNetMetadata("EXAMPLE", nil, []NetPOC{{Handle: "POC-1", Function: role}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if ValidateNetMetadata("EXAMPLE", nil, []NetPOC{{Handle: "POC-1", Function: "T"}, {Handle: "POC-1", Function: "T"}}) == nil {
+		t.Fatal("accepted duplicate association")
+	}
+}
