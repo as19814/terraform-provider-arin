@@ -21,6 +21,9 @@ func validateRPKICRLProfile(crl *x509.RevocationList) error {
 	if err != nil || len(tbs) < 5 {
 		return errRPKIUpDown
 	}
+	if err := validateRPKICRLNamesAndTimes(crl, tbs); err != nil {
+		return err
+	}
 	var version int
 	if !rpkiCSRDER(tbs[0].FullBytes, &version) || version != 1 {
 		return errRPKIUpDown

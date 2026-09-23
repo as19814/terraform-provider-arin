@@ -512,3 +512,23 @@ Tests cover zero and maximum permitted CRL numbers, conflicting candidates in
 both orders, identical copies and revocation in a low-number candidate. Both
 helper and path-level cases pass. Name/time profile checks remain outstanding;
 this correction took priority when the updated standard was discovered.
+
+## Resource names and DER time encodings
+
+Resource-path checks now require issuer and subject names with one PrintableString
+CommonName and at most one PrintableString serialNumber. Duplicate, extra,
+empty, oversized or improperly encoded attributes and unsorted RDN sets fail.
+Certificates must use the version-3 field layout without unique identifiers.
+Certificate validity, CRL update times and revoked-entry dates must use UTC,
+whole-second encodings with UTCTime through 2049 and GeneralizedTime from 2050.
+Offsets, missing seconds, fractional seconds and invalid calendar values fail.
+
+The checks inspect raw DER and are integrated into certificate-path and CRL
+profile validation. Tests cover separate and combined name RDNs, string types,
+attribute restrictions, year boundaries and malformed times. A freshly signed
+certificate with an extra organization attribute is rejected at path level.
+Existing signed path and CRL tests also pass.
+
+Remaining work includes certificate extension/algorithm profile completion,
+authenticated manifest selection, allocation matching, issuance and Terraform
+integration, uncertain-outcome recovery and native delegated verification.
