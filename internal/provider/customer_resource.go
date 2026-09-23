@@ -1,0 +1,206 @@
+package provider
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/as19814/terraform-provider-arin/internal/arin"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+var (
+	_ resource.Resource                   = &customerResource{}
+	_ resource.ResourceWithConfigure      = &customerResource{}
+	_ resource.ResourceWithImportState    = &customerResource{}
+	_ resource.ResourceWithValidateConfig = &customerResource{}
+)
+
+type customerResource struct{ client *arin.Client }
+type customerModel struct {
+	ID               types.String `tfsdk:"id"`
+	ParentNet        types.String `tfsdk:"parent_net_handle"`
+	Name             types.String `tfsdk:"name"`
+	ParentOrg        types.String `tfsdk:"parent_org_handle"`
+	RegistrationDate types.String `tfsdk:"registration_date"`
+	CountryCode      types.String `tfsdk:"country_code"`
+	CountryName      types.String `tfsdk:"country_name"`
+	City             types.String `tfsdk:"city"`
+	Subdivision      types.String `tfsdk:"subdivision"`
+	PostalCode       types.String `tfsdk:"postal_code"`
+	Street           types.List   `tfsdk:"street_address"`
+	Comments         types.List   `tfsdk:"comments"`
+	Private          types.Bool   `tfsdk:"private_customer"`
+}
+
+func NewCustomerResource() resource.Resource { return &customerResource{} }
+func (r *customerResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_customer"
+}
+func (r *customerResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	optionalText := func(description string) schema.StringAttribute {
+		return schema.StringAttribute{Optional: true, Computed: true, Sensitive: true, Default: stringdefault.StaticString(""), MarkdownDescription: description}
+	}
+	resp.Schema = schema.Schema{MarkdownDescription: "Manage an ARIN customer record for a simple network reassignment. Creation does not itself reassign address space. Changes to parent_net_handle require replacement. Delete the dependent reassignment before deleting its customer. Name and address attributes are sensitive but remain in Terraform state. Import using PARENT-NET-HANDLE/CUSTOMER-HANDLE.", Attributes: map[string]schema.Attribute{
+		"id":                schema.StringAttribute{Computed: true, MarkdownDescription: "ARIN-generated customer handle.", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+		"parent_net_handle": schema.StringAttribute{Required: true, MarkdownDescription: "Parent network used to create the recipient. Creation-only context retained in state and required during import.", PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
+		"name":              schema.StringAttribute{Required: true, Sensitive: true, MarkdownDescription: "Customer name."},
+		"country_code":      schema.StringAttribute{Required: true, MarkdownDescription: "Uppercase two-letter country code."},
+		"country_name":      schema.StringAttribute{Computed: true, MarkdownDescription: "Country name returned by ARIN."},
+		"city":              optionalText("Customer city. Omission sends an empty value."),
+		"subdivision":       optionalText("State or province code. Required for US and CA customers."),
+		"postal_code":       optionalText("Postal code. Required for US and CA customers."),
+		"street_address":    schema.ListAttribute{Required: true, Sensitive: true, ElementType: types.StringType, MarkdownDescription: "Ordered street address lines. At least one line is required."},
+		"comments":          schema.ListAttribute{Optional: true, Computed: true, Sensitive: true, ElementType: types.StringType, Default: listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})), MarkdownDescription: "Ordered operational comments. Omission clears comments."},
+		"private_customer":  schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false), MarkdownDescription: "Hide the customer name and address from public registration output. Defaults to false."},
+		"parent_org_handle": schema.StringAttribute{Computed: true, MarkdownDescription: "Parent organization assigned by ARIN."},
+		"registration_date": schema.StringAttribute{Computed: true, MarkdownDescription: "Registration date generated by ARIN and preserved on updates."},
+	}}
+}
+func (r *customerResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+	c, ok := req.ProviderData.(*arin.Client)
+	if !ok {
+		resp.Diagnostics.AddError("Unexpected provider configuration", fmt.Sprintf("Expected *arin.Client, got %T", req.ProviderData))
+		return
+	}
+	r.client = c
+}
+func (m customerModel) api(ctx context.Context) (arin.Customer, diag.Diagnostics) {
+	out := arin.Customer{Handle: m.ID.ValueString(), Name: m.Name.ValueString(), CountryCode: m.CountryCode.ValueString(), City: m.City.ValueString(), Subdivision: m.Subdivision.ValueString(), PostalCode: m.PostalCode.ValueString(), Private: m.Private.ValueBool()}
+	var d diag.Diagnostics
+	d.Append(m.Street.ElementsAs(ctx, &out.StreetAddress, false)...)
+	d.Append(m.Comments.ElementsAs(ctx, &out.Comments, false)...)
+	return out, d
+}
+func (r *customerResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var m customerModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &m)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !m.ParentNet.IsUnknown() && !m.ParentNet.IsNull() {
+		if err := arin.ValidateCustomerContext(m.ParentNet.ValueString(), ""); err != nil {
+			resp.Diagnostics.AddAttributeError(path.Root("parent_net_handle"), "Invalid customer parent", err.Error())
+			return
+		}
+	}
+	for _, v := range []attr.Value{m.Name, m.CountryCode, m.City, m.Subdivision, m.PostalCode, m.Street, m.Comments, m.Private} {
+		tv, err := v.ToTerraformValue(ctx)
+		if err != nil || !tv.IsFullyKnown() {
+			return
+		}
+	}
+	s, d := m.api(ctx)
+	resp.Diagnostics.Append(d...)
+	if !resp.Diagnostics.HasError() {
+		if err := s.Validate(); err != nil {
+			resp.Diagnostics.AddError("Invalid customer", err.Error())
+		}
+	}
+}
+func customerState(ctx context.Context, s *arin.Customer, parent types.String) (customerModel, diag.Diagnostics) {
+	m := customerModel{ID: types.StringValue(s.Handle), ParentNet: parent, Name: types.StringValue(s.Name), CountryCode: types.StringValue(s.CountryCode), CountryName: types.StringValue(s.CountryName), City: types.StringValue(s.City), Subdivision: types.StringValue(s.Subdivision), PostalCode: types.StringValue(s.PostalCode), Private: types.BoolValue(s.Private), ParentOrg: types.StringValue(s.ParentOrgHandle), RegistrationDate: types.StringValue(s.RegistrationDate)}
+	var d, next diag.Diagnostics
+	m.Street, next = types.ListValueFrom(ctx, types.StringType, nonNilStrings(s.StreetAddress))
+	d.Append(next...)
+	m.Comments, next = types.ListValueFrom(ctx, types.StringType, nonNilStrings(s.Comments))
+	d.Append(next...)
+	return m, d
+}
+func (r *customerResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var m customerModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &m)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	s, d := m.api(ctx)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	out, err := r.client.CreateCustomer(ctx, m.ParentNet.ValueString(), s)
+	if err != nil {
+		resp.Diagnostics.AddError("Could not create customer", err.Error()+". Creation is not automatically retried; if the outcome is uncertain, locate and import the new customer before retrying.")
+		return
+	}
+	m, d = customerState(ctx, out, m.ParentNet)
+	resp.Diagnostics.Append(d...)
+	if !resp.Diagnostics.HasError() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
+	}
+}
+func (r *customerResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var m customerModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &m)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	out, err := r.client.GetCustomer(ctx, m.ID.ValueString())
+	if arin.IsNotFound(err) {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if err != nil {
+		resp.Diagnostics.AddError("Could not read customer", err.Error())
+		return
+	}
+	m, d := customerState(ctx, out, m.ParentNet)
+	resp.Diagnostics.Append(d...)
+	if !resp.Diagnostics.HasError() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
+	}
+}
+func (r *customerResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var m customerModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &m)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	s, d := m.api(ctx)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	out, err := r.client.UpdateCustomer(ctx, s)
+	if err != nil {
+		resp.Diagnostics.AddError("Could not update customer", err.Error())
+		return
+	}
+	m, d = customerState(ctx, out, m.ParentNet)
+	resp.Diagnostics.Append(d...)
+	if !resp.Diagnostics.HasError() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
+	}
+}
+func (r *customerResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var m customerModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &m)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if err := r.client.DeleteCustomer(ctx, m.ID.ValueString()); err != nil {
+		resp.Diagnostics.AddError("Could not delete customer", err.Error())
+	}
+}
+func (r *customerResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	parts := strings.Split(req.ID, "/")
+	if len(parts) != 2 || parts[1] == "" || arin.ValidateCustomerContext(parts[0], parts[1]) != nil {
+		resp.Diagnostics.AddError("Invalid customer import ID", "Use PARENT-NET-HANDLE/CUSTOMER-HANDLE.")
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("parent_net_handle"), parts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
+}

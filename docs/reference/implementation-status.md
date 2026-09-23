@@ -18,7 +18,7 @@ again before declaring full coverage.
 | IRR route sets | Simple XML resource plus individual/list data sources; mock and OT&E lifecycle pass | Advanced RPSL capability |
 | IRR aut-num | Simple XML resource plus individual/list data sources; all six policies and membership pass OT&E | Advanced RPSL capability |
 | NET records | Individual, organization inventory, parent, range and most-specific data sources | Metadata update, reassignment, reallocation, deletion/removal and ticket semantics |
-| Customers | Individual data source | Recipient creation, update, deletion, import |
+| Customers | Individual data source and managed recipient resource; mock and OT&E lifecycle pass | Network reassignment integration |
 | Organizations | Individual data source | Creation, update, deletion and POC associations; ticket semantics |
 | POCs | Individual and organization references data sources | Creation, update, deletion; phone/email suboperations |
 | DNS delegations | Individual and NET delegation list data sources | Full delegation management, nameserver addition/update/removal, DNSSEC |
@@ -47,6 +47,9 @@ again before declaring full coverage.
 - IRR aut-num supports writable AS name, all six routing policy fields and
   membership in AS sets. Creation, changes, clearing, import and deletion passed
   without changing the underlying ASN registration.
+- Customer records support creation, address/name/privacy updates, comment clearing,
+  import and deletion. Updates preserve server-generated identity and registration
+  date. Creation does not itself reassign a network.
 - OT&E keys may differ from production because snapshots refresh monthly.
 
 ## Verification commands

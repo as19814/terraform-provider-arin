@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Four managed resources cover simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Five managed resources cover customer records, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -172,6 +172,15 @@ in place. Deletion removes the IRR object and leaves the ASN registration intact
 
 Both resources pass mock and OT&E create/update/clear/import/delete lifecycles.
 Advanced RPSL objects remain in the implementation backlog.
+
+## Customer records
+
+[`arin_customer`](docs/resources/customer.md) manages the recipient record used
+for simple network reassignments. It supports name, address, privacy and comments,
+and preserves ARIN-generated identity and registration date during updates.
+Import uses `PARENT-NET-HANDLE/CUSTOMER-HANDLE` because the API does not return the
+creation parent. Creating a customer does not itself reassign address space.
+Mock and OT&E create/update/clear/import/delete lifecycles pass.
 
 ## Next steps
 
