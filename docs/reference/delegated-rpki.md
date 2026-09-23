@@ -316,3 +316,28 @@ rejection, wrong-key replies, scheduled outcomes, journal completion and retry
 prevention. Parser tests cover identity, namespace, type, class, key and error
 validation. No native certificate has been revoked. Up-down list/issue clients,
 Terraform lifecycle integration and explicit uncertain-outcome recovery remain.
+
+## Delegated resource-class inventory
+
+The private up-down client now sends signed list requests and parses resource
+classes, ordered certificate URL lists, ASN/IPv4/IPv6 resource sets, expiry times,
+suggested publication directories, issuer certificates and issued certificates.
+Absent requested-resource attributes remain distinct from explicitly empty sets.
+No certificate URLs are fetched. Peer scope is shared with revocation for the
+same child/parent pair, so both operations use the same durable history.
+
+Validation checks identities, namespaces, attributes, class uniqueness, element
+order, required fields, certificate URL lists containing rsync, UTC expiry times,
+and bounded certificate encodings. Resource sets must contain valid, ordered,
+non-overlapping ranges or network prefixes of the correct family. Certificates
+must parse as CA certificates. This is structural inspection of authenticated
+inventory, not RPKI path validation, revocation checking or proof that certificate
+resource extensions agree with the listed entitlements. Those checks remain
+necessary before implementing certificate issuance and lifecycle decisions.
+
+Signed fake-server tests cover populated and empty inventories, authenticated
+errors, invalid replies, durable completion and retry prevention. Unit tests
+cover field preservation, optional attributes, resource ranges and malformed
+classes. Up-down list messages have no nonce, so equal-time replay remains a
+protocol limitation. No native delegated list request has been made. Issuance,
+Terraform integration and uncertain-outcome recovery remain unfinished.
