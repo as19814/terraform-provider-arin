@@ -10,7 +10,12 @@ import (
 )
 
 type rpkiRevocationProof struct {
-	CertificateSHA256, IssuerSHA256, CRLSHA256, ManifestSHA256, CRLURI string
+	CertificateSHA256 string `json:"certificate_sha256"`
+	IssuerSHA256      string `json:"issuer_sha256"`
+	CRLSHA256         string `json:"crl_sha256"`
+	ManifestSHA256    string `json:"manifest_sha256"`
+	CRLURI            string `json:"crl_uri"`
+	SKI               string `json:"ski"`
 }
 
 // checkRPKIRevocationProof checks supplied repository evidence only. Callers must
@@ -91,7 +96,7 @@ func checkRPKIRevocationProof(der []byte, ski string, issuers []*x509.Certificat
 			return nil, errRPKIUpDown
 		}
 	}
-	return &rpkiRevocationProof{CertificateSHA256: rpkiManifestDigest(certificate.Raw), IssuerSHA256: rpkiManifestDigest(issuer.Raw), CRLSHA256: rpkiManifestDigest(checked.CRL.Raw), ManifestSHA256: rpkiManifestDigest(publication.ManifestDER), CRLURI: checked.CRLURI}, nil
+	return &rpkiRevocationProof{CertificateSHA256: rpkiManifestDigest(certificate.Raw), IssuerSHA256: rpkiManifestDigest(issuer.Raw), CRLSHA256: rpkiManifestDigest(checked.CRL.Raw), ManifestSHA256: rpkiManifestDigest(publication.ManifestDER), CRLURI: checked.CRLURI, SKI: ski}, nil
 }
 
 // verifyAndRecordRPKIRevocationProof checks all supplied evidence and atomically

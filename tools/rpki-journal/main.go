@@ -1,5 +1,5 @@
 // Command rpki-journal inspects journals, abandons exact pending inventory reads,
-// observes pending revocations, or reconciles publication batches and issuance.
+// observes or reconciles pending revocations, publication batches and issuance.
 package main
 
 import (
@@ -14,18 +14,20 @@ import (
 )
 
 type journalActions struct {
-	loadValidation   func(string) (arin.RPKICertificateValidation, error)
-	issuance         func(context.Context, arin.RPKIProvisioningReadConfig, arin.RPKICertificateValidation, string, string) (*arin.RPKIIssuanceRecoveryReport, error)
-	loadProvisioning func(string) (arin.RPKIProvisioningReadConfig, error)
-	revocation       func(context.Context, arin.RPKIProvisioningReadConfig, string) (*arin.RPKIRevocationRecoveryReport, error)
-	inspect          func(string, string) ([]byte, error)
-	recoverRead      func(string, string, string) ([]byte, error)
-	load             func(string) (arin.RPKIPublicationReadConfig, error)
-	publication      func(context.Context, arin.RPKIPublicationReadConfig, string, string) (*arin.RPKIPublicationRecoveryReport, error)
+	loadRevocationValidation func(string) (arin.RPKIRevocationValidation, error)
+	recoverRevocation        func(context.Context, arin.RPKIProvisioningReadConfig, arin.RPKIRevocationValidation, string, string) (*arin.RPKIRevocationRecoveryReport, error)
+	loadValidation           func(string) (arin.RPKICertificateValidation, error)
+	issuance                 func(context.Context, arin.RPKIProvisioningReadConfig, arin.RPKICertificateValidation, string, string) (*arin.RPKIIssuanceRecoveryReport, error)
+	loadProvisioning         func(string) (arin.RPKIProvisioningReadConfig, error)
+	revocation               func(context.Context, arin.RPKIProvisioningReadConfig, string) (*arin.RPKIRevocationRecoveryReport, error)
+	inspect                  func(string, string) ([]byte, error)
+	recoverRead              func(string, string, string) ([]byte, error)
+	load                     func(string) (arin.RPKIPublicationReadConfig, error)
+	publication              func(context.Context, arin.RPKIPublicationReadConfig, string, string) (*arin.RPKIPublicationRecoveryReport, error)
 }
 
 func main() {
-	os.Exit(runJournal(os.Args[1:], os.Stdout, os.Stderr, journalActions{loadValidation: arin.LoadRPKICertificateValidation, issuance: arin.RecoverRPKIIssuance, loadProvisioning: arin.LoadRPKIProvisioningConfig, revocation: arin.ObserveRPKIRevocation, inspect: arin.InspectRPKIJournal, recoverRead: arin.RecoverRPKIRead, load: arin.LoadRPKIPublicationConfig, publication: arin.RecoverRPKIPublication}))
+	os.Exit(runJournal(os.Args[1:], os.Stdout, os.Stderr, journalActions{loadRevocationValidation: arin.LoadRPKIRevocationValidation, recoverRevocation: arin.RecoverRPKIRevocation, loadValidation: arin.LoadRPKICertificateValidation, issuance: arin.RecoverRPKIIssuance, loadProvisioning: arin.LoadRPKIProvisioningConfig, revocation: arin.ObserveRPKIRevocation, inspect: arin.InspectRPKIJournal, recoverRead: arin.RecoverRPKIRead, load: arin.LoadRPKIPublicationConfig, publication: arin.RecoverRPKIPublication}))
 }
 func runJournal(args []string, out, stderr io.Writer, actions journalActions) int {
 	flags := flag.NewFlagSet("rpki-journal", flag.ContinueOnError)
@@ -36,7 +38,8 @@ func runJournal(args []string, out, stderr io.Writer, actions journalActions) in
 	configFile := flags.String("publication-config", "", "Absolute path to private BPKI JSON configuration for publication recovery")
 	provisioningFile := flags.String("provisioning-config", "", "Absolute path to private BPKI JSON configuration for revocation or issuance recovery")
 	validationFile := flags.String("issuance-validation", "", "Private resource trust JSON file; selects issuance recovery with provisioning-config")
-	certificateHash := flags.String("expect-certificate-sha256", "", "Commit issuance recovery only for this validated DER certificate hash")
+	revocationFile := flags.String("revocation-validation", "", "Private trust JSON with prior certificate; selects proven revocation recovery")
+	certificateHash := flags.String("expect-certificate-sha256", "", "Commit certificate recovery only for this validated DER certificate hash")
 	digest := flags.String("request-sha256", "", "Exact pending mutation digest")
 	expected := flags.String("expect", "", "Commit only matches_before or matches_after; omit to observe without clearing")
 	if err := flags.Parse(args); err != nil {
@@ -45,7 +48,7 @@ func runJournal(args []string, out, stderr io.Writer, actions journalActions) in
 		}
 		return 2
 	}
-	invalid := flags.NArg() != 0 || (*validationFile != "" && *provisioningFile == "") || (*certificateHash != "" && *validationFile == "")
+	invalid := flags.NArg() != 0 || ((*validationFile != "" || *revocationFile != "") && *provisioningFile == "") || (*validationFile != "" && *revocationFile != "") || (*certificateHash != "" && *validationFile == "" && *revocationFile == "")
 	if *provisioningFile != "" {
 		invalid = invalid || *configFile != "" || *directory != "" || *peer != "" || *readDigest != "" || *digest == "" || *expected != ""
 	} else if *configFile != "" {
@@ -68,6 +71,16 @@ func runJournal(args []string, out, stderr io.Writer, actions journalActions) in
 			if err == nil {
 				var report *arin.RPKIIssuanceRecoveryReport
 				report, err = actions.issuance(context.Background(), config, validation, *digest, *certificateHash)
+				if err == nil {
+					result, err = json.MarshalIndent(report, "", "  ")
+				}
+			}
+		} else if err == nil && *revocationFile != "" {
+			var validation arin.RPKIRevocationValidation
+			validation, err = actions.loadRevocationValidation(*revocationFile)
+			if err == nil {
+				var report *arin.RPKIRevocationRecoveryReport
+				report, err = actions.recoverRevocation(context.Background(), config, validation, *digest, *certificateHash)
 				if err == nil {
 					result, err = json.MarshalIndent(report, "", "  ")
 				}

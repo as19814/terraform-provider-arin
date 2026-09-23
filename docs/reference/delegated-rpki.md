@@ -1241,9 +1241,10 @@ helper. Neither inspection changes journal state nor sends network requests.
 scopes revocation to a client's key within a resource class. Signed tests reject
 wrong peers, handles, operations, timestamps, signatures and missing evidence;
 parser tests reject malformed or mismatched revocation payloads. These tests use
-synthetic BPKI identities. Remote outcome verification, scheduled-revocation
-handling, durable reconciliation and Terraform certificate resources remain
-unfinished. No native delegated enrollment is available for verification.
+synthetic BPKI identities. The recovery CLI below adds remote evidence and
+durable reconciliation for completed revocations. Scheduled revocations remain
+pending until completion can be proven. No native delegated enrollment is
+available for verification.
 
 ### Revocation recovery inventory
 
@@ -1263,8 +1264,9 @@ Malformed inventories and duplicate classes fail classification.
 This is an observation primitive, not completed revocation recovery. A missing
 key does not prove CRL publication; a present key can still be scheduled for
 revocation. No outcome clears the original journal or permits mutation replay.
-Durable outcome reconciliation, resource-path/CRL evidence and provider lifecycle
-integration remain to be implemented and verified with native delegated setup.
+The proof-backed recovery CLI below adds durable reconciliation when current
+resource-path and CRL evidence are available. Native verification still requires
+a delegated setup.
 
 ### Revocation observation CLI
 
@@ -1291,8 +1293,8 @@ an interrupted probe can be inspected with the existing local journal commands.
 Only a pending inventory read may be explicitly abandoned by those commands.
 
 This CLI does not issue certificates, resubmit revocations or establish CRL
-publication. It is not yet an end-to-end recovery path for a Terraform
-certificate resource. Signed local API tests verify report mapping and unchanged
+publication. Use the proof-backed recovery mode below to reconcile a Terraform
+certificate revocation. Signed local API tests verify report mapping and unchanged
 pending state; CLI tests verify mode isolation, error handling and rejection of
 commit flags. Native delegated verification still requires sandbox enrollment.
 
@@ -1486,8 +1488,8 @@ not signing key bytes or BPKI configuration.
 After commit, run Terraform refresh/plan or validated certificate import if a
 failed create left no resource state. The CLI does not edit Terraform state.
 Errors identify the probe journal when possible; only pending inventory probes
-can be explicitly abandoned through read recovery. Revocation completion and
-native delegated sandbox verification remain unfinished.
+can be explicitly abandoned through read recovery. Revocation completion has a
+separate mode below; native delegated sandbox verification remains unavailable.
 
 ### Manifest-backed revocation evidence
 
@@ -1510,8 +1512,8 @@ not substituted for explicit current revocation evidence.
 Signed tests cover valid revocation, absent revocation entries, still-published
 and reissued keys, incorrect keys/anchors/issuers/CRL locations, resource
 overclaims, tampered CRLs, expired manifests and future revocation times.
-Repository retrieval and durable history integration are described below;
-reconciliation and native verification remain unfinished. The relevant protocol scope is
+Repository retrieval, durable history and reconciliation are described below.
+Native verification remains unavailable. The relevant protocol scope is
 [RFC 6492 section 3.5](https://www.rfc-editor.org/rfc/rfc6492.html#section-3.5).
 
 ### Durable revocation evidence history
@@ -1530,9 +1532,8 @@ manifest already recorded by ordinary certificate validation.
 
 Signed tests verify persistence/reopen, idempotent evidence, local and upstream
 rollback rejection, unchanged history after a mixed-version failure, exclusive
-locking and shared watermarks across issuance and revocation. Binding the proof
-to a fresh signed parent inventory is still required before journal
-reconciliation; native delegated verification remains unavailable.
+locking and shared watermarks across issuance and revocation. The reconciliation flow below binds the proof to fresh signed parent
+inventory; native delegated verification remains unavailable.
 
 
 ### RRDP retrieval for revocation evidence
@@ -1549,5 +1550,87 @@ anchored revocation proof and shared durable history checks. Signed TLS tests
 exercise these together, including a direct anchor issuer, a withdrawn child,
 a still-published key, missing files and upstream certificates, swapped
 repositories, tampered CRLs, wrong anchors and persistent cache reuse after
-caller mutation. No exchange journal is cleared by retrieval. Fresh signed
-parent inventory binding and a durable reconciliation receipt remain required.
+caller mutation. No exchange journal is cleared by retrieval. The reconciliation flow below adds fresh signed parent inventory binding and
+a durable reconciliation receipt.
+
+
+### Revocation recovery CLI
+
+`RecoverRPKIRevocation` and `tools/rpki-journal` can now reconcile an uncertain
+revocation without resending it. The original peer lease remains held while a
+separate digest-scoped exchange reads signed parent inventory and retrieves
+RRDP evidence. The resource class must still exist, the key must be absent, and
+the class issuer must exactly match the configured immediate issuer. The prior
+certificate must identify the requested key and pass the current anchored
+revocation proof checks, including an effective CRL entry and withdrawal of all
+published certificates for that key. Manifest history is durably recorded before
+any exchange journal is cleared.
+
+Create a mode-0600 JSON file at an absolute path, containing the same fields as
+issuance validation plus `prior_certificate_pem`:
+
+```json
+{
+  "prior_certificate_pem": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----\n",
+  "resource_anchor_pem": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----\n",
+  "issuer_chain_pem": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----\n",
+  "rrdp_notifications": ["https://repository.example/notification.xml"],
+  "rrdp_cache_directory": "/private/arin/rrdp",
+  "manifest_history_directory": "/private/arin/manifests"
+}
+```
+
+Use the saved prior certificate from Terraform state or a retained certificate
+file. The issuer chain runs from the immediate issuer through the configured
+anchor, with a notification URL for each issuer. Both directories must already
+exist with private permissions and persist between runs. The loader rejects
+unknown, duplicate, missing, null and incorrectly typed fields, symlinks and
+publicly readable configuration files.
+
+First inspect the authenticated proof without clearing the pending mutation:
+
+```sh
+go run ./tools/rpki-journal \
+  -provisioning-config /private/arin/provisioning.json \
+  -revocation-validation /private/arin/revocation.json \
+  -request-sha256 "$REQUEST_SHA256"
+```
+
+The JSON report includes certificate, issuer, CRL and manifest SHA-256 digests,
+the selected CRL URI, class/key identity, recovery peer and signed timestamps.
+It contains no private keys or certificate bodies. To commit, explicitly select
+the reported prior certificate hash:
+
+```sh
+go run ./tools/rpki-journal \
+  -provisioning-config /private/arin/provisioning.json \
+  -revocation-validation /private/arin/revocation.json \
+  -request-sha256 "$REQUEST_SHA256" \
+  -expect-certificate-sha256 "$CERTIFICATE_SHA256"
+```
+
+Commit rereads inventory and revalidates repository evidence through the persistent
+cache. An atomic `reconciled_revocation` receipt stores the original request,
+class, proof fingerprints, key and recovery timestamps; it advances journal
+watermarks and clears only that pending operation. A mismatched certificate,
+invalid evidence or failure before the atomic journal replacement leaves the
+durable pending journal in place. A filesystem error after replacement can leave
+a receipt despite an error return; inspect the journal before proceeding.
+Repeating a successful commit fails before another network request.
+Older provider builds reject journals containing the new receipt field.
+
+Run Terraform refresh/plan after reconciliation. Recovery does not edit Terraform
+state. The inventory-only observation mode remains available by omitting
+`-revocation-validation`; it never clears a mutation. The issuance and revocation
+validation flags are mutually exclusive. A missing class, changed issuer,
+expired prior certificate or unavailable current CRL remains unresolved by this
+flow. Equal-time signed inventory replay remains a protocol limitation because
+list requests have no nonce. Native delegated ARIN verification still requires
+sandbox enrollment and identities.
+
+Signed HTTP/TLS tests cover private and API observation/commit, original-lease
+retention during both inventory and repository requests, exact issuer/key/hash
+binding, missing and invalid CRL evidence, durable reopen, receipt ownership,
+watermark preservation and prevention of replay after completion. State tests
+cover receipt corruption and atomic save failure; CLI tests cover mode isolation,
+configuration failures and JSON output.

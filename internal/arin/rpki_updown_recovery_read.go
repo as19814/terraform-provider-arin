@@ -10,11 +10,24 @@ type rpkiRevocationRecoveryObservation struct {
 	Plan                    rpkiRevocationRecoveryPlan
 	RecoveryPeerID, Outcome string
 	Sent, Received          time.Time
+	Proof                   *rpkiRevocationProof
 }
 
 // observePendingRevocation reads authenticated inventory under the original
 // lease. Key absence does not prove CRL publication or authorize replay.
 func (client rpkiUpDownClient) observePendingRevocation(ctx context.Context, digest string) (observation rpkiRevocationRecoveryObservation, err error) {
+	return client.readPendingRevocation(ctx, digest, "", nil, rrdpHTTPClient{})
+}
+
+// reconcilePendingRevocation commits only the explicitly selected prior
+// certificate after signed key absence and durable repository proof validation.
+func (client rpkiUpDownClient) reconcilePendingRevocation(ctx context.Context, digest, expectedCertificate string, validation RPKIRevocationValidation, repository rrdpHTTPClient) (rpkiRevocationRecoveryObservation, error) {
+	if !exchangeDigest.MatchString(expectedCertificate) {
+		return rpkiRevocationRecoveryObservation{}, errRPKIExchangeState
+	}
+	return client.readPendingRevocation(ctx, digest, expectedCertificate, &validation, repository)
+}
+func (client rpkiUpDownClient) readPendingRevocation(ctx context.Context, digest, expectedCertificate string, validation *RPKIRevocationValidation, repository rrdpHTTPClient) (observation rpkiRevocationRecoveryObservation, err error) {
 	c := client.Exchange
 	scope, _ := json.Marshal([]string{upDownToken(client.Child), upDownToken(client.Parent)})
 	c.PeerScope = string(scope)
@@ -81,5 +94,26 @@ func (client rpkiUpDownClient) observePendingRevocation(ctx context.Context, dig
 		return observation, errRPKIExchangeState
 	}
 	observation = rpkiRevocationRecoveryObservation{Plan: plan, RecoveryPeerID: recoveryPeer, Outcome: outcome, Sent: recovered.LastSent, Received: recovered.LastReceived}
+	if validation != nil {
+		clock := c.Clock
+		if clock == nil {
+			clock = time.Now
+		}
+		observation.Proof, err = validateRevocationInventory(ctx, plan, objects, *validation, repository, clock())
+		if err != nil {
+			return observation, err
+		}
+	}
+	if expectedCertificate != "" {
+		if observation.Proof == nil || observation.Proof.CertificateSHA256 != expectedCertificate {
+			return observation, errRPKIExchangeState
+		}
+		if err := ctx.Err(); err != nil {
+			return observation, err
+		}
+		if err := lease.reconcileRevocation(observation); err != nil {
+			return observation, err
+		}
+	}
 	return observation, nil
 }

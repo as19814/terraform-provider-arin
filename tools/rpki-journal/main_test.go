@@ -228,3 +228,79 @@ func TestJournalIssuanceModes(t *testing.T) {
 		})
 	}
 }
+
+func TestJournalProvenRevocationModes(t *testing.T) {
+	for _, mode := range []string{"observe", "commit", "load_error", "read_error", "missing_provisioning", "missing_validation", "publication", "expect", "read", "issuance"} {
+		t.Run(mode, func(t *testing.T) {
+			calls := []string{}
+			actions := journalActions{
+				loadProvisioning: func(path string) (arin.RPKIProvisioningReadConfig, error) {
+					calls = append(calls, "provisioning")
+					return arin.RPKIProvisioningReadConfig{Child: "child"}, nil
+				},
+				loadRevocationValidation: func(path string) (arin.RPKIRevocationValidation, error) {
+					calls = append(calls, "validation")
+					if mode == "load_error" {
+						return arin.RPKIRevocationValidation{}, errors.New("bad validation")
+					}
+					return arin.RPKIRevocationValidation{PriorCertificatePEM: "prior"}, nil
+				},
+				recoverRevocation: func(_ context.Context, c arin.RPKIProvisioningReadConfig, v arin.RPKIRevocationValidation, digest, expected string) (*arin.RPKIRevocationRecoveryReport, error) {
+					calls = append(calls, "revocation")
+					want := ""
+					if mode == "commit" {
+						want = "hash"
+					}
+					if c.Child != "child" || v.PriorCertificatePEM != "prior" || digest != "digest" || expected != want {
+						t.Fatal("revocation recovery arguments changed")
+					}
+					if mode == "read_error" {
+						return nil, errors.New("recovery failed")
+					}
+					return &arin.RPKIRevocationRecoveryReport{Outcome: "key_absent", CertificateSHA256: "hash", Committed: expected != ""}, nil
+				},
+			}
+			args := []string{"-provisioning-config", "/private/provisioning.json", "-revocation-validation", "/private/validation.json", "-request-sha256", "digest"}
+			switch mode {
+			case "commit":
+				args = append(args, "-expect-certificate-sha256", "hash")
+			case "missing_provisioning":
+				args = args[2:]
+			case "missing_validation":
+				args = []string{"-provisioning-config", "/private/config.json", "-request-sha256", "digest", "-expect-certificate-sha256", "hash"}
+			case "issuance":
+				args = append(args, "-issuance-validation", "/private/issuance.json")
+			case "publication":
+				args = append(args, "-publication-config", "/private/publication.json")
+			case "expect":
+				args = append(args, "-expect", "matches_after")
+			case "read":
+				args = append(args, "-recover-read-sha256", "digest")
+			}
+			var out, stderr bytes.Buffer
+			code := runJournal(args, &out, &stderr, actions)
+			switch mode {
+			case "observe", "commit":
+				want := `"committed": false`
+				if mode == "commit" {
+					want = `"committed": true`
+				}
+				if code != 0 || strings.Join(calls, ",") != "provisioning,validation,revocation" || !strings.Contains(out.String(), want) {
+					t.Fatalf("bad recovery mode: %s", stderr.String())
+				}
+			case "load_error", "read_error":
+				want := "provisioning,validation"
+				if mode == "read_error" {
+					want += ",revocation"
+				}
+				if code != 1 || strings.Join(calls, ",") != want || out.Len() != 0 {
+					t.Fatal("failed operation produced result")
+				}
+			default:
+				if code != 2 || len(calls) != 0 || out.Len() != 0 {
+					t.Fatal("invalid flags performed an action")
+				}
+			}
+		})
+	}
+}
