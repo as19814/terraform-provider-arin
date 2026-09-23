@@ -17,6 +17,12 @@ const (
 	ReportWhoWasNet    = "who_was_net"
 )
 
+// ReportNotSubmittedError identifies a local precondition failure before any
+// HTTP request, so Terraform must not retain an uncertain submission receipt.
+type ReportNotSubmittedError struct{ Reason string }
+
+func (e *ReportNotSubmittedError) Error() string { return e.Reason }
+
 // ReportRequest is a ticket-creating operation even though its wire method is GET.
 // Target is empty for associations, a NET handle for reassignment, a decimal ASN
 // for who_was_asn, and an IP address (not a CIDR) for who_was_net.
@@ -70,7 +76,10 @@ func (r ReportRequest) MatchesTicket(t Ticket) bool {
 func (c *Client) RequestReport(ctx context.Context, r ReportRequest) (*Ticket, error) {
 	path, err := r.path()
 	if err != nil {
-		return nil, err
+		return nil, &ReportNotSubmittedError{Reason: err.Error()}
+	}
+	if c.apiKey == "" {
+		return nil, &ReportNotSubmittedError{Reason: "api_key or ARIN_API_KEY is required for report requests"}
 	}
 	response, err := c.requestReport(ctx, path)
 	if err != nil {

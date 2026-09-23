@@ -4,6 +4,58 @@ Report requests create server-side jobs and return ticket identities. They must
 not be exposed as data sources that submit work on refresh, even though ARIN uses
 GET for these operations.
 
+## Terraform report receipts
+
+`arin_report_request` submits once and stores the generated ticket number.
+`report_type` and `target` are immutable: changing them or explicitly replacing the
+resource submits a new request. Normal refresh only reads ticket metadata.
+Creation succeeds when ARIN accepts the job, including an IN_PROGRESS ticket;
+`status` and `resolution` update on later refreshes. Use existing ticket, message
+and attachment data sources to retrieve the eventual report.
+
+ARIN can delete report tickets after expiry. A 404 for a previously confirmed
+receipt sets `ticket_available=false`, retains its last known metadata and never
+requests a replacement. Other read failures preserve state and return an error.
+Destroy forgets only the Terraform receipt. It does not cancel, close or delete
+the server ticket. These semantics apply to a submitted request, not a promise to
+keep a report downloadable forever.
+
+Imports use `associations/TICKET` or `REPORT-TYPE/TARGET/TICKET`. Provide the
+original target: ticket summary metadata confirms the report category but does
+not independently expose or verify its original target. Import requires a
+readable ticket with the matching category. An already-expired ticket cannot be
+newly imported, although an existing receipt can survive expiry.
+
+If a submission returns a ticket number but incomplete metadata, create tries a
+summary read to confirm it without resubmitting. If that succeeds, no error taints
+the new resource. Local precondition failures and definite rejection responses
+leave no pending receipt because no accepted request needs recovery.
+
+Otherwise `pending_submission=true` preserves an uncertain request. No ticket
+number means manual reconciliation against the ARIN ticket list is necessary.
+Even when a later refresh confirms a known ticket, it does not silently clear the
+pending marker: Terraform may have tainted the failed creation and would replace
+it on the next apply, submitting a duplicate report. Back up state, identify the
+correct report, remove only the pending receipt from state, and import that ticket
+using its original report type and target. Refresh and destroy block while this
+recovery remains outstanding. Do not discard pending state to force a retry.
+
+Mock Terraform tests verify all four report types, import, request replacement,
+clean plans, expiry without resubmission, and destroy without server mutations.
+Recovery tests cover both a partial response and a completely lost response. They
+prove an ordinary second apply cannot duplicate the request even with
+`create_before_destroy=true`, then verify manual import recovery with only one
+submission. Unit tests also cover missing credentials, partial-response
+confirmation, unresolved identities and read failures.
+
+The OT&E Terraform lifecycle creates an associations report, imports its ticket,
+checks a clean plan, and destroys only the local receipt while the server ticket
+remains available. It retains a separate private recovery file at
+`terraform-provider-arin/ote-report-resource-<org-hash>.json`. Later test runs import
+that saved ticket instead of creating another report. A second live run verified
+this import-only path and observed the completed ticket as CLOSED. An empty ticket
+identity in that file blocks another run until the first submission is reconciled.
+
 ## Client coverage
 
 `ReportRequest` supports four types:
@@ -86,10 +138,9 @@ selected in ARIN Online. The API does not expose that retention setting.
 
 ## Remaining work
 
-The Terraform report-request resource must preserve request and ticket identity,
-import existing receipts, avoid resubmitting on refresh, and retain uncertain
-submission state. Report attachment access already exists through ticket data
-sources. Message submission, full-ticket modification and native explicit closure
+Native successful WhoWas generation requires account access. Report attachment
+access exists through ticket data sources and still needs its final integration
+audit. Message submission, full-ticket modification and native explicit closure
 still need lifecycle decisions, implementation and sandbox evidence. See the
 [coverage inventory](implementation-status.md).
 

@@ -216,6 +216,8 @@ before retrying a failed apply.
 
 [`arin_roa`](docs/resources/roa.md) manages hosted ROAs with IPv4/IPv6 prefixes, maximum lengths, AS0, and optional IRR links. Updates atomically replace the generated handle. Import by `ORG-HANDLE/ROA-HANDLE`. Linked routes are preserved on destroy unless `delete_linked_routes = true`. Uncertain writes retain a recovery journal and block repeat submission.
 
+[`arin_report_request`](docs/resources/report_request.md) submits an associations, reassignment or WhoWas report and retains its ticket receipt. Refresh and ticket expiry never resubmit it; destroy only forgets the receipt. WhoWas requires account access. See [report lifecycle and recovery](docs/reference/reports-tickets.md).
+
 ## Next steps
 
 Extend managed-resource support to additional IRR objects, organizations, contacts, and hosted RPKI, with explicit lifecycle semantics and OT&E validation. Network and reverse DNS management are implemented. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
