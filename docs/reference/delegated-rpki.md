@@ -341,3 +341,31 @@ cover field preservation, optional attributes, resource ranges and malformed
 classes. Up-down list messages have no nonce, so equal-time replay remains a
 protocol limitation. No native delegated list request has been made. Issuance,
 Terraform integration and uncertain-outcome recovery remain unfinished.
+
+## Delegated certificate issuance client
+
+The private up-down client now sends bounded, caller-supplied PKCS#10 requests
+with optional requested-resource attributes. CSR parsing and proof-of-possession
+signature checks happen before dispatch. Explicitly empty attributes remain
+present; omitted attributes remain absent. The provider does not generate the
+resource key or CSR. Full RFC 6487 request-profile validation remains outstanding.
+
+Authenticated issuance replies must contain one matching resource class and one
+certificate whose public key matches the CSR. Requested-resource attributes must
+match both presence and value. The certificate must have a valid signature from
+the supplied issuer, matching issuer identity/key identifier, and both certificates
+must be currently valid. The existing strict class parser validates the surrounding
+XML. Confirmed protocol errors complete the exchange; scheduled, malformed and
+mismatched replies retain pending state. No automatic issuance retries occur.
+
+These checks authenticate the parent's reply and correlate the issued key. They
+do not establish a resource-certificate path to an RPKI trust anchor, check resource
+containment, enforce the complete certificate profile, or validate the requested
+publication extensions. Native enrollment, complete certificate validation,
+Terraform integration and explicit asynchronous recovery remain required.
+
+Tests use synthetic CSRs and certificates, not complete RPKI CA profiles. Signed
+fake-server cases cover issuance, confirmed errors, wrong keys, scheduled outcomes,
+journal persistence and retry prevention. Unit cases additionally cover CSR
+signature failures, input limits, echoed resource attributes, certificate dates
+and invalid certificate signatures. No native certificate has been requested.
