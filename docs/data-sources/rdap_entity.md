@@ -35,7 +35,7 @@ data "arin_rdap_entity" "example" {
 - `kind` (String) kind returned by ARIN.
 - `names` (List of String) Formatted names from jCard fn properties, sorted and deduplicated.
 - `phones` (List of String) Telephone values as returned, including tel: URIs when used by ARIN. Parameters remain in vcard_json.
-- `rdap_json` (String) Complete RDAP response JSON, including nested entities, links, notices, remarks and extensions. Links are not followed.
+- `rdap_json` (String) Complete RDAP entity JSON, including nested entities, links, notices, remarks and extensions. Links are not followed.
 - `roles` (List of String) roles returned by ARIN.
 - `status` (List of String) status returned by ARIN.
 - `vcard_json` (String) Complete jCard JSON, preserving structured addresses, parameters, repeated properties and extensions. Null when omitted.

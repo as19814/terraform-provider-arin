@@ -27,6 +27,8 @@ func TestPublicReads(t *testing.T) {
 			t.Error("public read sent credentials or used wrong method")
 		}
 		switch r.URL.RequestURI() {
+		case "/registry/entities?handle=EXAMPLE-1":
+			fmt.Fprintf(w, `{"entitySearchResults":[%s]}`, entity)
 		case "/registry/ip/192.0.2.1":
 			_, _ = w.Write(network)
 		case "/registry/autnum/64496":
@@ -46,11 +48,20 @@ func TestPublicReads(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, s := range PublicReads() {
-		result, err := c.ReadRegistration(context.Background(), s, map[string]string{"handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"})
+		params := map[string]string{"handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"}
+		if s.Name == "rdap_entities" {
+			params["search_by"] = "handle"
+			params["query"] = "EXAMPLE-1"
+		}
+		result, err := c.ReadRegistration(context.Background(), s, params)
 		if err != nil {
 			t.Fatal(err)
 		}
 		switch s.Name {
+		case "rdap_entities":
+			if len(result["entities"].([]any)) != 1 {
+				t.Fatal("missing entity search result")
+			}
 		case "rdap_entity":
 			if result["handle"] != "EXAMPLE-1" || result["vcard_json"] != nil || len(result["emails"].([]any)) != 0 {
 				t.Fatal("incorrect entity with omitted contact fields")

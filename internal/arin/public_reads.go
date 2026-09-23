@@ -17,6 +17,7 @@ var asnFields = []Field{
 
 func PublicReads() []ReadSpec {
 	return []ReadSpec{
+		{Name: "rdap_entities", Public: true, Collection: true, Output: "entities", Description: "Search public RDAP entities by handle or name, including organizations, POCs and customer entities returned by ARIN. Supports one trailing wildcard. No API key is sent. Results use ARIN search semantics and are sorted by handle; partial results, duplicates and referrals are rejected. A structured RDAP no-match response produces an empty list.", Inputs: []Input{input("search_by", "name", "handle", "Search field: handle or name (mapped to RDAP fn)."), input("query", "rdap_search", "EXAMPLE-*", "Exact search term or a term ending in one wildcard (*). Name matching is performed by ARIN, including its name-component matching rules.")}, Fields: rdapEntityFields},
 		{Name: "rdap_entity", Public: true, Description: "Look up a public organization or POC entity by handle. No API key is sent. Returns contact fields and complete jCard/RDAP JSON, including embedded records and extensions. Public data may omit private registration fields. Partial results and referrals are rejected.", Inputs: []Input{input("handle", "handle", "EXAMPLE-1", "Organization or POC handle.")}, Fields: rdapEntityFields},
 		{Name: "rdap_network", Public: true, Description: "Look up the public ARIN network registration containing an IPv4/IPv6 address or canonical prefix. No API key is sent. Returns registration data, not proof of authority to modify the network. Referrals and partial results are rejected.", Inputs: []Input{input("query", "ip_network", "192.0.2.1", "Canonical IPv4/IPv6 address or network prefix without host bits.")}, Fields: rdapNetworkFields},
 		{Name: "asn", Public: true, Description: "Read an ASN registration through public ARIN RDAP. No API key is sent. This is distinct from an IRR aut-num object.", Inputs: []Input{input("asn", "asn", "19814", "Autonomous system number.")}, Fields: asnFields},
@@ -130,6 +131,9 @@ func (c *Client) rdapEntity(ctx context.Context, handle string) ([]rdapEntityRef
 func (c *Client) readPublic(ctx context.Context, spec ReadSpec, p map[string]string) (map[string]any, error) {
 	if c.rdapBaseURL == "" {
 		return nil, errors.New("rdap_base_url is required for public reads when base_url is a custom origin")
+	}
+	if spec.Name == "rdap_entities" {
+		return c.searchRDAPEntities(ctx, p["search_by"], p["query"])
 	}
 	if spec.Name == "rdap_entity" {
 		return c.readRDAPEntity(ctx, p["handle"])

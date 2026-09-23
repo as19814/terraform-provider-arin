@@ -105,9 +105,12 @@ func New(cfg Config) (*Client, error) {
 
 // APIError exposes status and sanitized ARIN error fields without retaining a raw body.
 type APIError struct {
-	StatusCode int
-	Code       string
-	Message    string
+	// True only for a complete, structured RDAP 404 response. Search callers
+	// can distinguish no matches from a proxy or wrong-origin HTTP 404.
+	rdapNotFound bool
+	StatusCode   int
+	Code         string
+	Message      string
 }
 
 func (e *APIError) Error() string {
@@ -242,11 +245,13 @@ func (c *Client) doRequest(ctx context.Context, method, origin, path, accept str
 		}
 		if accept == "application/rdap+json" {
 			var rdapError struct {
+				ErrorCode   int      `json:"errorCode"`
 				Title       string   `json:"title"`
 				Description []string `json:"description"`
 			}
 			if json.Unmarshal(body, &rdapError) == nil {
 				apiErr.Message = c.redact(strings.Join(append([]string{rdapError.Title}, rdapError.Description...), " "))
+				apiErr.rdapNotFound = resp.StatusCode == http.StatusNotFound && rdapError.ErrorCode == http.StatusNotFound && checkRDAPCompleteness(body) == nil
 			}
 		}
 		return nil, apiErr

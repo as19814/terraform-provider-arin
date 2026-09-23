@@ -141,7 +141,11 @@ func (d *registrationDataSource) Read(ctx context.Context, req datasource.ReadRe
 
 func outputFields(spec arin.ReadSpec) []arin.Field {
 	if spec.Collection {
-		return []arin.Field{{Name: spec.Output, Kind: arin.ObjectsKind, Fields: spec.Fields, Description: "Records returned by ARIN, ordered deterministically. An empty collection is an empty list; authorization and missing-object errors remain errors."}}
+		description := "Records returned by ARIN, ordered deterministically. An empty collection is an empty list; authorization and missing-object errors remain errors."
+		if spec.Name == "rdap_entities" {
+			description = "Entity records returned by ARIN, ordered by handle. No matches, including a structured RDAP 404, produce an empty list. Other failures remain errors."
+		}
+		return []arin.Field{{Name: spec.Output, Kind: arin.ObjectsKind, Fields: spec.Fields, Description: description}}
 	}
 	return spec.Fields
 }

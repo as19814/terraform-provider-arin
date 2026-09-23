@@ -14,7 +14,7 @@ var rdapEntityFields = []Field{
 	objects("entities", "", required(text("handle", "")), stringsField("roles", "")),
 	objects("events", "", text("action", ""), text("date", "")),
 	{Name: "vcard_json", Kind: StringKind, Description: "Complete jCard JSON, preserving structured addresses, parameters, repeated properties and extensions. Null when omitted."},
-	{Name: "rdap_json", Kind: StringKind, Description: "Complete RDAP response JSON, including nested entities, links, notices, remarks and extensions. Links are not followed."},
+	{Name: "rdap_json", Kind: StringKind, Description: "Complete RDAP entity JSON, including nested entities, links, notices, remarks and extensions. Links are not followed."},
 }
 
 type rdapEvent struct {
@@ -53,7 +53,18 @@ func (c *Client) readRDAPEntity(ctx context.Context, handle string) (map[string]
 	if err != nil {
 		return nil, err
 	}
-	if err = validateEntityTree(body, 0); err != nil {
+	result, err := decodeRDAPEntity(body)
+	if err != nil {
+		return nil, err
+	}
+	if !strings.EqualFold(result["handle"].(string), handle) {
+		return nil, errors.New("ARIN returned an unexpected RDAP entity")
+	}
+	return result, nil
+}
+
+func decodeRDAPEntity(body []byte) (map[string]any, error) {
+	if err := validateEntityTree(body, 0); err != nil {
 		return nil, err
 	}
 	var entity struct {
@@ -65,7 +76,7 @@ func (c *Client) readRDAPEntity(ctx context.Context, handle string) (map[string]
 		Entities []rdapEntityRef `json:"entities"`
 		Events   []rdapEvent     `json:"events"`
 	}
-	if json.Unmarshal(body, &entity) != nil || entity.Class != "entity" || entity.Handle == "" || !strings.EqualFold(entity.Handle, handle) {
+	if json.Unmarshal(body, &entity) != nil || entity.Class != "entity" || entity.Handle == "" {
 		return nil, errors.New("ARIN returned an unexpected RDAP entity")
 	}
 	result, err := rdapContact(entity.VCard)

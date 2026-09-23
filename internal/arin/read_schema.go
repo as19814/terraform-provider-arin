@@ -268,6 +268,8 @@ func (s ReadSpec) Validate(params map[string]string) error {
 		case "cidr":
 			prefix, err := netip.ParsePrefix(value)
 			valid = err == nil && prefix == prefix.Masked() && !prefix.Addr().Is4In6()
+		case "rdap_search":
+			valid = validRDAPSearch(value)
 		case "ip_network":
 			_, _, err := rdapNetworkQuery(value)
 			valid = err == nil
@@ -277,6 +279,11 @@ func (s ReadSpec) Validate(params map[string]string) error {
 		}
 		if !valid {
 			return fmt.Errorf("%s is not a valid %s", input.Name, input.Kind)
+		}
+	}
+	if s.Name == "rdap_entities" {
+		if err := validateRDAPEntitySearch(params["search_by"], params["query"]); err != nil {
+			return err
 		}
 	}
 	if params["start_address"] != "" {

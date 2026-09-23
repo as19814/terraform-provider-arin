@@ -58,6 +58,41 @@ ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
   go test ./internal/provider -run '^TestLiveRDAPEntity$' -count=1 -v
 ```
 
+## Implemented entity searches
+
+`arin_rdap_entities` uses `/registry/entities?handle=TERM` when `search_by` is
+`handle`, or `/registry/entities?fn=TERM` when it is `name`. `query` accepts an exact
+term or one trailing wildcard. Query values are URL-encoded, including spaces,
+Unicode and punctuation in names. ARIN performs name-component matching, so a
+result's formatted name need not start with the query. Handle results must match
+the requested exact handle or prefix, case-insensitively.
+
+Results expose the same fields and complete per-entity JSON as `arin_rdap_entity`,
+ordered by handle. The client rejects duplicate handles, malformed records,
+pagination and truncation notices at the envelope or nested-entity levels. It
+never follows result links or sends the API key. Empty arrays and complete HTTP
+404 RDAP errors with `errorCode=404` become empty lists. Unstructured HTTP 404s,
+wrong error codes, authorization failures, throttling and server failures remain
+errors. This avoids turning a proxy error into an empty inventory.
+
+Native probes on 2026-09-23 confirmed exact/wildcard handle searches and structured
+404 responses for no-match handle/name queries in OT&E. The live Terraform test
+passed organization-name searches, discovered POC handle searches, no-match
+queries and clean plans against both OT&E and production. Native Terraform
+queries are serialized to avoid request bursts. A common POC name returned truncated results for both exact
+and wildcard queries; the test verifies Terraform reports that failure rather
+than accepting the partial collection. When a POC name yields a complete result,
+the same test instead verifies its returned identity and clean plan.
+
+Mock tests cover sorted multi-record results, name-component matches, encoded
+query punctuation, contact fields, refresh, no matches, invalid inputs, malformed
+responses, duplicate/mismatched identities and partial-result rejection.
+
+```sh
+ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
+  go test ./internal/provider -run '^TestLiveRDAPEntities$' -count=1 -v
+```
+
 ## Remaining endpoint audit
 
 | Family | Current coverage | Remaining work |
@@ -67,7 +102,7 @@ ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
 | ASN lookup | `arin_asn` | Final field audit |
 | ASN searches | `arin_asns` handles direct registrant inventory | Handle/name search and other entity reverse-search filters |
 | Entity lookup | `arin_rdap_entity` exposes contact fields and complete JSON; native organization/POC reads verified | Final endpoint audit |
-| Entity searches | Not implemented | Handle/name searches and complete-result handling |
+| Entity searches | `arin_rdap_entities` covers handle/name searches, exact/trailing-wildcard queries, no matches and partial-result rejection | Final endpoint audit |
 | Reverse domain lookup/search | Authenticated DNS data sources exist | Public RDAP domain lookup and hierarchy searches |
 | Standalone nameserver lookup | Unsupported by ARIN RDAP | No data source for an unimplemented operation |
 
