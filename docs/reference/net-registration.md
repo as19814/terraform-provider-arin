@@ -2,8 +2,8 @@
 
 The authenticated client now supports NET creation through simple reassignment,
 detailed reassignment, and reallocation. It also supports metadata updates and
-deletion of reassigned/reallocated records. The Terraform resource is still to be
-implemented, including persistence and reconciliation of asynchronous tickets.
+deletion of reassigned/reallocated records. The `arin_net` Terraform resource exposes these downstream registration lifecycles
+and retains recovery state for pending or uncertain operations.
 
 ## API contracts
 
@@ -33,15 +33,15 @@ cannot be decoded, any separately returned ticket is retained for reconciliation
 1. Discover an owned allocation and choose a random unassigned /32 or /64.
 2. Verify the covering parent before writing.
 3. Create a disposable customer and simple reassignment.
-4. Read the network, update its name, and clear comments and origin ASNs.
+4. Read the network, update its name, and clear comments.
 5. Delete the network and verify authenticated GET returns 404.
 6. Reuse the freed range for detailed reassignment to the test organization.
 7. Delete and verify absence, then create a reallocation to the test organization.
 8. Delete and verify absence, then delete the disposable customer.
 
 All six creation paths passed. These requests completed synchronously, returning
-embedded NET records without ticket numbers. Pending requests are covered by mock
-tests; a genuinely asynchronous sandbox lifecycle remains to be exercised.
+embedded NET records without ticket numbers. The Terraform lifecycle, import and clean-plan checks also passed for all six
+paths. Pending requests and persisted state are covered by mock acceptance tests; a genuinely asynchronous sandbox lifecycle remains to be exercised.
 Organization-recipient tests use the authenticated test organization as recipient,
 not an unrelated organization with different acceptance or authorization settings.
 
@@ -54,13 +54,58 @@ Run the opt-in test using `make testote` with `ARIN_OTE_API_KEY` and
 hardcoded to OT&E in the live test. Credentials, raw responses and Terraform state
 are not fixtures.
 
-## Remaining Terraform behavior
+## Pending operations and recovery
 
-- Expose creation modes, recipient, prefixes and mutable metadata with import.
-- Persist ticket identifiers before returning an unresolved operation.
-- Reconcile ticket status and resulting registration without repeating creation.
-- Preserve state until deletion is confirmed, including pending deletion tickets.
-- Test interrupted requests, pending/denied tickets and refresh/import recovery.
+The resource records `pending_operation` and `pending_ticket` when a write cannot
+be confirmed. Before a NET handle is known, its `id` is a `pending:` recovery
+identifier. This is not a NET handle and must not be used in dependent API calls.
+
+A subsequent refresh performs exact range lookups and verifies parent, recipient,
+creation mode, blocks and name before recovering a created NET. A known failed
+creation ticket can release recovery state only when no matching NET exists.
+An unknown outcome without a ticket retains state and requires investigation;
+removing it blindly could permit a duplicate request.
+
+Terraform marks failed creations as tainted. After the ticket completes, refresh
+and verify the registered NET before untainting it if you want to retain it:
+
+```sh
+terraform apply -refresh-only
+terraform untaint arin_net.example
+terraform plan
+```
+
+Without untainting, Terraform will normally destroy and replace the recovered
+network. Importing the confirmed NET into the correct resource address is another
+recovery option after carefully reconciling existing state.
+
+Pending deletion never resubmits DELETE. The NET must be absent, and a known
+deletion ticket must reach RESOLVED or CLOSED, before state is released. If the
+ticket ends unsuccessfully while the NET remains, an apply clears the failed
+ticket marker and reports the failure. Correct the cause before applying again.
+
+A transport failure or malformed response is treated as uncertain, not a failed
+write that can be repeated automatically. Credentials and response bodies are not
+stored in recovery state. A process killed before it receives the write response
+may require manual import or ticket investigation, as Terraform cannot checkpoint
+a response it never received.
+
+## Retired NET Origin AS
+
+ARIN [retired the NET Origin AS field on 29 July 2025](https://www.arin.net/announcements/20250729/).
+The older payload guide still lists `originASes`, but OT&E tests on 22 September
+2026 confirmed that both `AS64496` and `64496` are silently discarded during
+creation and metadata update. Fresh GETs return an empty collection.
+
+The new resource therefore has no writable Origin AS setting. The client rejects
+nonempty origin inputs instead of claiming they were saved. Legacy read fields
+remain readable for older fixtures or responses. Use IRR routes or RPKI to publish
+routing information.
+
+## Remaining work
+
+- Exercise a genuinely asynchronous OT&E ticket, including failure/rejection.
+- Verify multi-block registration and any server-side CIDR normalization.
 - Cover network POC editing and direct-allocation metadata separately from the
   lifecycle of child registrations.
 - Evaluate the remove-NET workflow with message/attachment payloads.

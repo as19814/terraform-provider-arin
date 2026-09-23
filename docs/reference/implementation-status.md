@@ -17,7 +17,7 @@ again before declaring full coverage.
 | IRR route/route6 | Simple XML resource and individual/list data sources; IPv4/IPv6 OT&E lifecycle passes | memberOf support; advanced RPSL; coordinated ROA-linked lifecycle |
 | IRR route sets | Simple XML resource plus individual/list data sources; mock and OT&E lifecycle pass | Advanced RPSL capability |
 | IRR aut-num | Simple XML resource plus individual/list data sources; all six policies and membership pass OT&E | Advanced RPSL capability |
-| NET records | Read data sources plus client creation/update/deletion; IPv4/IPv6 simple, detailed and reallocation lifecycles pass OT&E | Terraform resource, async ticket reconciliation, direct-allocation metadata, POC editing and remove-with-message workflow; see [evidence](net-registration.md) |
+| NET records | Read data sources and arin_net resource; IPv4/IPv6 simple, detailed and reallocation Terraform lifecycles pass OT&E; pending/uncertain recovery passes mocks | Live asynchronous ticket evidence, multi-block normalization, direct-allocation metadata, POC editing and remove-with-message workflow; see [evidence](net-registration.md) |
 | Customers | Individual data source and managed recipient resource; mock and OT&E lifecycle pass | Network reassignment integration |
 | Organizations | Individual data source | Creation, update, deletion and POC associations; ticket semantics |
 | POCs | Individual and organization references data sources | Creation, update, deletion; phone/email suboperations |
@@ -50,10 +50,12 @@ again before declaring full coverage.
 - Customer records support creation, address/name/privacy updates, comment clearing,
   import and deletion. Updates preserve server-generated identity and registration
   date. Creation does not itself reassign a network.
-- IPv4 /32 and IPv6 /64 NET assignments pass client-level simple reassignment,
+- IPv4 /32 and IPv6 /64 NET assignments pass Terraform simple reassignment,
   detailed reassignment, reallocation, metadata update/clearing and deletion.
   Tested responses contain completed NET records without tickets. Asynchronous
-  ticket responses are covered by mocks; Terraform integration is still pending.
+  ticket responses and persisted recovery state are covered by mocks and Terraform
+  acceptance tests. NET Origin AS was retired in July 2025 and OT&E silently
+  discards it on create and update; it is not exposed as a writable field.
 - OT&E keys may differ from production because snapshots refresh monthly.
 
 ## Verification commands

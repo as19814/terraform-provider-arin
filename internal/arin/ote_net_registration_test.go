@@ -152,7 +152,7 @@ func testOTENetAssignmentClientLifecycle(t *testing.T, family string) {
 			t.Errorf("customer deletion unconfirmed: %v", e)
 		}
 	})
-	assignment := NetAssignment{ParentNetHandle: parent, Name: name, CustomerHandle: customer.Handle, Prefixes: []string{prefix}, Comments: []string{"Disposable OT&E network"}, OriginASNs: []string{"AS64496"}}
+	assignment := NetAssignment{ParentNetHandle: parent, Name: name, CustomerHandle: customer.Handle, Prefixes: []string{prefix}, Comments: []string{"Disposable OT&E network"}}
 	result, err := c.CreateNetAssignment(ctx, assignment)
 	if result != nil && result.Net != nil {
 		handle = result.Net.Handle

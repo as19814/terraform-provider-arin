@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Five managed resources cover customer records, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Six managed resources cover downstream network registrations, customer records, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -182,6 +182,21 @@ Import uses `PARENT-NET-HANDLE/CUSTOMER-HANDLE` because the API does not return 
 creation parent. Creating a customer does not itself reassign address space.
 Mock and OT&E create/update/clear/import/delete lifecycles pass.
 
+## Downstream network registrations
+
+[`arin_net`](docs/resources/net.md) manages simple reassignments to customers,
+detailed reassignments to organizations, and reallocations. Name and comments
+update in place; changes to parent, recipient, prefixes or creation mode replace
+the registration. Reference an `arin_customer` ID to establish deletion order.
+
+Import existing downstream registrations by NET handle. Direct-allocation
+metadata and network POC editing remain separate pending work. ARIN retired NET
+Origin AS in July 2025; use `arin_irr_route` for routing announcements.
+
+Pending and uncertain writes retain recovery state. See the
+[network lifecycle and recovery guide](docs/reference/net-registration.md)
+before retrying a failed apply.
+
 ## Next steps
 
 Extend managed-resource support to additional IRR objects, network metadata, and delegations, with explicit lifecycle semantics and OT&E validation. Network discovery and authenticated detail reads are implemented; network metadata management can build on those models. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
@@ -190,13 +205,14 @@ Start with the [API index](docs/reference/arin-api/README.md), [provider notes](
 
 ## OT&E write validation
 
-The AS-set, route-set, aut-num and route lifecycles have a separate opt-in test command:
+The managed resources and network client have a separate opt-in sandbox test command:
 
 ```sh
 ARIN_TEST_ORG_HANDLE=FT-684 make testote
 ```
 
-Set `ARIN_OTE_API_KEY` in the shell, or let the test fall back to `ARIN_API_KEY`.
+Set `ARIN_OTE_API_KEY` in the shell. Older IRR tests also support an
+`ARIN_API_KEY` fallback; network tests require the explicit sandbox variable.
 The test pins both API origins to OT&E regardless of `ARIN_BASE_URL` and
 `ARIN_RDAP_BASE_URL`. It validates organization access before writing.
 It creates a randomly named `AS-TF-OTE-*` set, updates membership and descriptions,
@@ -215,6 +231,9 @@ organization with no existing IRR aut-num, creates a disposable helper AS set,
 and exercises all policy fields and membership before deleting both IRR objects.
 The ASN registration remains unchanged. A lack of a suitable unused IRR identity
 fails preflight rather than changing an existing object.
+The NET tests select a free IPv4 /32 and IPv6 /64, then test customer
+reassignment, organization reassignment, and reallocation. They verify updates,
+import, clean plans and deletion, and remove their disposable customer records.
 These tests never mutate an existing account object. Normal tests and CI skip them.
 
 OT&E account data and API keys are refreshed from production monthly. If the

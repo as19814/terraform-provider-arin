@@ -73,3 +73,11 @@ The refresh script fetches only the curated public URLs. It fails on HTTP errors
 This collection covers the current public API guides and associated operating documentation found through ARIN's documentation hubs and their links. It is not a mirror of every historical release, meeting presentation, blog post, or account-only help page. External RFCs and third-party implementations are linked, not copied. No authenticated resource records or account data are included.
 
 No OpenAPI specification or write XSD was identified in the reviewed guides. A linked Relax NG archive does contain registration/RPKI definitions, but some differ from current documented payloads. Use the current XML payload references and OT&E to resolve differences. Documentation examples are retained as published, not certified executable fixtures; apparent inconsistencies should be checked in OT&E.
+
+
+## Verified changes after reviewing the payload guides
+
+ARIN's [July 2025 retirement notice](https://www.arin.net/announcements/20250729/)
+supersedes the NET Origin AS field still shown in older payload examples. See
+[the implementation evidence](../net-registration.md#retired-net-origin-as)
+for OT&E verification and current provider behavior.

@@ -12,10 +12,11 @@ import (
 )
 
 func testAssignment() NetAssignment {
-	return NetAssignment{ParentNetHandle: "NET-192-0-2-0-1", Name: "EXAMPLE-NET", CustomerHandle: "C123", Prefixes: []string{"192.0.2.0/29"}, Comments: []string{"Operational & <comment>"}, OriginASNs: []string{"AS64496"}}
+	return NetAssignment{ParentNetHandle: "NET-192-0-2-0-1", Name: "EXAMPLE-NET", CustomerHandle: "C123", Prefixes: []string{"192.0.2.0/29"}, Comments: []string{"Operational & <comment>"}}
 }
 func testRegisteredNet() RegisteredNet {
 	n := testAssignment().net()
+	n.OriginASNs = []string{"AS64496"}
 	n.Handle = "NET-192-0-2-0-2"
 	n.RegistrationDate = "2026-01-01T00:00:00Z"
 	return n
@@ -30,6 +31,8 @@ func TestNetAssignmentValidation(t *testing.T) {
 		func(a *NetAssignment) { a.Prefixes = []string{"192.0.2.1/29"} },
 		func(a *NetAssignment) { a.Prefixes = []string{"2001:db8::/65"} },
 		func(a *NetAssignment) { a.Prefixes = []string{"192.0.2.0/24", "192.0.2.0/29"} },
+		func(a *NetAssignment) { a.Prefixes = []string{"192.0.2.0/29", "192.0.2.16/29"} },
+		func(a *NetAssignment) { a.Prefixes = []string{"192.0.2.0/29", "192.0.2.8/29"} },
 		func(a *NetAssignment) { a.Prefixes = []string{"192.0.2.0/29", "2001:db8::/64"} },
 		func(a *NetAssignment) { a.Name = "bad/name" },
 		func(a *NetAssignment) { a.OriginASNs = []string{"64496"} },
@@ -45,7 +48,7 @@ func TestNetAssignmentValidation(t *testing.T) {
 		a.CustomerHandle = ""
 		a.OrgHandle = "ORG-1"
 		a.Reallocate = reallocate
-		a.Prefixes = []string{"2001:db8::/64", "2001:db8:0:1::/64"}
+		a.Prefixes = []string{"2001:db8::/63", "2001:db8:0:2::/64"}
 		if err := a.Validate(); err != nil {
 			t.Fatal(err)
 		}
@@ -277,5 +280,58 @@ func TestNetDeletePendingTicket(t *testing.T) {
 	}
 	if deletes != 1 {
 		t.Fatal("retried pending deletion")
+	}
+}
+
+func TestRegisteredNetNumericOrigins(t *testing.T) {
+	body, _ := testRegisteredNet().marshal()
+	body = []byte(strings.ReplaceAll(string(body), "<originAS>AS64496</originAS>", "<originAS>64496</originAS>"))
+	n, err := decodeRegisteredNet(body, "NET-192-0-2-0-2")
+	if err != nil || len(n.OriginASNs) != 1 || n.OriginASNs[0] != "AS64496" {
+		t.Fatalf("numeric origin not normalized: %+v %v", n, err)
+	}
+}
+
+func TestRetiredNetOriginsRejected(t *testing.T) {
+	a := testAssignment()
+	a.OriginASNs = []string{"AS64496"}
+	if err := a.Validate(); err == nil || !strings.Contains(err.Error(), "retired") {
+		t.Fatal("retired origin field accepted")
+	}
+}
+func TestFindNetAssignmentRejectsOtherRecipient(t *testing.T) {
+	n := testRegisteredNet()
+	n.CustomerHandle = "C999"
+	body, _ := n.marshal()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(body) }))
+	defer server.Close()
+	c, _ := New(Config{BaseURL: server.URL, APIKey: "test-key"})
+	if _, err := c.FindNetAssignment(context.Background(), testAssignment()); err == nil {
+		t.Fatal("adopted another recipient's network")
+	}
+}
+
+func TestFindNetAssignmentUsesCompleteRange(t *testing.T) {
+	a := testAssignment()
+	a.Prefixes = []string{"192.0.2.0/30", "192.0.2.4/31"}
+	n := a.net()
+	n.Handle = "NET-192-0-2-0-2"
+	n.RegistrationDate = "2026-01-01T00:00:00Z"
+	body, _ := n.marshal()
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.URL.Path != "/rest/net/mostSpecificNet/192.0.2.0/192.0.2.5" {
+			t.Error("did not query complete registration range")
+			w.WriteHeader(404)
+			return
+		}
+		w.Write(body)
+	}))
+	defer server.Close()
+	c, _ := New(Config{BaseURL: server.URL, APIKey: "test-key"})
+	found, err := c.FindNetAssignment(context.Background(), a)
+	if err != nil || found == nil || calls != 1 {
+		t.Fatalf("multi-block reconciliation failed: %+v %v calls=%d", found, err, calls)
 	}
 }

@@ -51,20 +51,30 @@ type registeredNetXML struct {
 }
 
 func (n RegisteredNet) marshal() ([]byte, error) {
-	return xml.Marshal(registeredNetXML{Version: n.Version, Comments: xmlPolicy(n.Comments), RegistrationDate: n.RegistrationDate, OrgHandle: n.OrgHandle, Handle: n.Handle, Blocks: n.Blocks, CustomerHandle: n.CustomerHandle, ParentNetHandle: n.ParentNetHandle, Name: n.Name, OriginASNs: n.OriginASNs, POCs: n.POCs})
+	origins := make([]string, len(n.OriginASNs))
+	for i, asn := range n.OriginASNs {
+		origins[i] = strings.TrimPrefix(asn, "AS")
+	}
+	return xml.Marshal(registeredNetXML{Version: n.Version, Comments: xmlPolicy(n.Comments), RegistrationDate: n.RegistrationDate, OrgHandle: n.OrgHandle, Handle: n.Handle, Blocks: n.Blocks, CustomerHandle: n.CustomerHandle, ParentNetHandle: n.ParentNetHandle, Name: n.Name, OriginASNs: origins, POCs: n.POCs})
 }
 
 // NetAssignment creates a reassignment (customer or org) or reallocation (org).
-// A single request can contain multiple nonoverlapping CIDR blocks.
+// Multiple CIDR blocks must form the minimal cover of one contiguous range.
 type NetAssignment struct {
 	ParentNetHandle, Name, CustomerHandle, OrgHandle string
 	Reallocate                                       bool
-	Prefixes, Comments, OriginASNs                   []string
+	Prefixes, Comments                               []string
+	// OriginASNs is retained for explicit validation of retired input. Nonempty
+	// values are rejected because ARIN no longer stores the NET Origin AS field.
+	OriginASNs []string
 }
 
 var netNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 -]*$`)
 
 func validateNetMetadata(name string, comments, origins []string) error {
+	if len(origins) != 0 {
+		return errors.New("NET Origin AS was retired by ARIN in July 2025; use IRR routes or RPKI instead")
+	}
 	if !netNamePattern.MatchString(name) {
 		return errors.New("network name must contain only letters, digits, spaces and hyphens")
 	}
@@ -72,16 +82,6 @@ func validateNetMetadata(name string, comments, origins []string) error {
 		if strings.TrimSpace(line) == "" || strings.ContainsAny(line, "\r\n") {
 			return errors.New("comments must contain nonempty individual lines")
 		}
-	}
-	seen := map[string]bool{}
-	for _, asn := range origins {
-		if err := ValidateIRRRouteID("192.0.2.0/24," + asn); err != nil {
-			return errors.New("origin_asns must contain canonical AS numbers")
-		}
-		if seen[asn] {
-			return errors.New("origin_asns must not contain duplicates")
-		}
-		seen[asn] = true
 	}
 	return nil
 }
@@ -126,6 +126,17 @@ func (a NetAssignment) Validate() error {
 			}
 		}
 		prefixes = append(prefixes, p)
+	}
+	slices.SortFunc(prefixes, func(a, b netip.Prefix) int { return a.Addr().Compare(b.Addr()) })
+	for i := 1; i < len(prefixes); i++ {
+		prior, current := prefixes[i-1], prefixes[i]
+		if prefixEnd(prior).Next() != current.Addr() {
+			return errors.New("NET prefixes must describe one contiguous address range")
+		}
+		if prior.Bits() == current.Bits() && prior.Bits() > 0 &&
+			netip.PrefixFrom(prior.Addr(), prior.Bits()-1).Masked() == netip.PrefixFrom(current.Addr(), current.Bits()-1).Masked() {
+			return errors.New("merge adjacent sibling prefixes into their canonical parent CIDR")
+		}
 	}
 	return nil
 }
@@ -212,7 +223,12 @@ func decodeRegisteredNetNode(root *xmlNode, handle string) (*RegisteredNet, erro
 			if k == "comments" {
 				n.Comments = append(n.Comments, item.(string))
 			} else {
-				n.OriginASNs = append(n.OriginASNs, item.(string))
+				// NET responses use numeric origins even when the write used ASn.
+				asn := "AS" + strings.TrimPrefix(item.(string), "AS")
+				if err := ValidateIRRRouteID("192.0.2.0/24," + asn); err != nil {
+					return nil, errors.New("ARIN returned an invalid NET origin ASN")
+				}
+				n.OriginASNs = append(n.OriginASNs, asn)
 			}
 		}
 	}
@@ -425,4 +441,67 @@ func sameNetAssignment(a, b RegisteredNet) bool {
 	return a.Version == b.Version && a.ParentNetHandle == b.ParentNetHandle &&
 		a.CustomerHandle == b.CustomerHandle && a.OrgHandle == b.OrgHandle &&
 		slices.Equal(blocks(a), blocks(b))
+}
+
+// FindNetAssignment reconciles a previously submitted assignment using exact
+// range lookups. It never adopts an unrelated registration in the same range.
+func (c *Client) FindNetAssignment(ctx context.Context, a NetAssignment) (*RegisteredNet, error) {
+	if err := a.Validate(); err != nil {
+		return nil, err
+	}
+	// mostSpecificNet matches the registration's complete range, not each
+	// constituent CIDR. Multi-block records need one bounding-range lookup.
+	first := netip.MustParsePrefix(a.Prefixes[0])
+	start, end := first.Addr(), prefixEnd(first)
+	for _, raw := range a.Prefixes[1:] {
+		p := netip.MustParsePrefix(raw)
+		if p.Addr().Compare(start) < 0 {
+			start = p.Addr()
+		}
+		if last := prefixEnd(p); last.Compare(end) > 0 {
+			end = last
+		}
+	}
+	body, err := c.get(ctx, c.baseURL, "/rest/net/mostSpecificNet/"+url.PathEscape(start.String())+"/"+url.PathEscape(end.String()), "application/xml", true)
+	if IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	n, err := decodeRegisteredNet(body, "")
+	if err != nil {
+		return nil, err
+	}
+	if !sameNetAssignment(*n, a.net()) || n.Name != a.Name {
+		return nil, errors.New("the requested range contains a different registration; import or investigate it before retrying")
+	}
+	return n, nil
+}
+
+type RegistrationTicket struct{ Number, Status, Resolution string }
+
+func (t RegistrationTicket) Terminal() bool {
+	return slices.Contains([]string{"RESOLVED", "CLOSED"}, t.Status)
+}
+
+func (t RegistrationTicket) Failed() bool {
+	return slices.Contains([]string{"RESOLVED", "CLOSED"}, t.Status) &&
+		slices.Contains([]string{"DENIED", "ABANDONED", "WITHDRAWN", "UNSUCCESSFUL", "DUPLICATE"}, t.Resolution)
+}
+func (c *Client) GetRegistrationTicket(ctx context.Context, number string) (*RegistrationTicket, error) {
+	for _, spec := range RegistrationReads() {
+		if spec.Name != "ticket_summary" {
+			continue
+		}
+		v, err := c.ReadRegistration(ctx, spec, map[string]string{"ticket_number": number})
+		if err != nil {
+			return nil, err
+		}
+		if netString(v, "ticket_number") != number {
+			return nil, errors.New("ARIN returned a mismatched ticket")
+		}
+		return &RegistrationTicket{Number: number, Status: netString(v, "ticket_status"), Resolution: netString(v, "resolution")}, nil
+	}
+	return nil, errors.New("ticket summary API is unavailable")
 }
