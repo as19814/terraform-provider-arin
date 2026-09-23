@@ -181,11 +181,15 @@ func TestRPKIPublicationBatchLifecycle(t *testing.T) {
 	if err := client.Apply(ctx, []rpkiPublicationChange{{URI: uri, DER: first}}); err != nil {
 		t.Fatal(err)
 	}
-	if err := client.Apply(ctx, []rpkiPublicationChange{{URI: uri, OldSHA256: digest(first), DER: second}}); err != nil {
+	planned, err := planRPKIPublicationBundle(map[string]string{uri: base64.StdEncoding.EncodeToString(second)}, map[string]string{uri: digest(first)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Apply(ctx, planned); err != nil {
 		t.Fatal(err)
 	}
 	// First PDU would create a new object, second has a stale hash. Neither commits.
-	err := client.Apply(ctx, []rpkiPublicationChange{{URI: uri + "2", DER: first}, {URI: uri, OldSHA256: digest(first), Withdraw: true}})
+	err = client.Apply(ctx, []rpkiPublicationChange{{URI: uri + "2", DER: first}, {URI: uri, OldSHA256: digest(first), Withdraw: true}})
 	var rejected *rpkiPublicationError
 	if !errors.As(err, &rejected) || rejected.Codes[0] != "no_object_matching_hash" || len(rejected.OperationIndexes) != 1 || rejected.OperationIndexes[0] != 1 {
 		t.Fatalf("wrong rejection: %v", err)

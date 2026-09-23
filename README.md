@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 75 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-three managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, report requests, ticket messages and closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 75 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-four managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, delegated publication bundles, report requests, ticket messages and closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -380,3 +380,10 @@ independently validate the returned resource certificates' RPKI trust paths.
 Interrupted delegated inventory reads can be inspected and explicitly abandoned
 with `go run ./tools/rpki-journal`. See [read recovery](docs/reference/delegated-rpki.md#recovering-an-interrupted-inventory-read).
 The command cannot clear uncertain mutations or bypass process locks.
+
+
+[`arin_rpki_publication_bundle`](docs/resources/rpki_publication_bundle.md)
+manages caller-supplied signed objects and manifests in atomic publication
+batches. It uses inventory hashes for replacement and withdrawal, restores drift,
+and preserves unmanaged URLs. Import and uncertain-mutation recovery remain
+unfinished; native delegated verification requires existing sandbox enrollment.

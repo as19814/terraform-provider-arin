@@ -976,3 +976,34 @@ keep using a build that understands this field after recovery.
 Tests cover first-read and later-read recovery, reopen, unchanged timestamps,
 metadata ownership, replay prevention, mutation rejection and locking. A signed
 HTTP test covers failure, blocked retry, explicit recovery and successful reads.
+
+
+## Managed publication bundles
+
+`arin_rpki_publication_bundle` manages an explicit map of rsync URLs to canonical
+base64 object contents. Callers supply signed objects and corresponding manifests;
+the provider does not create or cryptographically validate these payloads. Changes
+to the owned URL set are sent in one RFC 8181 atomic batch. Objects outside the
+owned set are preserved. Overlapping ownership with another resource or publisher
+is unsupported.
+
+Creation uses absent-object preconditions. Refresh records current hashes for
+owned URLs. Plans compare them with desired hashes, so missing or changed objects
+produce updates. Updates use last-observed hashes for replacement/withdrawal and
+absence for new URLs; a concurrent change after refresh is rejected by the server.
+Destroy withdraws the owned objects still observed at refresh. A successful
+protocol response confirms the batch before Terraform state is committed.
+
+Desired data is bounded to 10,000 objects and 3 MiB decoded bytes. Actual mutation
+XML must fit the existing 4 MiB transport limit. Key bytes remain in a private
+local file, while object content and identity configuration remain in state.
+Changes to endpoint, publisher or trust anchors require replacement.
+
+Terraform tests using an injected repository cover create, update, additions,
+removals, drift repair, missing-object recreation, clean plans, destroy and
+preservation of unmanaged objects. Planner tests verify hash preconditions and
+limits; the signed batch lifecycle also exercises planned replacement. These
+complement existing signed protocol tests and do not establish native ARIN
+interoperability. Import and uncertain-mutation recovery remain unfinished.
+A pending mutation blocks further peer exchanges; the read-only recovery command
+cannot abandon it. No native delegated publication was attempted.
