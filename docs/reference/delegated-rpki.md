@@ -1488,3 +1488,28 @@ failed create left no resource state. The CLI does not edit Terraform state.
 Errors identify the probe journal when possible; only pending inventory probes
 can be explicitly abandoned through read recovery. Revocation completion and
 native delegated sandbox verification remain unfinished.
+
+### Manifest-backed revocation evidence
+
+A private proof checker now validates supplied revocation evidence against an
+explicit resource anchor. It first verifies the issuer's upstream manifest path,
+then binds the prior certificate's key, issuer signature, resource containment and
+CRL distribution point. The issuer's current signed manifest must select a valid
+CRL that contains the certificate's serial with an effective revocation time.
+No certificate with the retired key may remain listed in that publication point,
+including one with a different filename or serial.
+
+The returned proof identifies the exact certificate, issuer, CRL and manifest by
+SHA-256. This checker does not fetch repositories, record manifest history or
+clear pending state. Before using it for recovery, callers must bind the issuer
+to the signed resource class, verify current parent-inventory key absence and
+persist rollback protection for both the issuer path and its own manifest.
+Expired prior certificates currently fail this proof check; absence alone is
+not substituted for explicit current revocation evidence.
+
+Signed tests cover valid revocation, absent revocation entries, still-published
+and reissued keys, incorrect keys/anchors/issuers/CRL locations, resource
+overclaims, tampered CRLs, expired manifests and future revocation times.
+Repository retrieval, durable history integration, reconciliation and native
+verification remain unfinished. The relevant protocol scope is
+[RFC 6492 section 3.5](https://www.rfc-editor.org/rfc/rfc6492.html#section-3.5).
