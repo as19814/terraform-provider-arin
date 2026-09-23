@@ -1933,3 +1933,30 @@ issuer's unverified overclaim. An allocation wider than the verified set remains
 an issuance error even when certificate profile validation succeeds. These tests
 use signed synthetic chains and publications, not native ARIN alternate-profile
 certificates.
+
+### Bounded issuer-certificate discovery
+
+The Go API `DiscoverRPKIIssuerChain` accepts an existing resource certificate,
+an explicit resource anchor, ordered RRDP notification URLs, a private cache
+directory and a private manifest-history directory. `IssuerChainPEM` must be
+empty. It returns an immediate-issuer-first PEM chain ending at the pinned anchor
+only after current manifest/CRL, resource-path and durable history validation.
+
+Intermediate certificates are looked up using the child's rsync AIA references
+inside the configured parent repository. AIA URLs are never fetched directly.
+Repository order and path depth remain explicit through the notification list.
+Each issuer must match the child's issuer name, key identifier and signature.
+Conflicting AIA candidates, repeated certificates, premature anchors, missing
+objects and unpublished intermediate certificates fail. Discovery is bounded to
+31 issuer levels, 4 MiB of certificate DER and the existing aggregate repository
+limits. Persistent refresh caches are reused during final publication assembly.
+
+Signed TLS tests cover a discovered three-certificate path and API output,
+cache reuse, missing/wrong/ambiguous issuers, a different anchor, an intermediate
+omitted from its manifest and invalid notification configuration. Discovery does
+not accept an unvalidated chain merely because its certificates parse.
+
+Terraform integration remains to be implemented. The existing certificate
+resource still requires `issuer_chain_pem`; this API is a verified building block
+for supplying that input. Native discovery has not yet been exercised against
+ARIN's repository.

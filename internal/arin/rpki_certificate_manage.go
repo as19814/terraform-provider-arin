@@ -21,6 +21,7 @@ type RPKICertificateRequest struct {
 
 // RPKICertificateValidation supplies an explicit resource trust path independently
 // of the BPKI transport identity. IssuerChainPEM is immediate issuer through anchor.
+// Only DiscoverRPKIIssuerChain accepts an empty IssuerChainPEM.
 type RPKICertificateValidation struct {
 	AnchorPEM, IssuerChainPEM        string
 	Notifications                    []string
