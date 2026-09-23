@@ -253,3 +253,5 @@ OT&E account data and API keys are refreshed from production monthly. If the
 preflight rejects a recently created production key, generate a key in
 [OT&E ARIN Online](https://www.ote.arin.net/) and use `ARIN_OTE_API_KEY`.
 See [ARIN's OT&E documentation](https://www.arin.net/reference/tools/testing/).
+
+CI runs on the YYJ self-hosted runners (`runs-on: [self-hosted, yyj]`) inside an Ubuntu 24.04 container. The workflow installs build dependencies and uses the pinned Go and Terraform setup steps. CI uses fake-server tests and does not enable live ARIN writes.
