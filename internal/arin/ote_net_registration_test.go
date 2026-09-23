@@ -215,6 +215,9 @@ func testOTENetAssignmentClientLifecycle(t *testing.T, family string) {
 		if err != nil || record.OrgHandle != org {
 			t.Fatalf("%s read: %v", mode, err)
 		}
+		if !reallocate {
+			auditOTEDownstreamRoutes(t, ctx, c, org, parent, handle, prefix, name)
+		}
 		if _, err := c.DeleteNetAssignment(ctx, handle); err != nil {
 			t.Fatalf("%s delete: %v", mode, err)
 		}

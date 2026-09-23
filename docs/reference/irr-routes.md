@@ -59,7 +59,20 @@ The remaining list endpoints map to `arin_irr_routes` (organization routes) and
 for the documented `reassignments` query parameter. Collection entries preserve
 entry type, organization, origin ASN and prefix. Path tests cover these endpoints;
 the existing live Terraform read suite exercises organization and direct network
-lists. A direct-list read does not prove downstream reassignment inclusion.
+lists. `TestOTENetAssignmentClientLifecycle` now creates a route under a disposable
+organization-recipient reassignment for each IP family and directly verifies:
+
+- The child's direct list contains the route.
+- The parent's direct list excludes the child route.
+- The parent's list with `reassignments=true` includes the child route.
+- The organization list includes the route with matching prefix, origin,
+  organization and `SIMPLE` entry type.
+
+Both IPv4 /32 and IPv6 /64 cases passed. The route identity is durably recorded
+before POST, and cleanup verifies route absence before the fixture deletes its
+NET and customer. A leftover route receipt blocks another probe until reconciled.
+This is native client coverage of list semantics; it does not claim a separate
+Terraform acceptance run for downstream inclusion.
 
 | Simple payload field | Provider behavior and evidence |
 | --- | --- |
