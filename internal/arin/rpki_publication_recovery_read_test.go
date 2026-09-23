@@ -32,7 +32,7 @@ func TestRPKIPublicationRecoveryRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	digest := fmt.Sprintf("%x", sha256.Sum256(original))
-	for _, mode := range []string{"after", "before", "conflict", "old_reply", "wrong_signer", "unavailable", "same_second", "wrong_digest", "original_locked", "recovery_rollback"} {
+	for _, mode := range []string{"after", "before", "conflict", "old_reply", "wrong_signer", "unavailable", "same_second", "wrong_digest", "original_locked", "recovery_rollback", "commit_after", "commit_before", "commit_mismatch", "commit_conflict"} {
 		t.Run(mode, func(t *testing.T) {
 			directory := privateExchangeDir(t)
 			var calls atomic.Int32
@@ -60,10 +60,10 @@ func TestRPKIPublicationRecoveryRead(t *testing.T) {
 					return
 				}
 				objects := `<list uri="` + uri + `" hash="` + hash + `"/>`
-				if mode == "before" {
+				if mode == "before" || mode == "commit_before" {
 					objects = ""
 				}
-				if mode == "conflict" {
+				if mode == "conflict" || mode == "commit_conflict" {
 					objects = `<list uri="` + uri + `" hash="` + strings.Repeat("c", 64) + `"/>`
 				}
 				signing := remote
@@ -124,21 +124,55 @@ func TestRPKIPublicationRecoveryRead(t *testing.T) {
 			if mode == "wrong_digest" {
 				expected = strings.Repeat("e", 64)
 			}
-			observation, err := exchange.observePendingPublication(context.Background(), expected)
-			valid := mode == "after" || mode == "before" || mode == "conflict" || mode == "recovery_rollback"
+			var observation rpkiPublicationRecoveryObservation
+			if strings.HasPrefix(mode, "commit_") {
+				selected := "matches_after"
+				if mode == "commit_before" || mode == "commit_mismatch" {
+					selected = "matches_before"
+				}
+				observation, err = exchange.reconcilePendingPublication(context.Background(), expected, selected)
+			} else {
+				observation, err = exchange.observePendingPublication(context.Background(), expected)
+			}
+			valid := mode == "after" || mode == "before" || mode == "conflict" || mode == "recovery_rollback" || mode == "commit_after" || mode == "commit_before"
 			if (err == nil) != valid {
 				t.Fatalf("valid=%v err=%v", valid, err)
 			}
 			if valid {
-				want := map[string]string{"after": "matches_after", "before": "matches_before", "conflict": "conflict", "recovery_rollback": "matches_after"}[mode]
+				want := map[string]string{"after": "matches_after", "before": "matches_before", "conflict": "conflict", "recovery_rollback": "matches_after", "commit_after": "matches_after", "commit_before": "matches_before"}[mode]
 				if observation.Outcome != want || observation.Plan.RequestSHA256 != digest || observation.RecoveryPeerID == peer || !observation.Sent.After(cmsTrustNow()) || observation.Received.Before(cmsTrustNow().Add(time.Second)) {
 					t.Fatal("wrong recovery observation")
 				}
 			}
 			after, readErr := os.ReadFile(path)
-			if readErr != nil || !bytes.Equal(before, after) {
+			if mode == "commit_after" || mode == "commit_before" {
+				var completed rpkiExchangeState
+				if readErr != nil || json.Unmarshal(after, &completed) != nil || completed.Pending != nil || completed.ReconciledPublication == nil || completed.ReconciledPublication.Original.RequestSHA256 != digest || completed.ReconciledPublication.Outcome != observation.Outcome || !completed.LastSent.Equal(observation.Sent) || !completed.LastReceived.Equal(observation.Received) {
+					t.Fatal("reconciliation did not durably record outcome and watermarks")
+				}
+				reopened, err := openRPKIExchange(directory, peer)
+				if err != nil {
+					t.Fatal(err)
+				}
+				copy, err := reopened.State()
+				if err != nil {
+					t.Fatal(err)
+				}
+				copy.ReconciledPublication.Outcome = "changed"
+				actual, err := reopened.State()
+				if err != nil || actual.ReconciledPublication.Outcome != observation.Outcome {
+					t.Fatal("receipt aliases journal state")
+				}
+				if err := reopened.Close(); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := exchange.reconcilePendingPublication(context.Background(), digest, observation.Outcome); err == nil || calls.Load() != 1 {
+					t.Fatal("repeated reconciliation dispatched or succeeded")
+				}
+			} else if readErr != nil || !bytes.Equal(before, after) {
 				t.Fatal("recovery altered original pending journal")
 			}
+
 			if mode == "recovery_rollback" {
 				if _, err := exchange.observePendingPublication(context.Background(), digest); err == nil || calls.Load() != 2 {
 					t.Fatal("recovery receive watermark rolled back")

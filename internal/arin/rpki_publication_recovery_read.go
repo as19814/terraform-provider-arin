@@ -15,7 +15,19 @@ type rpkiPublicationRecoveryObservation struct {
 // digest-scoped recovery journal records an authenticated inventory exchange.
 // It never resends the mutation or clears its pending record. The response is
 // checked against both original and recovery receive-time watermarks.
-func (c rpkiHTTPExchange) observePendingPublication(ctx context.Context, digest string) (observation rpkiPublicationRecoveryObservation, err error) {
+func (c rpkiHTTPExchange) observePendingPublication(ctx context.Context, digest string) (rpkiPublicationRecoveryObservation, error) {
+	return c.readPendingPublication(ctx, digest, "")
+}
+
+// reconcilePendingPublication requires an explicitly selected observed state.
+// It commits the decision while still holding the original peer's lease.
+func (c rpkiHTTPExchange) reconcilePendingPublication(ctx context.Context, digest, expected string) (rpkiPublicationRecoveryObservation, error) {
+	if expected != "matches_before" && expected != "matches_after" {
+		return rpkiPublicationRecoveryObservation{}, errRPKIExchangeState
+	}
+	return c.readPendingPublication(ctx, digest, expected)
+}
+func (c rpkiHTTPExchange) readPendingPublication(ctx context.Context, digest, expected string) (observation rpkiPublicationRecoveryObservation, err error) {
 	if c.RecoveryOf != "" || !exchangeDigest.MatchString(digest) {
 		return observation, errRPKIExchangeState
 	}
@@ -77,5 +89,17 @@ func (c rpkiHTTPExchange) observePendingPublication(ctx context.Context, digest 
 	if stateErr != nil || closeErr != nil || recovered.Pending != nil || recovered.LastSent.Before(probe.MinimumSent) || recovered.LastReceived.IsZero() || recovered.LastReceived.Before(probe.MinimumReceived) {
 		return observation, errRPKIExchangeState
 	}
-	return rpkiPublicationRecoveryObservation{Plan: plan, RecoveryPeerID: recoveryPeer, Outcome: outcome, Sent: recovered.LastSent, Received: recovered.LastReceived}, nil
+	observation = rpkiPublicationRecoveryObservation{Plan: plan, RecoveryPeerID: recoveryPeer, Outcome: outcome, Sent: recovered.LastSent, Received: recovered.LastReceived}
+	if expected != "" {
+		if outcome != expected {
+			return observation, errRPKIExchangeState
+		}
+		if err := ctx.Err(); err != nil {
+			return observation, err
+		}
+		if err := lease.reconcilePublication(observation); err != nil {
+			return observation, err
+		}
+	}
+	return observation, nil
 }

@@ -1140,3 +1140,28 @@ failed probes are not retried, and recovery receive history cannot roll back.
 This is still an internal observation operation. Committing a reconciliation
 decision, exposing recovery to the CLI/provider, and native delegated verification
 remain unfinished. A successful observation does not itself clear a mutation.
+
+## Durable publication reconciliation
+
+The private recovery flow can now commit an explicitly selected `matches_before`
+or `matches_after` observation while still holding the original peer lock. It
+requires the authenticated inventory comparison to match that selection.
+Ambiguous, conflicting or unexpected results do not clear the pending mutation.
+No mutation is resubmitted as part of reconciliation.
+
+Commit atomically saves a `reconciled_publication` receipt containing the original
+request identity, recovery peer ID, observed outcome and probe timestamps. It
+clears pending state and advances the original send/receive watermarks to the
+recovery exchange's timestamps. The journal retains the latest receipt rather
+than an unbounded audit log. Later requests cannot roll signing time backward.
+Older provider binaries reject the new receipt field; use a compatible build
+after reconciliation.
+
+Signed fake-server tests cover both commit outcomes, wrong expected outcomes,
+conflicts, repeated commit rejection and unchanged state on observation failure.
+State tests cover reopen, receipt ownership, invalid metadata, clock rollback,
+corrupt receipts and atomic-save failure preserving the on-disk pending record.
+The observation describes current hashes, not proof of transaction history.
+
+The mechanism remains internal. CLI/provider exposure, recovery of issuance and
+revocation, crash-lock handling and native delegated verification remain unfinished.

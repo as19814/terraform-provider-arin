@@ -22,12 +22,13 @@ type rpkiPendingExchange struct {
 	SigningTime   time.Time `json:"signing_time"`
 }
 type rpkiExchangeState struct {
-	Version       int                  `json:"version"`
-	PeerID        string               `json:"peer_id"`
-	LastSent      time.Time            `json:"last_sent"`
-	LastReceived  time.Time            `json:"last_received"`
-	Pending       *rpkiPendingExchange `json:"pending,omitempty"`
-	RecoveredRead *rpkiPendingExchange `json:"recovered_read,omitempty"`
+	Version               int                            `json:"version"`
+	PeerID                string                         `json:"peer_id"`
+	LastSent              time.Time                      `json:"last_sent"`
+	LastReceived          time.Time                      `json:"last_received"`
+	Pending               *rpkiPendingExchange           `json:"pending,omitempty"`
+	RecoveredRead         *rpkiPendingExchange           `json:"recovered_read,omitempty"`
+	ReconciledPublication *rpkiPublicationReconciliation `json:"reconciled_publication,omitempty"`
 }
 
 // rpkiExchangeLease holds an exclusive filesystem lease for one protocol peer.
@@ -110,6 +111,11 @@ func openRPKIExchangeMode(directory, peerID string, create bool) (*rpkiExchangeL
 				return nil, errRPKIExchangeState
 			}
 		}
+		if receipt := lease.state.ReconciledPublication; receipt != nil {
+			if !validPublicationReconciliation(*receipt) || receipt.RecoveryPeerID == peerID || receipt.Sent.After(lease.state.LastSent) || receipt.Received.After(lease.state.LastReceived) {
+				return nil, errRPKIExchangeState
+			}
+		}
 		if p := lease.state.Pending; p != nil {
 			if !exchangeDigest.MatchString(p.RequestSHA256) || !exchangeOperation.MatchString(p.Operation) || p.SigningTime.IsZero() || !validExchangeTime(p.SigningTime) || !p.SigningTime.Equal(lease.state.LastSent) {
 				return nil, errRPKIExchangeState
@@ -136,6 +142,10 @@ func (l *rpkiExchangeLease) State() (rpkiExchangeState, error) {
 	if state.RecoveredRead != nil {
 		recovered := *state.RecoveredRead
 		state.RecoveredRead = &recovered
+	}
+	if state.ReconciledPublication != nil {
+		receipt := *state.ReconciledPublication
+		state.ReconciledPublication = &receipt
 	}
 	return state, nil
 }
