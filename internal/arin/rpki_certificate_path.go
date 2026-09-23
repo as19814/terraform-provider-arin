@@ -11,7 +11,7 @@ import (
 // Verify the exact supplied leaf-first CA path against an explicitly configured
 // resource anchor. CRLs must already be selected using authenticated manifests
 // and CRLDPs; this function does not perform that selection. It checks current CRL
-// status and original-profile resource containment, not the entire RPKI profile.
+// status and profile-specific verified resource sets, not the entire RPKI profile.
 func verifyRPKICertificatePath(path []*x509.Certificate, anchor *x509.Certificate, crls []*x509.RevocationList, now time.Time) (*rpkiCertificateResources, error) {
 	if len(path) == 0 || len(path) > 32 || anchor == nil || now.IsZero() || len(crls) > 32 {
 		return nil, errRPKIUpDown
@@ -41,7 +41,7 @@ func verifyRPKICertificatePath(path []*x509.Certificate, anchor *x509.Certificat
 		}
 		var unhandled []asn1.ObjectIdentifier
 		for _, oid := range cert.UnhandledCriticalExtensions {
-			if !oid.Equal(oidRPKIASResources) && !oid.Equal(oidRPKIIPResources) {
+			if !oid.Equal(oidRPKIASResources) && !oid.Equal(oidRPKIIPResources) && !oid.Equal(oidRPKIASResourcesV2) && !oid.Equal(oidRPKIIPResourcesV2) {
 				unhandled = append(unhandled, oid)
 			}
 		}

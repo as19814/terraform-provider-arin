@@ -10,6 +10,9 @@ import (
 var oidRPKIIPResources = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 1, 7}
 var oidRPKIASResources = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 1, 8}
 
+var oidRPKIIPResourcesV2 = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 1, 28}
+var oidRPKIASResourcesV2 = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 1, 29}
+
 type rpkiASRange struct{ Min, Max uint32 }
 type rpkiIPRange struct{ Min, Max netip.Addr }
 type rpkiASSet struct {
@@ -21,19 +24,26 @@ type rpkiIPSet struct {
 	Ranges  []rpkiIPRange
 }
 type rpkiCertificateResources struct {
-	ASN        *rpkiASSet
-	IPv4, IPv6 *rpkiIPSet
+	Reconsidered bool
+	ASN          *rpkiASSet
+	IPv4, IPv6   *rpkiIPSet
 }
 
-// Decode the RFC 6487 subset of RFC 3779. Nil means absent, not inherited.
+// Decode the resource syntax shared by RFC 6487 and RFC 8360.
+// Nil means absent, not inherited.
 // This does not authenticate the certificate or resolve inheritance.
 func parseRPKICertificateResources(extensions []pkix.Extension) (*rpkiCertificateResources, error) {
 	out := &rpkiCertificateResources{}
 	seen := make(map[string]bool)
 	for _, e := range extensions {
-		if !e.Id.Equal(oidRPKIASResources) && !e.Id.Equal(oidRPKIIPResources) {
+		v2 := e.Id.Equal(oidRPKIASResourcesV2) || e.Id.Equal(oidRPKIIPResourcesV2)
+		if !v2 && !e.Id.Equal(oidRPKIASResources) && !e.Id.Equal(oidRPKIIPResources) {
 			continue
 		}
+		if len(seen) > 0 && out.Reconsidered != v2 {
+			return nil, errRPKIUpDown
+		}
+		out.Reconsidered = v2
 		if seen[e.Id.String()] || !e.Critical || len(e.Value) > 512000 {
 			return nil, errRPKIUpDown
 		}
@@ -42,7 +52,7 @@ func parseRPKICertificateResources(extensions []pkix.Extension) (*rpkiCertificat
 		if err != nil || len(nodes) == 0 {
 			return nil, errRPKIUpDown
 		}
-		if e.Id.Equal(oidRPKIASResources) {
+		if e.Id.Equal(oidRPKIASResources) || e.Id.Equal(oidRPKIASResourcesV2) {
 			// RDI is excluded from the resource-certificate profile.
 			if len(nodes) != 1 || nodes[0].Class != 2 || nodes[0].Tag != 0 || !nodes[0].IsCompound {
 				return nil, errRPKIUpDown

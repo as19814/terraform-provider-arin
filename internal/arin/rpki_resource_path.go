@@ -25,6 +25,23 @@ func resolveRPKIResourcePath(path [][]pkix.Extension) (*rpkiCertificateResources
 			parent = current
 			continue
 		}
+		if current.Reconsidered {
+			resolved := &rpkiCertificateResources{Reconsidered: true}
+			if current.ASN != nil {
+				resolved.ASN = &rpkiASSet{}
+				if parent.ASN != nil {
+					ranges := current.ASN.Ranges
+					if current.ASN.Inherit {
+						ranges = parent.ASN.Ranges
+					}
+					resolved.ASN.Ranges = intersectIssueAS(ranges, parent.ASN.Ranges)
+				}
+			}
+			resolved.IPv4 = intersectRPKIIPSet(current.IPv4, parent.IPv4)
+			resolved.IPv6 = intersectRPKIIPSet(current.IPv6, parent.IPv6)
+			parent = resolved
+			continue
+		}
 		resolved := &rpkiCertificateResources{}
 		resolved.ASN, err = resolveRPKIASSet(current.ASN, parent.ASN)
 		if err != nil {
@@ -85,4 +102,19 @@ func resolveRPKIIPSet(child, parent *rpkiIPSet) (*rpkiIPSet, error) {
 		}
 	}
 	return &rpkiIPSet{Ranges: slices.Clone(child.Ranges)}, nil
+}
+
+func intersectRPKIIPSet(child, parent *rpkiIPSet) *rpkiIPSet {
+	if child == nil {
+		return nil
+	}
+	out := &rpkiIPSet{}
+	if parent != nil {
+		ranges := child.Ranges
+		if child.Inherit {
+			ranges = parent.Ranges
+		}
+		out.Ranges = intersectIssueIP(ranges, parent.Ranges)
+	}
+	return out
 }

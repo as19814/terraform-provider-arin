@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-// Original resource-extension profiles. Signature/path, revocation and
-// resource-allocation validation remain separate requirements.
+// Original and reconsidered resource-extension profiles. Signature/path,
+// revocation and resource-allocation validation remain separate requirements.
 func validateRPKICAProfile(cert *x509.Certificate) error {
 	return validateRPKICertificateProfile(cert, false)
 }
@@ -50,6 +50,7 @@ func validateRPKICertificateProfile(cert *x509.Certificate, manifestEE bool) err
 		return errRPKIUpDown
 	}
 	selfSigned := bytes.Equal(cert.RawIssuer, cert.RawSubject) && cert.CheckSignatureFrom(cert) == nil
+	policyV2 := false
 	seen := make(map[string]bool)
 	for _, e := range cert.Extensions {
 		oid := e.Id.String()
@@ -88,7 +89,8 @@ func validateRPKICertificateProfile(cert *x509.Certificate, manifestEE bool) err
 				return errRPKIUpDown
 			}
 		case "2.5.29.32":
-			if !e.Critical || !validRPKIPolicies(e.Value) {
+			policyV2 = validRPKIPoliciesFor(e.Value, true)
+			if !e.Critical || (!policyV2 && !validRPKIPolicies(e.Value)) {
 				return errRPKIUpDown
 			}
 		case "1.3.6.1.5.5.7.1.1":
@@ -99,7 +101,7 @@ func validateRPKICertificateProfile(cert *x509.Certificate, manifestEE bool) err
 			if e.Critical || selfSigned || !validRPKICRLDP(e.Value) {
 				return errRPKIUpDown
 			}
-		case "1.3.6.1.5.5.7.1.11", "1.3.6.1.5.5.7.1.7", "1.3.6.1.5.5.7.1.8":
+		case "1.3.6.1.5.5.7.1.28", "1.3.6.1.5.5.7.1.29", "1.3.6.1.5.5.7.1.11", "1.3.6.1.5.5.7.1.7", "1.3.6.1.5.5.7.1.8":
 			// Dedicated decoders below enforce these extension profiles.
 		default:
 			return errRPKIUpDown
@@ -131,6 +133,9 @@ func validateRPKICertificateProfile(cert *x509.Certificate, manifestEE bool) err
 	if err != nil {
 		return err
 	}
+	if resources.Reconsidered != policyV2 {
+		return errRPKIUpDown
+	}
 	if manifestEE && ((resources.ASN != nil && !resources.ASN.Inherit) || (resources.IPv4 != nil && !resources.IPv4.Inherit) || (resources.IPv6 != nil && !resources.IPv6.Inherit)) {
 		return errRPKIUpDown
 	}
@@ -151,7 +156,13 @@ func validRPKIProfileURI(s string) bool {
 	return err == nil && u.IsAbs()
 }
 
-func validRPKIPolicies(der []byte) bool {
+func validRPKIPolicies(der []byte) bool { return validRPKIPoliciesFor(der, false) }
+
+func validRPKIPoliciesFor(der []byte, reconsidered bool) bool {
+	policy := 2
+	if reconsidered {
+		policy = 3
+	}
 	type qualifier struct {
 		ID    asn1.ObjectIdentifier
 		Value asn1.RawValue
@@ -160,7 +171,7 @@ func validRPKIPolicies(der []byte) bool {
 		ID         asn1.ObjectIdentifier
 		Qualifiers []qualifier `asn1:"optional"`
 	}
-	if !rpkiCSRDER(der, &policies) || len(policies) != 1 || !policies[0].ID.Equal(asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 14, 2}) || len(policies[0].Qualifiers) > 1 {
+	if !rpkiCSRDER(der, &policies) || len(policies) != 1 || !policies[0].ID.Equal(asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 14, policy}) || len(policies[0].Qualifiers) > 1 {
 		return false
 	}
 	if len(policies[0].Qualifiers) == 1 {

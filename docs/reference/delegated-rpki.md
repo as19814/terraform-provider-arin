@@ -1883,8 +1883,8 @@ resource-extension OIDs in [RFC 8360](https://www.rfc-editor.org/rfc/rfc8360.htm
 The alternative policy is `1.3.6.1.5.5.7.14.3`; the alternative IP and AS resource
 extensions are `1.3.6.1.5.5.7.1.28` and `1.3.6.1.5.5.7.1.29`. Supporting them
 requires verified-resource intersection semantics, not merely accepting new OIDs.
-The current certificate validator supports the original policy and extensions
-and rejects the alternative profile.
+At the time of this census, the certificate validator supported only the original
+policy and extensions. The subsequent implementation is described below.
 
 `TestOTEPublicRPKIRepository` now counts the policy/resource OID combinations of
 every standalone `.cer` in the digest-checked public sandbox snapshot. A fresh,
@@ -1901,5 +1901,25 @@ checks each packed object's digest; it does not validate every certificate chain
 inspect embedded EE certificates in signed objects, or prove that ARIN cannot
 issue an alternative-profile certificate. It describes this observed snapshot.
 The delegated service's native issuance profile remains unverified without
-sandbox enrollment. Alternative-profile semantics remain an implementation
-limitation, with no native example observed in this census.
+sandbox enrollment. No native alternative-profile example was observed in this census.
+
+
+### Alternate certificate profile and verified resources
+
+The shared certificate validator now supports [RFC 8360](https://www.rfc-editor.org/rfc/rfc8360.html#section-4.2.4.4)
+policy/resource OIDs with AS, IPv4 and IPv6 intersection semantics. Each path step
+uses its issuer's verified resource set. Alternate-profile overclaims can produce
+a smaller or empty authorized set; original-profile overclaims still fail.
+Inheritance cannot restore clipped resources, and omitted families remain absent.
+Policy and resource-extension profiles must match within each certificate.
+
+Issuance and refresh still compare the verified resources with the signed
+allocation bounded by the request. Accepting the alternate profile does not
+accept a partially authorized requested allocation. Revocation recovery uses the
+same path rules. Manifest EE certificates still require inherited resources.
+No Terraform schema or configuration change is required.
+
+Tests cover signed mixed-profile paths, policy mismatches, noncritical and
+duplicate extensions, AS authorization gaps, both IP families, empty intersections,
+inheritance and manifest EE constraints. Native alternate-profile interoperability
+remains unverified; the public census found only original-profile certificates.
