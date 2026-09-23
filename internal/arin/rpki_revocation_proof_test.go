@@ -109,3 +109,65 @@ func TestRPKIRevocationProof(t *testing.T) {
 		})
 	}
 }
+
+func expireRevocationCertificate(t *testing.T, f *resourcePathFixture, expiry time.Time, notBefore ...time.Time) {
+	t.Helper()
+	cert := *f.certs[0]
+	cert.ExtraExtensions = cert.Extensions
+	cert.NotBefore = expiry.Add(-time.Hour)
+	cert.NotAfter = expiry
+	if len(notBefore) > 0 {
+		cert.NotBefore = notBefore[0]
+	}
+	der, err := x509.CreateCertificate(rand.Reader, &cert, f.certs[1], &f.keys[0].PublicKey, f.keys[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.certs[0], err = x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRPKIExpiredRetirementProof(t *testing.T) {
+	for _, mode := range []string{"expired", "disabled", "at_boundary", "unexpired", "still_published", "renewed_key", "stale_manifest", "wrong_key", "invalid_interval"} {
+		t.Run(mode, func(t *testing.T) {
+			f, pubs := manifestPathFixture(t, "valid") // No revoked serial on the CRL.
+			now := cmsTrustNow()
+			expiry := now.Add(-time.Second)
+			if mode == "at_boundary" {
+				expiry = now
+			}
+			if mode == "unexpired" {
+				expiry = now.Add(time.Hour)
+			}
+			original := f.certs[0].Raw
+			expireRevocationCertificate(t, &f, expiry)
+			if mode == "invalid_interval" {
+				expireRevocationCertificate(t, &f, expiry, now)
+			}
+			delete(pubs[0].Files, "child.cer")
+			if mode == "still_published" {
+				pubs[0].Files["child.cer"] = f.certs[0].Raw
+			}
+			if mode == "renewed_key" {
+				pubs[0].Files["renewed.cer"] = original
+			}
+			pubs[0] = rewriteRevocationManifestFiles(t, pubs[0], f, mode == "stale_manifest")
+			ski, err := rpkiPublicKeyIdentifier(f.certs[0].RawSubjectPublicKeyInfo)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if mode == "wrong_key" {
+				ski = "AAAAAAAAAAAAAAAAAAAAAAAAAAA"
+			}
+			proof, err := verifyAndRecordRPKIRetirementProof(privateExchangeDir(t), f.certs[0].Raw, ski, f.certs[1:], f.certs[2], pubs[1:], pubs[0], now, mode != "disabled")
+			if (err == nil) != (mode == "expired") {
+				t.Fatalf("mode=%s: %v", mode, err)
+			}
+			if err == nil && (proof.ExpiredAt != expiry.Format(time.RFC3339Nano) || proof.CheckedAt != now.Format(time.RFC3339Nano) || !validRPKIRetirementTimes(*proof)) {
+				t.Fatal("expiry evidence missing")
+			}
+		})
+	}
+}

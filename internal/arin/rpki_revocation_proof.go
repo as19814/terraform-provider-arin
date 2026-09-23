@@ -16,6 +16,8 @@ type rpkiRevocationProof struct {
 	ManifestSHA256    string `json:"manifest_sha256"`
 	CRLURI            string `json:"crl_uri"`
 	SKI               string `json:"ski"`
+	ExpiredAt         string `json:"expired_at,omitempty"`
+	CheckedAt         string `json:"checked_at,omitempty"`
 }
 
 // checkRPKIRevocationProof checks supplied repository evidence only. Callers must
@@ -23,6 +25,12 @@ type rpkiRevocationProof struct {
 // in fresh parent inventory and persist manifest rollback protection before use.
 // It never changes an exchange journal or treats certificate absence as a CRL.
 func checkRPKIRevocationProof(der []byte, ski string, issuers []*x509.Certificate, anchor *x509.Certificate, upstream []rpkiPathPublication, publication rpkiPathPublication, now time.Time) (*rpkiRevocationProof, error) {
+	return checkRPKIRetirementProof(der, ski, issuers, anchor, upstream, publication, now, false)
+}
+
+// Expiry is a distinct, explicitly enabled retirement result, never evidence
+// that the parent executed a revoke. All current issuer/publication checks apply.
+func checkRPKIRetirementProof(der []byte, ski string, issuers []*x509.Certificate, anchor *x509.Certificate, upstream []rpkiPathPublication, publication rpkiPathPublication, now time.Time, allowExpired bool) (*rpkiRevocationProof, error) {
 	if len(der) == 0 || len(der) > 512000 || len(issuers) == 0 || len(issuers) > 31 || issuers[0] == nil || now.IsZero() {
 		return nil, errRPKIUpDown
 	}
@@ -34,7 +42,11 @@ func checkRPKIRevocationProof(der []byte, ski string, issuers []*x509.Certificat
 		return nil, err
 	}
 	certificate, err := x509.ParseCertificate(bytes.Clone(der))
-	if err != nil || validateRPKICAProfile(certificate) != nil || now.Before(certificate.NotBefore) || !now.Before(certificate.NotAfter) {
+	if err != nil || validateRPKICAProfile(certificate) != nil || now.Before(certificate.NotBefore) || certificate.NotAfter.Before(certificate.NotBefore) {
+		return nil, errRPKIUpDown
+	}
+	expired := allowExpired && now.After(certificate.NotAfter)
+	if !now.Before(certificate.NotAfter) && !expired {
 		return nil, errRPKIUpDown
 	}
 	key, err := rpkiPublicKeyIdentifier(certificate.RawSubjectPublicKeyInfo)
@@ -78,7 +90,7 @@ func checkRPKIRevocationProof(der []byte, ski string, issuers []*x509.Certificat
 			revoked = true
 		}
 	}
-	if !revoked {
+	if !revoked && !expired {
 		return nil, errRPKIUpDown
 	}
 	// Key retirement withdraws all certificates for that key in this publication
@@ -96,17 +108,26 @@ func checkRPKIRevocationProof(der []byte, ski string, issuers []*x509.Certificat
 			return nil, errRPKIUpDown
 		}
 	}
-	return &rpkiRevocationProof{CertificateSHA256: rpkiManifestDigest(certificate.Raw), IssuerSHA256: rpkiManifestDigest(issuer.Raw), CRLSHA256: rpkiManifestDigest(checked.CRL.Raw), ManifestSHA256: rpkiManifestDigest(publication.ManifestDER), CRLURI: checked.CRLURI, SKI: ski}, nil
+	proof := &rpkiRevocationProof{CertificateSHA256: rpkiManifestDigest(certificate.Raw), IssuerSHA256: rpkiManifestDigest(issuer.Raw), CRLSHA256: rpkiManifestDigest(checked.CRL.Raw), ManifestSHA256: rpkiManifestDigest(publication.ManifestDER), CRLURI: checked.CRLURI, SKI: ski}
+	if expired {
+		proof.ExpiredAt = certificate.NotAfter.UTC().Format(time.RFC3339Nano)
+		proof.CheckedAt = now.UTC().Format(time.RFC3339Nano)
+	}
+	return proof, nil
 }
 
 // verifyAndRecordRPKIRevocationProof checks all supplied evidence and atomically
 // records both upstream manifests and the retiring issuer's own manifest. It
 // shares history with issuance, preventing rollback across the two workflows.
 func verifyAndRecordRPKIRevocationProof(directory string, der []byte, ski string, issuers []*x509.Certificate, anchor *x509.Certificate, upstream []rpkiPathPublication, publication rpkiPathPublication, now time.Time) (*rpkiRevocationProof, error) {
+	return verifyAndRecordRPKIRetirementProof(directory, der, ski, issuers, anchor, upstream, publication, now, false)
+}
+
+func verifyAndRecordRPKIRetirementProof(directory string, der []byte, ski string, issuers []*x509.Certificate, anchor *x509.Certificate, upstream []rpkiPathPublication, publication rpkiPathPublication, now time.Time, allowExpired bool) (*rpkiRevocationProof, error) {
 	var proof *rpkiRevocationProof
 	err := withRPKIManifestHistory(directory, anchor, func(history *rpkiManifestHistory) error {
 		var err error
-		proof, err = checkRPKIRevocationProof(der, ski, issuers, anchor, upstream, publication, now)
+		proof, err = checkRPKIRetirementProof(der, ski, issuers, anchor, upstream, publication, now, allowExpired)
 		if err != nil {
 			return err
 		}

@@ -20,13 +20,16 @@ import (
 func TestRPKIRevocationReconciliation(t *testing.T) {
 	local, _ := cmsSigningFixture(t)
 	remote, _ := cmsSigningFixture(t)
-	for _, mode := range []string{"valid", "valid_api", "observe_api", "observe_proof", "key_present", "class_absent", "wrong_issuer", "wrong_prior", "wrong_hash", "missing_crl", "not_revoked", "history_unavailable"} {
+	for _, mode := range []string{"valid", "valid_api", "observe_api", "observe_proof", "key_present", "class_absent", "wrong_issuer", "wrong_prior", "wrong_hash", "missing_crl", "not_revoked", "history_unavailable", "expired_api", "expired_observe_api", "expired_disabled", "expired_class_absent", "expired_wrong_hash"} {
 		t.Run(mode, func(t *testing.T) {
 			fixture := "revoked_child"
-			if mode == "not_revoked" {
+			if mode == "not_revoked" || strings.HasPrefix(mode, "expired_") {
 				fixture = "valid"
 			}
 			f, pubs := manifestPathFixture(t, fixture)
+			if strings.HasPrefix(mode, "expired_") {
+				expireRevocationCertificate(t, &f, cmsTrustNow().Add(-time.Second))
+			}
 			delete(pubs[0].Files, "child.cer")
 			pubs[0] = rewriteRevocationManifestFiles(t, pubs[0], f)
 			ski, err := rpkiPublicKeyIdentifier(f.certs[0].RawSubjectPublicKeyInfo)
@@ -56,7 +59,7 @@ func TestRPKIRevocationReconciliation(t *testing.T) {
 				child = fmt.Sprintf(`<certificate cert_url="%s">%s</certificate>`, pubs[0].ChildURI, base64.StdEncoding.EncodeToString(f.certs[0].Raw))
 			}
 			inventory := fmt.Sprintf(`<class class_name="class" cert_url="rsync://repo.example/module/issuer.cer" resource_set_as="64500-64510" resource_set_ipv4="" resource_set_ipv6="" resource_set_notafter="%s">%s<issuer>%s</issuer></class>`, now.Add(time.Hour).Format("2006-01-02T15:04:05Z"), child, base64.StdEncoding.EncodeToString(issuer))
-			if mode == "class_absent" {
+			if mode == "class_absent" || mode == "expired_class_absent" {
 				inventory = ""
 			}
 			reply, err := signRPKICMS([]byte(upDownTestReply("list_response", inventory)), remote, now, time.Time{})
@@ -141,6 +144,7 @@ func TestRPKIRevocationReconciliation(t *testing.T) {
 				t.Fatal(err)
 			}
 			validation := RPKIRevocationValidation{PriorCertificatePEM: certificateTestPEM("CERTIFICATE", f.certs[0].Raw), Path: RPKICertificateValidation{AnchorPEM: certificateTestPEM("CERTIFICATE", f.certs[2].Raw), IssuerChainPEM: certificateTestPEM("CERTIFICATE", f.certs[1].Raw) + certificateTestPEM("CERTIFICATE", f.certs[2].Raw), Notifications: []string{repository.URL + "/0/notification.xml", repository.URL + "/1/notification.xml"}, CacheDirectory: privateExchangeDir(t), HistoryDirectory: privateExchangeDir(t)}}
+			validation.AllowExpired = strings.HasPrefix(mode, "expired_") && mode != "expired_disabled"
 			if mode == "wrong_prior" {
 				validation.PriorCertificatePEM = certificateTestPEM("CERTIFICATE", f.certs[1].Raw)
 			}
@@ -149,22 +153,29 @@ func TestRPKIRevocationReconciliation(t *testing.T) {
 			}
 			hash := rpkiManifestDigest(f.certs[0].Raw)
 			expected := hash
-			if mode == "wrong_hash" {
+			if mode == "wrong_hash" || mode == "expired_wrong_hash" {
 				expected = strings.Repeat("f", 64)
 			}
 			client := rpkiUpDownClient{Exchange: exchange, Child: "child", Parent: "parent"}
 			transport := rrdpHTTPClient{Transport: repository.Client().Transport}
 			var o rpkiRevocationRecoveryObservation
-			if mode == "valid_api" || mode == "observe_api" {
+			if mode == "valid_api" || mode == "observe_api" || mode == "expired_api" || mode == "expired_observe_api" {
 				selected := expected
-				if mode == "observe_api" {
+				if mode == "observe_api" || mode == "expired_observe_api" {
 					selected = ""
 				}
 				var report *RPKIRevocationRecoveryReport
 				report, err = recoverRPKIRevocation(context.Background(), certificateTestConfig(t, exchange), &validation, digest, selected, exchange.Clock, transport)
 				if err == nil {
-					if report.RequestSHA256 != digest || report.Class != "class" || report.SKI != ski || report.Child != "child" || report.Parent != "parent" || report.Committed != (mode == "valid_api") || report.Outcome != "key_absent" || report.IssuerSHA256 != rpkiManifestDigest(f.certs[1].Raw) || report.CRLSHA256 != rpkiManifestDigest(pubs[0].Files["issuer.crl"]) || report.ManifestSHA256 != rpkiManifestDigest(pubs[0].ManifestDER) || report.CRLURI == "" {
+					if report.RequestSHA256 != digest || report.Class != "class" || report.SKI != ski || report.Child != "child" || report.Parent != "parent" || report.Committed != (mode == "valid_api" || mode == "expired_api") || report.Outcome != "key_absent" || report.IssuerSHA256 != rpkiManifestDigest(f.certs[1].Raw) || report.CRLSHA256 != rpkiManifestDigest(pubs[0].Files["issuer.crl"]) || report.ManifestSHA256 != rpkiManifestDigest(pubs[0].ManifestDER) || report.CRLURI == "" {
 						t.Fatal("API report lost evidence binding")
+					}
+					if strings.HasPrefix(mode, "expired_") {
+						if report.Evidence != "expired_withdrawn" || report.ExpiredAt != f.certs[0].NotAfter.Format(time.RFC3339Nano) || report.CheckedAt != now.Format(time.RFC3339Nano) {
+							t.Fatal("expiry reported as revocation")
+						}
+					} else if report.Evidence != "revoked" || report.ExpiredAt != "" || report.CheckedAt != "" {
+						t.Fatal("revocation evidence changed")
 					}
 					o = rpkiRevocationRecoveryObservation{Sent: report.Sent, Received: report.Received, Proof: &rpkiRevocationProof{CertificateSHA256: report.CertificateSHA256, SKI: report.SKI}}
 				}
@@ -173,8 +184,8 @@ func TestRPKIRevocationReconciliation(t *testing.T) {
 			} else {
 				o, err = client.reconcilePendingRevocation(context.Background(), digest, expected, validation, transport)
 			}
-			committed := mode == "valid" || mode == "valid_api"
-			success := committed || mode == "observe_proof" || mode == "observe_api"
+			committed := mode == "valid" || mode == "valid_api" || mode == "expired_api"
+			success := committed || mode == "observe_proof" || mode == "observe_api" || mode == "expired_observe_api"
 			if (err == nil) != success {
 				t.Fatalf("mode=%s err=%v", mode, err)
 			}
@@ -207,6 +218,9 @@ func TestRPKIRevocationReconciliation(t *testing.T) {
 			if committed {
 				if state.Pending != nil || state.ReconciledRevocation == nil || state.ReconciledRevocation.Proof.CertificateSHA256 != hash || !state.LastSent.Equal(o.Sent) || !state.LastReceived.Equal(o.Received) {
 					t.Fatal("reconciliation not durably saved")
+				}
+				if mode == "expired_api" && (state.ReconciledRevocation.Proof.ExpiredAt != f.certs[0].NotAfter.Format(time.RFC3339Nano) || state.ReconciledRevocation.Proof.CheckedAt != now.Format(time.RFC3339Nano)) {
+					t.Fatal("durable receipt lost expiry evidence")
 				}
 				state.ReconciledRevocation.Proof.CertificateSHA256 = "changed"
 				copy, err := reopened.State()

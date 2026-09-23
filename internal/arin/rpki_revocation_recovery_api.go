@@ -14,6 +14,9 @@ type RPKIRevocationRecoveryReport struct {
 	Parent            string    `json:"parent_handle"`
 	Class             string    `json:"class_name"`
 	SKI               string    `json:"ski"`
+	Evidence          string    `json:"evidence,omitempty"`
+	ExpiredAt         string    `json:"expired_at,omitempty"`
+	CheckedAt         string    `json:"checked_at,omitempty"`
 	Outcome           string    `json:"outcome"`
 	Committed         bool      `json:"committed"`
 	Sent              time.Time `json:"sent"`
@@ -69,6 +72,12 @@ func recoverRPKIRevocation(ctx context.Context, config RPKIProvisioningReadConfi
 	p := observation.Plan
 	report := &RPKIRevocationRecoveryReport{RequestSHA256: p.RequestSHA256, RecoveryPeerID: observation.RecoveryPeerID, Child: p.Child, Parent: p.Parent, Class: p.Class, SKI: p.SKI, Outcome: observation.Outcome, Sent: observation.Sent, Received: observation.Received, Committed: expectedCertificate != ""}
 	if p := observation.Proof; p != nil {
+		report.Evidence = "revoked"
+		if p.ExpiredAt != "" {
+			report.Evidence = "expired_withdrawn"
+			report.ExpiredAt = p.ExpiredAt
+			report.CheckedAt = p.CheckedAt
+		}
 		report.CertificateSHA256, report.IssuerSHA256 = p.CertificateSHA256, p.IssuerSHA256
 		report.CRLSHA256, report.ManifestSHA256, report.CRLURI = p.CRLSHA256, p.ManifestSHA256, p.CRLURI
 	}

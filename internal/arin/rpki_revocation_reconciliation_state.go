@@ -14,7 +14,7 @@ type rpkiRevocationReconciliation struct {
 func validRevocationReconciliation(r rpkiRevocationReconciliation) bool {
 	p := r.Proof
 	ski, err := upDownSKI(p.SKI)
-	return err == nil && ski == p.SKI && upDownLabel(r.Class) && upDownToken(r.Class) == r.Class &&
+	return err == nil && validRPKIRetirementTimes(p) && ski == p.SKI && upDownLabel(r.Class) && upDownToken(r.Class) == r.Class &&
 		exchangeDigest.MatchString(p.CertificateSHA256) && exchangeDigest.MatchString(p.IssuerSHA256) &&
 		exchangeDigest.MatchString(p.CRLSHA256) && exchangeDigest.MatchString(p.ManifestSHA256) && publicationURI(p.CRLURI) &&
 		r.Original.Operation == "updown-revoke" && exchangeDigest.MatchString(r.Original.RequestSHA256) &&
@@ -43,4 +43,13 @@ func (l *rpkiExchangeLease) reconcileRevocation(o rpkiRevocationRecoveryObservat
 		return errRPKIExchangeState
 	}
 	return nil
+}
+
+func validRPKIRetirementTimes(p rpkiRevocationProof) bool {
+	if p.ExpiredAt == "" {
+		return p.CheckedAt == ""
+	}
+	expiry, e := time.Parse(time.RFC3339Nano, p.ExpiredAt)
+	checked, c := time.Parse(time.RFC3339Nano, p.CheckedAt)
+	return e == nil && c == nil && expiry.Year() >= 1970 && checked.Year() <= 9999 && checked.After(expiry) && expiry.UTC().Format(time.RFC3339Nano) == p.ExpiredAt && checked.UTC().Format(time.RFC3339Nano) == p.CheckedAt
 }

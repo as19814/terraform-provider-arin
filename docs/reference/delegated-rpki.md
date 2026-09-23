@@ -1760,3 +1760,66 @@ Regression tests cover persisted polling, 304, rollback, new sessions, preferred
 deltas, fallback, retained generations, old open readers, valid/empty v1 migration,
 format/scope/file corruption, two-delta replacement/withdrawal/publication chains,
 and rejection of late digest failures without exposing partial results.
+
+### Explicit recovery after certificate expiry
+
+An uncertain revoke can outlive its prior certificate. [RFC 6487 section 5](https://www.rfc-editor.org/rfc/rfc6487.html#section-5)
+defines CRL contents in terms of non-expired revoked certificates, so absence of
+an expired serial is not proof that the parent executed the revoke. Default
+recovery remains CRL-based and rejects expired prior certificates.
+
+`rpki-journal -accept-expired-certificate`, used with `-revocation-validation`,
+explicitly enables a different result: the prior certificate has expired and its
+key is absent from current signed class inventory and the issuer's current
+manifest. The class must still exist and its signed issuer must exactly match
+the configured issuer. Current issuer/anchor paths, resource containment,
+manifest signatures/freshness, the manifest-selected CRL and durable rollback
+history must all validate. The retained certificate must have a valid signature,
+profile, issuer/key binding and ordered validity interval, with the current time
+strictly after its `notAfter`. No certificate with that key may remain published,
+even under another filename or serial. Expiry does not permit ordinary issuance
+or refresh to accept an expired certificate as a valid resource path.
+
+Observe without clearing the pending operation:
+
+```sh
+go run ./tools/rpki-journal \
+  -provisioning-config /private/provisioning.json \
+  -revocation-validation /private/revocation-validation.json \
+  -accept-expired-certificate \
+  -request-sha256 "$REQUEST_SHA256"
+```
+
+Review `evidence`, the certificate hash and timestamps. Add
+`-expect-certificate-sha256 "$CERTIFICATE_SHA256"` to explicitly commit the
+matching result. This performs another authenticated observation and validation;
+it never resends the uncertain revoke. Without that hash the original pending
+journal remains unchanged, although probe journals, repository cache and verified
+manifest history are persisted as usual.
+
+Reports use `evidence: "revoked"` for CRL-confirmed revocation and
+`evidence: "expired_withdrawn"` for the expiry path. The latter includes `expired_at`
+and `checked_at` in canonical UTC. The durable reconciliation receipt retains
+both timestamps with the exact certificate, issuer, manifest and CRL digests.
+The CRL digest in an expiry receipt identifies the current CRL used to validate
+the publication, not a claim that it lists the expired serial. Inventory
+`outcome` remains `key_absent` in both cases. This reconciles the verified retired
+state; it does not prove that the original revoke caused that state, establish
+server-side key revocation, or prevent future reissuance. Continue to use a fresh
+key for replacement certificates.
+
+The Go API enables this behavior through `RPKIRevocationValidation.AllowExpired`.
+It is false by default. The JSON trust file has no implicit opt-in; the CLI flag
+is required on each invocation and is rejected outside validated revocation
+recovery. Existing CRL receipts retain their original serialized representation.
+Older binaries cannot read new expiry receipts and must not be used to rewrite
+those journals.
+
+Signed inventory/TLS repository tests cover observation, explicit commit,
+reopened expiry receipts, unchanged pending state on failures, disabled opt-in,
+wrong selected hashes and missing classes. Proof tests reject exact expiry-boundary
+ambiguity, unexpired/unrevoked certificates, invalid validity intervals, stale
+manifests, wrong keys and published/renewed keys. Corrupt receipt timestamps and
+incompatible CLI modes fail closed. Class disappearance, issuer rollover and
+expired issuer paths still require additional evidence; signed native delegated
+interoperability remains unverified without enrollment.

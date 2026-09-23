@@ -91,13 +91,26 @@ func TestRPKIRevocationReconciliationState(t *testing.T) {
 	}
 }
 func TestRPKIRevocationReconciliationCorruption(t *testing.T) {
-	for _, mode := range []string{"certificate_digest", "issuer_digest", "crl_digest", "manifest_digest", "crl_uri", "class", "key", "operation", "original_digest", "sent", "received", "peer"} {
+	for _, mode := range []string{"certificate_digest", "issuer_digest", "crl_digest", "manifest_digest", "crl_uri", "class", "key", "operation", "original_digest", "sent", "received", "peer", "expiry_without_check", "check_without_expiry", "before_expiry", "bad_expiry", "expiry_offset"} {
 		t.Run(mode, func(t *testing.T) {
 			directory := privateExchangeDir(t)
 			now := cmsTrustNow()
 			receipt := &rpkiRevocationReconciliation{Original: rpkiPendingExchange{RequestSHA256: testExchangeDigest, Operation: "updown-revoke", SigningTime: now}, RecoveryPeerID: strings.Repeat("c", 64), Class: "class", Proof: rpkiRevocationProof{CertificateSHA256: strings.Repeat("a", 64), IssuerSHA256: strings.Repeat("b", 64), CRLSHA256: strings.Repeat("c", 64), ManifestSHA256: strings.Repeat("d", 64), CRLURI: "rsync://repo.example/module/issuer.crl", SKI: "AAAAAAAAAAAAAAAAAAAAAAAAAAA"}, Sent: now.Add(time.Second), Received: now.Add(time.Second)}
 			state := rpkiExchangeState{Version: 1, PeerID: testExchangePeer, LastSent: receipt.Sent, LastReceived: receipt.Received, ReconciledRevocation: receipt}
 			switch mode {
+			case "expiry_without_check":
+				receipt.Proof.ExpiredAt = now.Format(time.RFC3339Nano)
+			case "check_without_expiry":
+				receipt.Proof.CheckedAt = now.Format(time.RFC3339Nano)
+			case "before_expiry":
+				receipt.Proof.ExpiredAt = now.Format(time.RFC3339Nano)
+				receipt.Proof.CheckedAt = now.Add(-time.Second).Format(time.RFC3339Nano)
+			case "bad_expiry":
+				receipt.Proof.ExpiredAt = "bad"
+				receipt.Proof.CheckedAt = now.Format(time.RFC3339Nano)
+			case "expiry_offset":
+				receipt.Proof.ExpiredAt = now.Format("2006-01-02T15:04:05+00:00")
+				receipt.Proof.CheckedAt = now.Add(time.Second).Format(time.RFC3339Nano)
 			case "issuer_digest":
 				receipt.Proof.IssuerSHA256 = "invalid"
 			case "crl_digest":

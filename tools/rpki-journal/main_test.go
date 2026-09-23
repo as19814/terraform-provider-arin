@@ -230,7 +230,7 @@ func TestJournalIssuanceModes(t *testing.T) {
 }
 
 func TestJournalProvenRevocationModes(t *testing.T) {
-	for _, mode := range []string{"observe", "commit", "load_error", "read_error", "missing_provisioning", "missing_validation", "publication", "expect", "read", "issuance"} {
+	for _, mode := range []string{"observe", "commit", "load_error", "read_error", "missing_provisioning", "missing_validation", "publication", "expect", "read", "issuance", "expiry_observe", "expiry_commit", "expiry_without_validation"} {
 		t.Run(mode, func(t *testing.T) {
 			calls := []string{}
 			actions := journalActions{
@@ -248,8 +248,11 @@ func TestJournalProvenRevocationModes(t *testing.T) {
 				recoverRevocation: func(_ context.Context, c arin.RPKIProvisioningReadConfig, v arin.RPKIRevocationValidation, digest, expected string) (*arin.RPKIRevocationRecoveryReport, error) {
 					calls = append(calls, "revocation")
 					want := ""
-					if mode == "commit" {
+					if mode == "commit" || mode == "expiry_commit" {
 						want = "hash"
+					}
+					if v.AllowExpired != strings.HasPrefix(mode, "expiry_") {
+						t.Fatal("expiry opt-in changed")
 					}
 					if c.Child != "child" || v.PriorCertificatePEM != "prior" || digest != "digest" || expected != want {
 						t.Fatal("revocation recovery arguments changed")
@@ -262,7 +265,7 @@ func TestJournalProvenRevocationModes(t *testing.T) {
 			}
 			args := []string{"-provisioning-config", "/private/provisioning.json", "-revocation-validation", "/private/validation.json", "-request-sha256", "digest"}
 			switch mode {
-			case "commit":
+			case "commit", "expiry_commit":
 				args = append(args, "-expect-certificate-sha256", "hash")
 			case "missing_provisioning":
 				args = args[2:]
@@ -277,12 +280,18 @@ func TestJournalProvenRevocationModes(t *testing.T) {
 			case "read":
 				args = append(args, "-recover-read-sha256", "digest")
 			}
+			if strings.HasPrefix(mode, "expiry_") {
+				args = append(args, "-accept-expired-certificate")
+			}
+			if mode == "expiry_without_validation" {
+				args = []string{"-provisioning-config", "/private/config.json", "-request-sha256", "digest", "-accept-expired-certificate"}
+			}
 			var out, stderr bytes.Buffer
 			code := runJournal(args, &out, &stderr, actions)
 			switch mode {
-			case "observe", "commit":
+			case "observe", "commit", "expiry_observe", "expiry_commit":
 				want := `"committed": false`
-				if mode == "commit" {
+				if mode == "commit" || mode == "expiry_commit" {
 					want = `"committed": true`
 				}
 				if code != 0 || strings.Join(calls, ",") != "provisioning,validation,revocation" || !strings.Contains(out.String(), want) {

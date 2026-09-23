@@ -10,6 +10,8 @@ import (
 // RPKIRevocationValidation supplies the retained certificate and explicit
 // resource trust settings used to prove an uncertain revocation.
 type RPKIRevocationValidation struct {
+	// AllowExpired accepts proven expiry and withdrawal as a distinct outcome.
+	AllowExpired        bool
 	PriorCertificatePEM string
 	Path                RPKICertificateValidation
 }
@@ -47,5 +49,5 @@ func validateRevocationInventory(ctx context.Context, plan rpkiRevocationRecover
 	if err != nil {
 		return nil, err
 	}
-	return verifyAndRecordRPKIRevocationProof(v.HistoryDirectory, path.Certificates[0].Raw, plan.SKI, path.Certificates[1:], anchors[0], path.Publications[1:], path.Publications[0], now)
+	return verifyAndRecordRPKIRetirementProof(v.HistoryDirectory, path.Certificates[0].Raw, plan.SKI, path.Certificates[1:], anchors[0], path.Publications[1:], path.Publications[0], now, validation.AllowExpired)
 }

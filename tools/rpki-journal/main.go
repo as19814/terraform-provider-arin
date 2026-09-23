@@ -38,7 +38,8 @@ func runJournal(args []string, out, stderr io.Writer, actions journalActions) in
 	configFile := flags.String("publication-config", "", "Absolute path to private BPKI JSON configuration for publication recovery")
 	provisioningFile := flags.String("provisioning-config", "", "Absolute path to private BPKI JSON configuration for revocation or issuance recovery")
 	validationFile := flags.String("issuance-validation", "", "Private resource trust JSON file; selects issuance recovery with provisioning-config")
-	revocationFile := flags.String("revocation-validation", "", "Private trust JSON with prior certificate; selects proven revocation recovery")
+	revocationFile := flags.String("revocation-validation", "", "Private trust JSON with prior certificate; selects validated revocation recovery")
+	allowExpired := flags.Bool("accept-expired-certificate", false, "Allow proven certificate expiry plus key withdrawal as distinct revocation recovery evidence")
 	certificateHash := flags.String("expect-certificate-sha256", "", "Commit certificate recovery only for this validated DER certificate hash")
 	digest := flags.String("request-sha256", "", "Exact pending mutation digest")
 	expected := flags.String("expect", "", "Commit only matches_before or matches_after; omit to observe without clearing")
@@ -48,7 +49,7 @@ func runJournal(args []string, out, stderr io.Writer, actions journalActions) in
 		}
 		return 2
 	}
-	invalid := flags.NArg() != 0 || ((*validationFile != "" || *revocationFile != "") && *provisioningFile == "") || (*validationFile != "" && *revocationFile != "") || (*certificateHash != "" && *validationFile == "" && *revocationFile == "")
+	invalid := (*allowExpired && *revocationFile == "") || flags.NArg() != 0 || ((*validationFile != "" || *revocationFile != "") && *provisioningFile == "") || (*validationFile != "" && *revocationFile != "") || (*certificateHash != "" && *validationFile == "" && *revocationFile == "")
 	if *provisioningFile != "" {
 		invalid = invalid || *configFile != "" || *directory != "" || *peer != "" || *readDigest != "" || *digest == "" || *expected != ""
 	} else if *configFile != "" {
@@ -78,6 +79,7 @@ func runJournal(args []string, out, stderr io.Writer, actions journalActions) in
 		} else if err == nil && *revocationFile != "" {
 			var validation arin.RPKIRevocationValidation
 			validation, err = actions.loadRevocationValidation(*revocationFile)
+			validation.AllowExpired = *allowExpired
 			if err == nil {
 				var report *arin.RPKIRevocationRecoveryReport
 				report, err = actions.recoverRevocation(context.Background(), config, validation, *digest, *certificateHash)
