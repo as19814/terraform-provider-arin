@@ -20,18 +20,29 @@ import (
 	"time"
 )
 
-func upDownIssueFixture(t *testing.T) (rpkiIssueRequest, string) {
+func upDownIssueFixture(t *testing.T, certSIAMode ...string) (rpkiIssueRequest, string) {
 	t.Helper()
 	_, issuerKey, issuer := cmsTrustFixture(t)
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatal(err)
 	}
-	csr, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{Subject: pkix.Name{CommonName: "child resource CA"}}, key)
+	csr, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{Subject: pkix.Name{CommonName: "child resource CA"}, ExtraExtensions: []pkix.Extension{rpkiSIATestExtension(t)}}, key)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cert, err := x509.CreateCertificate(rand.Reader, &x509.Certificate{SerialNumber: big.NewInt(42), Subject: pkix.Name{CommonName: "child resource CA"}, NotBefore: cmsTrustNow().Add(-time.Hour), NotAfter: cmsTrustNow().Add(time.Hour), IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageCRLSign}, issuer, &key.PublicKey, issuerKey)
+	certificateExtensions := []pkix.Extension{rpkiSIATestExtension(t)}
+	if len(certSIAMode) > 0 {
+		switch certSIAMode[0] {
+		case "missing":
+			certificateExtensions = nil
+		case "changed":
+			certificateExtensions[0].Value = bytes.ReplaceAll(certificateExtensions[0].Value, []byte("repo.example"), []byte("evil.example"))
+		case "critical":
+			certificateExtensions[0].Critical = true
+		}
+	}
+	cert, err := x509.CreateCertificate(rand.Reader, &x509.Certificate{SerialNumber: big.NewInt(42), Subject: pkix.Name{CommonName: "child resource CA"}, NotBefore: cmsTrustNow().Add(-time.Hour), NotAfter: cmsTrustNow().Add(time.Hour), IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageCRLSign, ExtraExtensions: certificateExtensions}, issuer, &key.PublicKey, issuerKey)
 	if err != nil {
 		t.Fatal(err)
 	}

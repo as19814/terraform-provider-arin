@@ -58,6 +58,9 @@ func buildUpDownIssue(child, parent string, input rpkiIssueRequest) ([]byte, err
 	if err != nil || csr.CheckSignature() != nil {
 		return nil, errRPKIUpDown
 	}
+	if _, err := rpkiCASIA(csr.Extensions); err != nil {
+		return nil, err
+	}
 	for _, r := range []struct {
 		value  *string
 		family int
@@ -138,6 +141,14 @@ func validateUpDownIssue(query, reply []byte, child, parent string, now time.Tim
 	}
 	cert, err := x509.ParseCertificate(issued.DER)
 	if err != nil {
+		return nil, nil, errRPKIUpDown
+	}
+	requestedSIA, err := rpkiCASIA(csr.Extensions)
+	if err != nil {
+		return nil, nil, err
+	}
+	issuedSIA, err := rpkiCASIA(cert.Extensions)
+	if err != nil || !bytes.Equal(requestedSIA, issuedSIA) {
 		return nil, nil, errRPKIUpDown
 	}
 	issuer, err := x509.ParseCertificate(class.IssuerDER)

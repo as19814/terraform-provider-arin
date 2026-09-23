@@ -369,3 +369,21 @@ fake-server cases cover issuance, confirmed errors, wrong keys, scheduled outcom
 journal persistence and retry prevention. Unit cases additionally cover CSR
 signature failures, input limits, echoed resource attributes, certificate dates
 and invalid certificate signatures. No native certificate has been requested.
+
+## Requested publication locations
+
+Issuance now requires a non-critical CA Subject Information Access extension in
+the CSR. Its DER is bounded and parsed strictly; URI access descriptions must
+include an rsync repository directory and rsync manifest object. Additional URI
+access descriptions are preserved in their original order and are never fetched.
+The issued certificate must contain the exact requested SIA DER, also non-critical.
+Missing, changed or malformed publication locations leave an issuance exchange
+pending rather than accepting a certificate for another publication location.
+
+Tests cover absent/duplicate/critical SIA extensions, malformed DER, invalid URI
+forms, missing mandatory access methods, preflight rejection and freshly signed
+certificates with missing or changed SIA. Existing issuance fixtures now include
+SIA in both CSR and certificate. Complete CSR attribute/extension and algorithm
+profile checks, RPKI certificate/path/resource validation and native evidence
+remain outstanding. This increment checks publication locations, not the entire
+RFC 6487 profile.
