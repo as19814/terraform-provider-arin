@@ -970,8 +970,10 @@ refresh can then perform a new authenticated list exchange.
 Recovery rejects pending issuance, revocation, publication batches, unknown
 operations, mismatched digests and repeated recovery of an already cleared read.
 It takes the ordinary exclusive lease and cannot bypass a live or crashed lock.
-It does not create missing journals or reset trust history. Crashed locks and
-uncertain mutations still require separate reconciliation, which is unfinished.
+It does not create missing journals or reset trust history. Crashed locks require
+confirmed offline recovery before lease acquisition. Uncertain mutations require
+the separate authenticated issuance, revocation or publication reconciliation
+procedures documented below; removing a lock never resolves a pending request.
 Older provider builds reject journals containing the new recovery metadata;
 keep using a build that understands this field after recovery.
 
@@ -2014,3 +2016,42 @@ merging older/newer destinations, rollback rejection after reopening, conflictin
 evidence, missing/corrupt files, symlinks and occupied locks. Native anchor rotation
 has not been exercised. The command cannot remove crash locks or reconstruct lost
 history, and it makes no network requests.
+
+## Recovering a manifest-history crash lock
+
+Manifest-history locks are empty directories, not process-liveness records. Their
+age and existence do not establish that a writer has stopped. Stop Terraform,
+provider and recovery processes using this history directory on every host that
+can access it, and confirm termination from their process or job handles. Preserve
+a private copy of the complete directory before making changes.
+
+Identify the exact configured anchor and its DER SHA-256:
+
+```sh
+openssl x509 -in /private/arin/resource-anchor.pem -outform DER | openssl dgst -sha256
+```
+
+The corresponding lock is
+`/private/arin/manifests/rpki-manifests-ANCHOR_SHA256.json.lock`. After confirming
+all writers have stopped, confirm the matching `.json` history file is present.
+Stop if it is missing; a fresh history scope is not crash recovery. Then remove
+only that exact empty lock directory with `rmdir`.
+Do not recursively remove it, delete the JSON history, replace the anchor, or
+reset the directory to bypass a validation error. A nonempty or unexpected lock
+requires investigation. An interrupted anchor-history migration can leave locks
+for both explicitly selected anchors; account for both before resuming.
+
+Resume read-only certificate-path validation using the same anchor and persistent
+history directory. The normal reader validates file permissions, identity and
+canonical contents, then rejects rollback against retained watermarks. A missing
+or corrupt history file is a different recovery problem: lock removal cannot
+reconstruct it, and an older backup may omit accepted versions. Do not treat
+resetting history as successful recovery.
+
+`TestRPKIManifestCrashRecovery` starts a subprocess that exits after acquiring the
+real history lock and altering an in-memory copy, before commit. The parent waits
+for that exit, verifies subsequent reads are blocked and committed bytes remain
+unchanged, removes only the empty lock, and confirms that an older signed manifest
+is still rejected while the last accepted path succeeds. This covers local
+manifest-history lock recovery. It does not bypass exchange-journal pending
+requests or establish ARIN delegated interoperability.
