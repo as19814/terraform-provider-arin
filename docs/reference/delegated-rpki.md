@@ -830,3 +830,25 @@ conflicting serials, rollback, polling and retention of prior data. Persistent
 storage and concurrent-process coordination are still needed; callers must not
 discard attempt metadata on retrieval failure. Issuance resolver wiring and
 native repository verification also remain unfinished.
+
+
+## Persistent RRDP cache
+
+The private refresh client now stores repository objects, snapshot references,
+conditional-request metadata and polling attempts in a private local directory.
+Each notification URI has its own cache and exclusive process lock. Attempts
+are saved before dispatch, so failed requests and restarts retain the one-minute
+polling interval. Successful replacements and retained data on failure are saved
+with atomic rename and file/directory synchronization.
+
+Cache records use bounded, versioned JSON. Invalid records, mismatched repository
+identity, symbolic links and permissive file permissions fail before HTTP.
+Crashes leave the lock in place for explicit recovery; automated lock recovery
+is not implemented. The cache does not authenticate repository objects, which
+still require manifest and resource-path verification.
+
+TLS tests cover restart, conditional retrieval, failed refresh retention,
+first-attempt failure and concurrent refresh rejection. Corruption, schema,
+identity, permissions and stale-lock tests exercise fail-closed behavior.
+Issuance resolver wiring, recovery, Terraform integration and native delegated
+verification remain unfinished.
