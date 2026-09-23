@@ -111,8 +111,35 @@ attachments. Its typed model is intentionally not a full-record PUT payload.
 already closed ticket as a no-op, and verifies a fresh summary after writing.
 It cannot withdraw open requests or reopen tickets. Mock tests cover premature
 closure, mismatched response identities, ignored updates, lost responses and
-verification failures. Full-ticket PUT and message submission remain separate
-implementation work.
+verification failures. Full-ticket PUT remains separate implementation work. The append-only message
+client is implemented as described below; its Terraform receipt resource remains
+to be added.
+
+## Append-only message client
+
+`AddTicketMessage` validates the ticket identity and correspondence before any
+request, reads current ticket status, and rejects CLOSED tickets. It sends one
+POST to `/rest/ticket/TICKETNUMBER/message` with numbered text lines, a NONE or
+JUSTIFICATION category and optional base64 attachments. Generated IDs and dates
+are omitted. The encoded request is limited to 4 MiB, matching the existing
+client limit. No automatic POST retries or redirects are allowed.
+
+A returned `TicketMessageSubmission` records that submission was attempted even
+when the response is lost or rejected. A trustworthy message ID survives errors
+in later response fields. Callers must persist intent before invoking the client
+and reconcile uncertain results, never repeat POST just because an error occurred.
+The client confirms success through a fresh GET of the exact returned ID and
+checks subject, text, category and attachment filenames. Attachment references
+are exposed without following response URLs; content retrieval uses the existing
+attachment endpoint. Filename confirmation does not verify attachment bytes.
+
+Mock tests cover XML escaping, numbered lines, base64 attachments, payload limits,
+invalid identities, closed tickets, rejected requests, lost responses, redirects,
+partial response recovery, read failures and changed read-back content. No live
+message has been submitted for this implementation. Native correspondence needs
+explicit approval. Terraform creation/import/refresh/destroy and persisted
+uncertain-submission handling still need implementation; there is no server-side
+message update or delete operation in the documented methods.
 
 ## Preventing report replay
 
@@ -172,8 +199,9 @@ selected in ARIN Online. The API does not expose that retention setting.
 
 Native successful WhoWas generation requires account access. Report attachment
 access exists through ticket data sources and still needs its final integration
-audit. Message submission and full-ticket modification still need lifecycle decisions,
-implementation and sandbox evidence. Successful native closure from RESOLVED also
+audit. Message submission has client and mock coverage; its Terraform receipt lifecycle
+and native evidence remain. Full-ticket modification still needs implementation
+and sandbox evidence. Successful native closure from RESOLVED also
 remains to be verified. See the
 [coverage inventory](implementation-status.md).
 
