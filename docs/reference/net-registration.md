@@ -106,7 +106,7 @@ routing information.
 
 - Exercise a genuinely asynchronous OT&E ticket, including failure/rejection.
 - Audit any additional range edge cases beyond the verified minimal CIDR covers.
-- Verify remove-NET and message/attachment submission in OT&E; implementation and mock lifecycle coverage are complete, but correspondence has not been sent to ARIN.
+- Verify message/attachment submission in OT&E; the remove endpoint passes IPv4/IPv6 sandbox tests without correspondence, and message payloads have mock lifecycle coverage.
 
 
 ## Multi-block registration
@@ -185,5 +185,18 @@ recovery tests prove a second destroy cannot resubmit an uncertain removal, then
 reconcile confirmed absence. Existing pending-ticket completion rules also apply.
 The existing ordinary NET Terraform lifecycle was rerun in OT&E on 2026-09-23
 for IPv4 and IPv6, including import, replacement and verified cleanup; it passed.
-The new remove endpoint and live message/attachment submission remain unverified.
-No correspondence was sent to ARIN during this work.
+`TestOTENetRemoveLifecycle` subsequently passed `PUT /rest/net/HANDLE/remove`
+without messages for disposable IPv4 and IPv6 simple reassignments. Both returned
+completed NET records without tickets, and fresh GETs confirmed their absence.
+The disposable customers were also deleted and their absence verified.
+
+The removal test shares the customer/NET graph guard and writes an exclusive
+mode-0600 `ote-net-remove-<org-hash>-<family>.json` receipt in the user cache.
+Each mutation is recorded before dispatch. Unknown outcomes or returned tickets
+retain the receipt and block further writes, including cleanup. The remove probe
+rejects message and message-reference elements before dispatch. Cleanup removes
+the receipt only after all tracked NETs and customers are confirmed absent.
+`make testote` includes this no-correspondence lifecycle.
+
+Live message/attachment submission remains unverified. No correspondence was
+sent to ARIN during this work.

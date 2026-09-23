@@ -33,10 +33,11 @@ type customerNetReceipt struct {
 	Customers, Nets                    []string
 }
 type customerNetOTETransport struct {
-	mu        sync.Mutex
-	path      string
-	receipt   customerNetReceipt
-	transport http.RoundTripper
+	mu                sync.Mutex
+	path              string
+	receipt           customerNetReceipt
+	transport         http.RoundTripper
+	allowEmptyRemoval bool
 }
 
 func (g *customerNetOTETransport) save() error {
@@ -62,11 +63,13 @@ func (g *customerNetOTETransport) save() error {
 }
 
 type graphNetXML struct {
-	Handle   string                    `xml:"handle"`
-	Name     string                    `xml:"netName"`
-	Parent   string                    `xml:"parentNetHandle"`
-	Customer string                    `xml:"customerHandle"`
-	Blocks   []arin.RegisteredNetBlock `xml:"netBlocks>netBlock"`
+	Messages          *struct{}                 `xml:"messages"`
+	MessageReferences *struct{}                 `xml:"messageReferences"`
+	Handle            string                    `xml:"handle"`
+	Name              string                    `xml:"netName"`
+	Parent            string                    `xml:"parentNetHandle"`
+	Customer          string                    `xml:"customerHandle"`
+	Blocks            []arin.RegisteredNetBlock `xml:"netBlocks>netBlock"`
 }
 
 func (g *customerNetOTETransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -86,8 +89,14 @@ func (g *customerNetOTETransport) RoundTrip(req *http.Request) (*http.Response, 
 	createNet := req.Method == "PUT" && path == "/rest/net/"+g.receipt.Parent+"/reassign"
 	knownCustomer := slices.Contains(g.receipt.Customers, strings.TrimPrefix(path, "/rest/customer/")) && strings.HasPrefix(path, "/rest/customer/")
 	knownNet := slices.Contains(g.receipt.Nets, strings.TrimPrefix(path, "/rest/net/")) && strings.HasPrefix(path, "/rest/net/")
-	if !createCustomer && !createNet && !((req.Method == "PUT" || req.Method == "DELETE") && (knownCustomer || knownNet)) {
+	removeHandle := strings.TrimSuffix(strings.TrimPrefix(path, "/rest/net/"), "/remove")
+	removeNet := g.allowEmptyRemoval && req.Method == "PUT" && path == "/rest/net/"+removeHandle+"/remove" && slices.Contains(g.receipt.Nets, removeHandle)
+
+	if !createCustomer && !createNet && !removeNet && !((req.Method == "PUT" || req.Method == "DELETE") && (knownCustomer || knownNet)) {
 		return nil, errors.New("refusing mutation outside disposable customer/NET graph")
+	}
+	if removeNet && req.Body == nil {
+		return nil, errors.New("NET removal probe requires a NET payload")
 	}
 	if req.Body != nil {
 		body, err := io.ReadAll(io.LimitReader(req.Body, 4<<20))
@@ -104,11 +113,14 @@ func (g *customerNetOTETransport) RoundTrip(req *http.Request) (*http.Response, 
 				return nil, errors.New("unexpected disposable customer identity")
 			}
 		}
-		if createNet || (knownNet && req.Method == "PUT") {
+		if createNet || removeNet || (knownNet && req.Method == "PUT") {
 			var net graphNetXML
 			prefix := netip.MustParsePrefix(g.receipt.Prefix)
 			if xml.Unmarshal(body, &net) != nil || net.Name != g.receipt.Name || net.Parent != g.receipt.Parent || !slices.Contains(g.receipt.Customers, net.Customer) || len(net.Blocks) != 1 {
 				return nil, errors.New("unexpected disposable NET identity")
+			}
+			if removeNet && (net.Handle != removeHandle || net.Messages != nil || net.MessageReferences != nil) {
+				return nil, errors.New("NET removal probe forbids messages and requires the saved NET identity")
 			}
 			start, e1 := netip.ParseAddr(net.Blocks[0].StartAddress)
 			end, e2 := netip.ParseAddr(net.Blocks[0].EndAddress)
@@ -159,6 +171,16 @@ func (g *customerNetOTETransport) RoundTrip(req *http.Request) (*http.Response, 
 		}
 		g.receipt.Nets = append(g.receipt.Nets, envelope.Net.Handle)
 	}
+	if removeNet {
+		var envelope struct {
+			XMLName xml.Name
+			Net     graphNetXML `xml:"net"`
+			Ticket  *struct{}   `xml:"ticket"`
+		}
+		if xml.Unmarshal(body, &envelope) != nil || envelope.XMLName.Local != "ticketedRequest" || envelope.XMLName.Space != "http://www.arin.net/regrws/core/v1" || envelope.Ticket != nil || envelope.Net.Handle != removeHandle || envelope.Net.Name != g.receipt.Name {
+			return nil, errors.New("NET removal outcome retained for manual reconciliation")
+		}
+	}
 	var ticketed struct {
 		Ticket *struct{} `xml:"ticket"`
 	}
@@ -183,7 +205,9 @@ func (p *customerNetOTEProvider) Configure(_ context.Context, _ frameworkprovide
 	resp.DataSourceData = p.client
 }
 
-func TestOTECustomerNetGraphLifecycle(t *testing.T) {
+func TestOTECustomerNetGraphLifecycle(t *testing.T) { testOTECustomerNetGraph(t, false) }
+func TestOTENetRemoveLifecycle(t *testing.T)        { testOTECustomerNetGraph(t, true) }
+func testOTECustomerNetGraph(t *testing.T, removeOnly bool) {
 	if os.Getenv("ARIN_OTE_WRITE_TESTS") != "1" || os.Getenv("TF_ACC") != "1" {
 		t.Skip("requires explicit OT&E write opt-in")
 	}
@@ -202,7 +226,11 @@ func TestOTECustomerNetGraphLifecycle(t *testing.T) {
 				t.Fatal(err)
 			}
 			hash := sha256.Sum256([]byte(org))
-			path := filepath.Join(cache, "terraform-provider-arin", fmt.Sprintf("ote-customer-net-%x-%s.json", hash[:8], family))
+			receiptPrefix := "ote-customer-net"
+			if removeOnly {
+				receiptPrefix = "ote-net-remove"
+			}
+			path := filepath.Join(cache, "terraform-provider-arin", fmt.Sprintf("%s-%x-%s.json", receiptPrefix, hash[:8], family))
 			if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 				t.Fatal(err)
 			}
@@ -216,7 +244,7 @@ func TestOTECustomerNetGraphLifecycle(t *testing.T) {
 			if _, err := rand.Read(random[:]); err != nil {
 				t.Fatal(err)
 			}
-			g := &customerNetOTETransport{path: path, receipt: customerNetReceipt{Org: org, Parent: parent, Prefix: prefix, Name: fmt.Sprintf("TERRAFORM-GRAPH-%X", random[:])}, transport: http.DefaultTransport}
+			g := &customerNetOTETransport{path: path, receipt: customerNetReceipt{Org: org, Parent: parent, Prefix: prefix, Name: fmt.Sprintf("TERRAFORM-GRAPH-%X", random[:])}, transport: http.DefaultTransport, allowEmptyRemoval: removeOnly}
 			f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 			if err != nil {
 				t.Fatal(err)
@@ -276,6 +304,36 @@ func TestOTECustomerNetGraphLifecycle(t *testing.T) {
 					t.Error(err)
 				}
 			})
+			if removeOnly {
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+				defer cancel()
+				customer, err := client.CreateCustomer(ctx, parent, arin.Customer{Name: g.receipt.Name, CountryCode: "US", Subdivision: "VA", PostalCode: "20151", City: "Chantilly", StreetAddress: []string{"123 Test Street"}, Private: true})
+				if err != nil {
+					t.Fatal(err)
+				}
+				created, err := client.CreateNetAssignment(ctx, arin.NetAssignment{ParentNetHandle: parent, Name: g.receipt.Name, CustomerHandle: customer.Handle, Prefixes: []string{prefix}})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if created.Net == nil || created.TicketNumber != "" {
+					t.Fatal("NET creation requires reconciliation")
+				}
+				handle := created.Net.Handle
+				t.Logf("disposable %s remove probe: customer %s, NET %s", family, customer.Handle, handle)
+				result, err := client.RemoveNetAssignment(ctx, handle, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if result.Net == nil || result.Net.Handle != handle || result.TicketNumber != "" {
+					t.Fatal("NET removal did not return a completed registration")
+				}
+				if _, err := client.GetRegisteredNet(ctx, handle); !arin.IsNotFound(err) {
+					t.Fatalf("NET removal unconfirmed: %v", err)
+				}
+				// The registered cleanup verifies absence again, deletes the
+				// disposable customer, and only then removes the durable receipt.
+				return
+			}
 			p := &customerNetOTEProvider{ARINProvider: &ARINProvider{version: "ote-test"}, client: client}
 			config := func(generation int, updated bool) string {
 				return customerNetGraphConfig(parent, prefix, g.receipt.Name, generation, updated)
@@ -391,6 +449,74 @@ func TestCustomerNetGraphReceiptGuard(t *testing.T) {
 				}
 			} else if err != nil || stored.Pending != "" || len(stored.Customers) != 1 || stored.Customers[0] != "C123" {
 				t.Fatalf("lost completed creation receipt: %v", err)
+			}
+		})
+	}
+}
+
+func TestNetRemoveReceiptGuard(t *testing.T) {
+	const handle = "NET-192-0-2-0-2"
+	const netBody = `<net xmlns="http://www.arin.net/regrws/core/v1"><handle>NET-192-0-2-0-2</handle><netName>TEST-REMOVE</netName><parentNetHandle>NET-192-0-2-0-1</parentNetHandle><customerHandle>C123</customerHandle><netBlocks><netBlock><type>S</type><startAddress>192.0.2.0</startAddress><endAddress>192.0.2.0</endAddress><cidrLength>32</cidrLength></netBlock></netBlocks></net>`
+	for _, mode := range []string{"complete", "messages", "references", "wrong-handle", "not-enabled", "pending", "lost", "ticket", "malformed", "foreign-root", "missing-body"} {
+		t.Run(mode, func(t *testing.T) {
+			calls := 0
+			g := &customerNetOTETransport{path: filepath.Join(t.TempDir(), "receipt.json"), allowEmptyRemoval: mode != "not-enabled", receipt: customerNetReceipt{Name: "TEST-REMOVE", Parent: "NET-192-0-2-0-1", Prefix: "192.0.2.0/32", Customers: []string{"C123"}, Nets: []string{handle}}}
+			if mode == "pending" {
+				g.receipt.Pending = "previous mutation"
+			}
+			g.transport = graphRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+				calls++
+				raw, err := os.ReadFile(g.path)
+				var saved customerNetReceipt
+				if err != nil || json.Unmarshal(raw, &saved) != nil || saved.Pending != "PUT /rest/net/"+handle+"/remove" {
+					t.Fatal("removal was not journaled before dispatch")
+				}
+				if mode == "lost" {
+					return nil, errors.New("lost response")
+				}
+				body := `<ticketedRequest xmlns="http://www.arin.net/regrws/core/v1">` + netBody + `</ticketedRequest>`
+				if mode == "ticket" {
+					body = `<ticketedRequest><ticket/></ticketedRequest>`
+				}
+				if mode == "malformed" {
+					body = `<ticketedRequest>`
+				}
+				if mode == "foreign-root" {
+					body = strings.Replace(body, `xmlns="http://www.arin.net/regrws/core/v1"`, `xmlns="urn:other"`, 1)
+				}
+				return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}, nil
+			})
+			body := netBody
+			if mode == "messages" {
+				body = strings.Replace(body, "</net>", "<messages><message/></messages></net>", 1)
+			}
+			if mode == "references" {
+				body = strings.Replace(body, "</net>", "<messageReferences/></net>", 1)
+			}
+			if mode == "wrong-handle" {
+				body = strings.Replace(body, handle, "NET-192-0-2-0-3", 1)
+			}
+			req, _ := http.NewRequest("PUT", "https://reg.ote.arin.net/rest/net/"+handle+"/remove", strings.NewReader(body))
+			if mode == "missing-body" {
+				req.Body = nil
+			}
+			response, err := g.RoundTrip(req)
+			if response != nil {
+				response.Body.Close()
+			}
+			if mode == "complete" {
+				if err != nil || calls != 1 || g.receipt.Pending != "" {
+					t.Fatalf("completed removal not recorded: %v", err)
+				}
+			} else if mode == "lost" || mode == "ticket" || mode == "malformed" || mode == "foreign-root" {
+				if err == nil || calls != 1 || g.receipt.Pending == "" {
+					t.Fatal("uncertain removal receipt lost")
+				}
+				if _, err := g.RoundTrip(req); err == nil || calls != 1 {
+					t.Fatal("uncertain removal replayed")
+				}
+			} else if err == nil || calls != 0 {
+				t.Fatal("unsafe removal passed the guard")
 			}
 		})
 	}
