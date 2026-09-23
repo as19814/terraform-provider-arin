@@ -103,7 +103,7 @@ func (p *ARINProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	resp.ResourceData = client
 }
 func (p *ARINProvider) Resources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{NewASSetResource}
+	return []func() resource.Resource{NewASSetResource, NewIRRRouteResource}
 }
 func (p *ARINProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	sources := []func() datasource.DataSource{NewNetworksDataSource}

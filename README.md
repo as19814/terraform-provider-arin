@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). The first managed resource, [`arin_irr_as_set`](docs/resources/irr_as_set.md), supports simple IRR AS set creation, updates, deletion, and import. The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Managed resources [`arin_irr_as_set`](docs/resources/irr_as_set.md) and [`arin_irr_route`](docs/resources/irr_route.md) support simple IRR AS sets and IPv4/IPv6 routes, with creation, updates, deletion, and import. The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -127,6 +127,33 @@ check whether the object exists and import it if necessary before retrying.
 Updates and deletes retain state on errors. Only a 404 means the object is absent;
 authentication and server errors never cause state removal.
 
+## Managed IRR routes
+
+`arin_irr_route` manages simple IPv4 and IPv6 IRR route objects. Configure a
+canonical `prefix`, `origin_as` (such as `AS64496`), `org_handle`, and ordered
+`description` lines. Optional `remarks` default to empty. POC links, network
+handle, and timestamps are computed by ARIN. Prefix, origin ASN, and organization
+changes require replacement. Removing the resource deletes the IRR object.
+
+The import ID is the canonical prefix followed by a comma and origin ASN:
+
+```sh
+terraform import arin_irr_route.example '192.0.2.0/24,AS64496'
+terraform import arin_irr_route.example_v6 '2001:db8::/48,AS64496'
+```
+
+Import existing objects before managing them. ROA-linked routes are rejected,
+including a fresh check before update or delete, because their lifecycle belongs
+to RPKI. Advanced RPSL objects and routes with `memberOf` associations are not
+supported. Unsupported XML fields fail reads rather than permitting a partial
+replacement payload. HTTP 404 removes missing objects from state; other errors
+preserve state. Mutations are not automatically retried.
+
+Both address families pass mock and OT&E lifecycle tests: create, update, clearing
+remarks, import, clean plan, deletion, and confirmation of absence. Mock tests also
+exercise drift repair, external deletion, origin replacement, and error handling.
+Production writes have not been performed.
+
 ## Next steps
 
 Extend managed-resource support to additional IRR objects, network metadata, and delegations, with explicit lifecycle semantics and OT&E validation. Network discovery and authenticated detail reads are implemented; network metadata management can build on those models. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
@@ -135,7 +162,7 @@ Start with the [API index](docs/reference/arin-api/README.md), [provider notes](
 
 ## OT&E write validation
 
-The AS-set lifecycle has a separate opt-in test command:
+The AS-set and route lifecycles have a separate opt-in test command:
 
 ```sh
 ARIN_TEST_ORG_HANDLE=FT-684 make testote
@@ -149,7 +176,12 @@ clears remarks, imports into separate state, verifies a clean plan, deletes the
 set, and confirms it is absent. Cleanup also checks for an object left behind by
 a failed apply. The generated name is printed for recovery if cleanup fails.
 The test uses documentation ASNs AS64496 and AS64497 as disposable members.
-It never mutates an existing account object. Normal tests and CI skip this test.
+The route test selects a random IPv4 /32 and IPv6 /128 within OT&E registrations
+held by the organization, confirms parent registration ownership, and confirms
+each prefix/origin pair is absent. It uses the documentation ASN AS64496. It then
+creates, updates, imports, verifies a clean plan, deletes, and checks absence for
+both families. Prefixes are printed for recovery if cleanup fails.
+These tests never mutate an existing account object. Normal tests and CI skip them.
 
 OT&E account data and API keys are refreshed from production monthly. If the
 preflight rejects a recently created production key, generate a key in

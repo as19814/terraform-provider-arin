@@ -26,7 +26,7 @@ check: vet test testacc build
 testlive:
 	ARIN_LIVE_TESTS=1 TF_ACC=1 go test ./internal/provider -run '^TestLive' -v -count=1 -timeout 5m
 
-# Explicitly opt-in writes, pinned to OT&E and disposable AS sets only.
+# Explicitly opt-in writes, pinned to OT&E and disposable objects only.
 .PHONY: testote
 testote:
-	ARIN_OTE_WRITE_TESTS=1 TF_ACC=1 go test ./internal/provider -run '^TestOTEASSetLifecycle$$' -v -count=1 -timeout 10m
+	ARIN_OTE_WRITE_TESTS=1 TF_ACC=1 go test ./internal/provider -run '^TestOTE(ASSet|IRRRoute)Lifecycle$$' -v -count=1 -timeout 10m

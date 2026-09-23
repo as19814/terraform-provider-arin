@@ -68,3 +68,23 @@ import into separate state, a clean plan, deletion, and absence verification.
 All disposable test sets were cleaned up. Production write behavior is untested.
 API diagnostics include redacted component messages and additional information
 to explain field-level validation failures.
+
+## Managed simple IRR routes
+
+`arin_irr_route` uses a dedicated XML write model for both address families.
+The stable ID is `canonical-prefix,AS<number>`, also used for import. Prefix,
+origin, and organization are replacement attributes. Description and remarks are
+writable; POC links, NET handle, and dates are computed. Empty remarks are omitted,
+matching the behavior verified during AS-set validation.
+
+GET, POST, PUT, and DELETE use `/rest/irr/route/IP/LENGTH/AS<number>`. Creation
+requires confirmed absence. Updates and deletes first reread the record and
+reject a ROA link. Managed reads also reject ROA links and `memberOf` associations,
+which this resource cannot round-trip. Unknown XML fields are rejected. No
+credentials or mutation payloads are logged, and there are no automatic retries.
+
+OT&E verified both IPv4 /32 and IPv6 /128 route lifecycles, using randomly chosen
+addresses inside the test organization's registrations. The parent registration
+lookup checks ownership; `mostSpecificNet` is unsuitable for this preflight
+because it requires an existing registration with the exact start/end range.
+Production writes remain untested. Tests leave no disposable routes behind.
