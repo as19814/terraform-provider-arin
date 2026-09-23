@@ -37,8 +37,9 @@ OT&E tests passed for both a disposable IPv4 /32 and IPv6 /128 using AS64496:
 No production writes are used. The test does not claim that expanded set membership
 has propagated to external IRR mirrors. Advanced RPSL has separate native coverage. The linked-route client now supports
 scoped metadata changes and independent deletion with IPv4/IPv6 OT&E evidence;
-the metadata resource and owning-ROA graph pass Terraform mocks. Native metadata
-graph verification and independent full-route ownership remain open. See [linked-route requirements](irr-route-metadata.md).
+the metadata resource and owning-ROA graph pass Terraform mocks and IPv4/IPv6
+OT&E with membership, replacement and restoration. Independent full-route
+ownership remains open. See [linked-route requirements](irr-route-metadata.md).
 
 References: [ARIN IRR API guide](https://www.arin.net/resources/manage/irr/irr-restful/),
 [RoutePayload schema](arin-api/schemas/extracted/RoutePayload.rnc),

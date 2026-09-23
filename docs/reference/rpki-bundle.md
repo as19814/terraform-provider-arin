@@ -110,4 +110,5 @@ write blocks create/update/destroy replay. A read error does not establish absen
 The lifecycle checks above now have Terraform mock and native evidence. Recovery
 faults are injected through the fake server; native tests do not intentionally
 interrupt live transactions. Coordinated ownership with separately managed IRR
-routes remains a distinct open requirement in the broader implementation audit.
+routes now has a metadata resource with native owning-ROA graph evidence.
+Independent full-route ownership for linked-route deletion remains open.

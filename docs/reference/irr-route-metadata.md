@@ -3,8 +3,8 @@
 Status: scoped client update/delete methods are implemented and pass IPv4/IPv6
 OT&E tests. `arin_irr_route_metadata` is implemented with fake-server Terraform
 lifecycle, import, drift repair, remark clearing and an owning-ROA dependency
-graph. Native Terraform metadata and linked route-set membership coverage remain
-required.
+graph. Native Terraform graph and linked route-set membership tests now pass
+for both IPv4 and IPv6 with complete baseline restoration.
 
 ## Native evidence
 
@@ -41,8 +41,8 @@ would exclude concurrent changes by other processes.
 Mock tests cover IPv4/IPv6, description/remarks and route-set membership, clearing,
 wrong organization/link, unlinked routes, reserved annotations, failed reads,
 malformed responses, changed response links, unconfirmed metadata and deletion,
-and uncertain responses without automatic replay. Native route-set membership
-changes on a linked object remain to be tested.
+and uncertain responses without automatic replay. Native linked route-set
+membership changes also pass in the Terraform graph below.
 
 ## Terraform contract and remaining verification
 
@@ -84,5 +84,28 @@ The current Terraform tests cover IPv4/IPv6 in linked and unlinked modes,
 organization/link guards, uncertain PUT outcomes with retained identity, failed
 refreshes and a real Terraform graph replacing the owning ROA. Changing only
 the expected handle to a matching new link issues no metadata PUT when fields
-already match. Removing metadata ownership sends no DELETE. Native graph tests,
-including membership authorization through a managed route set, remain open.
+already match. Removing metadata ownership sends no DELETE.
+
+## Native Terraform graph
+
+`TestOTEIRRRouteMetadataLifecycle` passed in 18.08 seconds. It creates a ROA
+covering one disposable IPv4 /32 and IPv6 /128, two route sets authorizing the
+organization maintainer, and metadata resources referencing the generated ROA
+handle and route-set names. The test then:
+
+1. Confirms descriptions, user remarks, both memberships and the exact ROA link.
+2. Imports each metadata resource and checks a clean plan.
+3. Changes user remarks and reduces membership to one route set.
+4. Renames the owning ROA, verifies a new handle, and checks that both metadata
+   resources follow the new link while retaining their configured fields.
+5. Clears remarks and memberships and checks another clean plan.
+6. Removes only the metadata resources and proves that the linked routes remain
+   with their last configured metadata.
+7. Destroys the ROA and route sets and verifies all disposable objects are absent.
+
+The exclusive mode-0600 RPKI journal includes the baseline ROA/ASPA inventories,
+disposable route IDs and helper route-set names before any mutation. Cleanup
+compares both complete inventories and removes the journal only after restoration.
+The graph is included in the serial `make testote` suite. Full-route Terraform
+ownership for independent deletion of a linked route remains a separate task;
+these metadata resources deliberately do not own route existence.
