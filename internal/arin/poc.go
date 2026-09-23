@@ -12,9 +12,10 @@ import (
 )
 
 type POCPhone struct {
-	Type      string
-	Number    string
-	Extension string
+	Description string
+	Type        string
+	Number      string
+	Extension   string
 }
 type POC struct {
 	Handle, RegistrationDate                                                                  string
@@ -196,7 +197,7 @@ func decodePOC(body []byte, handle string) (*POC, error) {
 	}
 	for _, x := range v["phones"].([]any) {
 		ph := x.(map[string]any)
-		p.Phones = append(p.Phones, POCPhone{Type: netString(ph, "type"), Number: netString(ph, "number"), Extension: netString(ph, "extension")})
+		p.Phones = append(p.Phones, POCPhone{Description: netString(ph, "description"), Type: netString(ph, "type"), Number: netString(ph, "number"), Extension: netString(ph, "extension")})
 	}
 	if !handlePattern.MatchString(p.Handle) || p.RegistrationDate == "" || (handle != "" && handle != p.Handle) {
 		return nil, errors.New("ARIN returned incomplete or mismatched POC identity")

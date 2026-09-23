@@ -48,9 +48,9 @@ func pocSteps(last string) []resource.TestStep {
 	updated := pocConfig("ROLE", last, pocContactUpdated)
 	person := pocConfig("PERSON", last, pocContactBase)
 	return []resource.TestStep{
-		{Config: base, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_poc.test", "contact_type", "ROLE"), resource.TestCheckResourceAttr("arin_poc.test", "country_code3", "USA"), resource.TestCheckResourceAttr("arin_poc.test", "country_calling_code", "1"))},
+		{Config: base, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_poc.test", "contact_type", "ROLE"), resource.TestCheckResourceAttr("arin_poc.test", "country_code3", "USA"), resource.TestCheckResourceAttr("arin_poc.test", "country_calling_code", "1"), resource.TestCheckResourceAttrSet("arin_poc.test", "phones.0.description"))},
 		{ResourceName: "arin_poc.test", ImportState: true, ImportStateVerify: true},
-		{Config: updated, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_poc.test", "emails.#", "2"), resource.TestCheckResourceAttr("arin_poc.test", "phones.#", "2"))},
+		{Config: updated, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_poc.test", "emails.#", "2"), resource.TestCheckResourceAttr("arin_poc.test", "phones.#", "2"), resource.TestCheckTypeSetElemNestedAttrs("arin_poc.test", "phones.*", map[string]string{"type": "O", "number": "+1-202-555-0100", "extension": "123"}), resource.TestCheckTypeSetElemNestedAttrs("arin_poc.test", "phones.*", map[string]string{"type": "F", "number": "+1-202-555-0101", "extension": "42"}))},
 		{Config: base, Check: resource.TestCheckResourceAttr("arin_poc.test", "comments.#", "0")},
 		{Config: base, PlanOnly: true},
 		{Config: person, Check: resource.TestCheckResourceAttr("arin_poc.test", "contact_type", "PERSON")},
@@ -99,6 +99,7 @@ func TestAccPOCResourceLifecycle(t *testing.T) {
 				t.Error("invalid update identity")
 			}
 			body = []byte(strings.Replace(string(body), "</iso3166-1>", "<name>UNITED STATES</name><code3>USA</code3><e164>1</e164></iso3166-1>", 1))
+			body = []byte(strings.ReplaceAll(string(body), "</type>", "<description>Phone category</description></type>"))
 			objects[handle] = string(body)
 			fmt.Fprint(w, string(body))
 		case "DELETE":
@@ -113,6 +114,12 @@ func TestAccPOCResourceLifecycle(t *testing.T) {
 	t.Setenv("ARIN_BASE_URL", server.URL)
 	t.Setenv("ARIN_RDAP_BASE_URL", "")
 	steps := pocSteps("Terraform Test Contact")
+	// Exercise an unknown phone number during the initial plan, followed by a
+	// clean plan once its dependency is known. Omitted extension must stay empty.
+	steps[0].Config = strings.Replace(steps[0].Config, `number="+1-202-555-0100"`, `number=terraform_data.phone.output`, 1) + `
+resource "terraform_data" "phone" { input = "+1-202-555-0100" }
+`
+	steps = append(steps[:1], append([]resource.TestStep{{Config: steps[0].Config, PlanOnly: true}}, steps[1:]...)...)
 	steps = append(steps, resource.TestStep{PreConfig: func() {
 		mu.Lock()
 		defer mu.Unlock()

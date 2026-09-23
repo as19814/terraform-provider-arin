@@ -26,6 +26,7 @@ func TestPOCContactOperations(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
+			body = []byte(strings.ReplaceAll(string(body), "</type>", "<description>Phone category</description></type>"))
 			_, _ = w.Write(body)
 			return
 		case strings.HasPrefix(r.URL.Path, base+"/email/"):
@@ -85,8 +86,10 @@ func TestPOCContactOperations(t *testing.T) {
 		t.Fatal(err)
 	}
 	ph := POCPhone{Type: "F", Number: "+1-202-555-0101", Extension: "42"}
-	if _, err := c.AddPOCPhone(ctx, p.Handle, ph); err != nil {
+	if out, err := c.AddPOCPhone(ctx, p.Handle, ph); err != nil {
 		t.Fatal(err)
+	} else if len(out.Phones) != 2 || out.Phones[1].Description != "Phone category" {
+		t.Fatal("lost phone type description")
 	}
 	ph.Extension = ""
 	if _, err := c.AddPOCPhone(ctx, p.Handle, ph); err == nil {

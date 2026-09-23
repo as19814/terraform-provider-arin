@@ -24,11 +24,12 @@ var (
 
 type pocPhoneResource struct{ client *arin.Client }
 type pocPhoneResourceModel struct {
-	ID        types.String `tfsdk:"id"`
-	Handle    types.String `tfsdk:"poc_handle"`
-	Number    types.String `tfsdk:"number"`
-	Type      types.String `tfsdk:"type"`
-	Extension types.String `tfsdk:"extension"`
+	Description types.String `tfsdk:"description"`
+	ID          types.String `tfsdk:"id"`
+	Handle      types.String `tfsdk:"poc_handle"`
+	Number      types.String `tfsdk:"number"`
+	Type        types.String `tfsdk:"type"`
+	Extension   types.String `tfsdk:"extension"`
 }
 
 func NewPOCPhoneResource() resource.Resource { return &pocPhoneResource{} }
@@ -38,11 +39,12 @@ func (r *pocPhoneResource) Metadata(_ context.Context, req resource.MetadataRequ
 func (r *pocPhoneResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	replace := []planmodifier.String{stringplanmodifier.RequiresReplace()}
 	resp.Schema = schema.Schema{MarkdownDescription: "Manage one phone on an existing ARIN POC, preserving other contact details. Import an existing record before managing it. Destroy removes only this record. Do not overlap management of this phone with arin_poc or another resource. Contact values remain in Terraform state. ARIN may reject removal of required contact details. Extension changes require replacement; do not use create_before_destroy for the same type/number because ARIN treats duplicate additions as a no-op.", Attributes: map[string]schema.Attribute{
-		"id":         schema.StringAttribute{Computed: true, Sensitive: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}, MarkdownDescription: "POC-HANDLE/TYPE/NUMBER."},
-		"poc_handle": schema.StringAttribute{Required: true, PlanModifiers: replace, MarkdownDescription: "Existing POC handle. Changes require replacement."},
-		"number":     schema.StringAttribute{Required: true, Sensitive: true, PlanModifiers: replace, MarkdownDescription: "Phone number including its international dialing prefix, for example +1-202-555-0101. Changes require replacement."},
-		"type":       schema.StringAttribute{Required: true, PlanModifiers: replace, MarkdownDescription: "O (office), F (fax), or M (mobile). Changes require replacement."},
-		"extension":  schema.StringAttribute{Optional: true, Computed: true, Sensitive: true, Default: stringdefault.StaticString(""), PlanModifiers: replace, MarkdownDescription: "Phone extension. Omission means no extension. Changes require delete and re-add because ARIN's individual endpoint cannot update extensions."},
+		"description": schema.StringAttribute{Computed: true, MarkdownDescription: "Phone type description returned by ARIN."},
+		"id":          schema.StringAttribute{Computed: true, Sensitive: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}, MarkdownDescription: "POC-HANDLE/TYPE/NUMBER."},
+		"poc_handle":  schema.StringAttribute{Required: true, PlanModifiers: replace, MarkdownDescription: "Existing POC handle. Changes require replacement."},
+		"number":      schema.StringAttribute{Required: true, Sensitive: true, PlanModifiers: replace, MarkdownDescription: "Phone number including its international dialing prefix, for example +1-202-555-0101. Changes require replacement."},
+		"type":        schema.StringAttribute{Required: true, PlanModifiers: replace, MarkdownDescription: "O (office), F (fax), or M (mobile). Changes require replacement."},
+		"extension":   schema.StringAttribute{Optional: true, Computed: true, Sensitive: true, Default: stringdefault.StaticString(""), PlanModifiers: replace, MarkdownDescription: "Phone extension. Omission means no extension. Changes require delete and re-add because ARIN's individual endpoint cannot update extensions."},
 	}}
 }
 func (r *pocPhoneResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -77,6 +79,7 @@ func (m *pocPhoneResourceModel) exists(out *arin.POC) bool {
 	for _, p := range out.Phones {
 		if p.Type == m.Type.ValueString() && p.Number == m.Number.ValueString() {
 			m.Extension = types.StringValue(p.Extension)
+			m.Description = types.StringValue(p.Description)
 			return true
 		}
 	}
@@ -102,6 +105,7 @@ func (r *pocPhoneResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 	m.identity()
+	m.Description = types.StringNull()
 	out, err := r.client.AddPOCPhone(ctx, m.Handle.ValueString(), arin.POCPhone{Type: m.Type.ValueString(), Number: m.Number.ValueString(), Extension: m.Extension.ValueString()})
 	if err != nil {
 		resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)

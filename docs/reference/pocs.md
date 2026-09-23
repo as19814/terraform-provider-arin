@@ -104,14 +104,42 @@ Terraform lifecycle passes against a disposable POC. After resource destroy,
 the complete POC is compared with its baseline; cleanup deletes the POC and
 verifies absence.
 
-## Remaining work
+## Endpoint and payload audit
 
-Organization associations are covered by `arin_org_poc`; see [evidence](org-pocs.md).
-The final API audit remains, including reconciliation of the phone type
-description metadata (already exposed by the read data source) with managed
-resource state. Country code3 and E.164 calling code metadata now round-trip
-through resource state, with native Terraform lifecycle and import coverage. The
-full implementation inventory tracks the broader outstanding API families.
+Reconciled with ARIN's [current methods](https://www.arin.net/resources/registry/regrws/methods/#pocs)
+and [POC payload](https://www.arin.net/resources/registry/regrws/payloads/#poc-payload)
+on 2026-09-23. The managed POC family covers all eight documented operations:
 
-References: collected [methods](arin-api/reg-rws/methods.md#pocs) and
-[payload](arin-api/reg-rws/payloads.md#poc-payload) guides.
+| Operation | Provider surface | Sandbox evidence |
+| --- | --- | --- |
+| GET `/rest/poc/HANDLE` | `arin_poc` data source and resource refresh | Full and individual-contact lifecycles |
+| POST `/rest/poc;makeLink=true` | `arin_poc` creation | ROLE and PERSON creation |
+| PUT `/rest/poc/HANDLE` | `arin_poc` update | Mutable fields and collection replacement/clearing |
+| DELETE `/rest/poc/HANDLE` | `arin_poc` destroy | Deletion followed by missing-record verification |
+| PUT `/rest/poc/HANDLE/phone` | `arin_poc_phone` creation | Addition and extension replacement |
+| DELETE `/rest/poc/HANDLE/phone/NUMBER;type=TYPE` | `arin_poc_phone` destroy and client selectors | Exact, number-only and type-only deletion |
+| POST `/rest/poc/HANDLE/email/EMAIL` | `arin_poc_email` creation | Addition and replacement |
+| DELETE `/rest/poc/HANDLE/email/EMAIL` | `arin_poc_email` destroy | Removal and sibling preservation |
+
+The complete POC payload is represented: identity/date, contact type, company and
+personal names, address and country metadata, comments, emails, and phone
+number/type/extension/description. Server descriptions are computed in both
+`arin_poc.phones[].description` and `arin_poc_phone.description`, matching the
+existing data source field. Country code3 and calling code are also computed.
+Response metadata is excluded from outgoing XML and phone addition comparisons.
+
+Terraform tests cover phone descriptions through creation, import, extension
+changes, omitted-extension clearing, collection changes and clean plans. Native
+OT&E tests exercise both complete POCs and individual contact resources, restore
+the baseline collections and delete the disposable POCs. Nested phone extension
+defaults are applied after Terraform's unknown marking to preserve configured
+extensions and computed descriptions within unordered sets.
+
+The managed creation mode always links the account, as described above. Unlinked
+one-shot creation is not exposed as a Terraform resource because it prevents
+subsequent management. Organization associations are covered separately by
+`arin_org_poc`; see [evidence](org-pocs.md). This audit completes the managed POC
+family, not the broader implementation inventory.
+
+Collected references: [methods](arin-api/reg-rws/methods.md#pocs) and
+[payload](arin-api/reg-rws/payloads.md#poc-payload).

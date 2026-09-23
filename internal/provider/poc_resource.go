@@ -22,6 +22,7 @@ var (
 	_ resource.ResourceWithConfigure      = &pocResource{}
 	_ resource.ResourceWithValidateConfig = &pocResource{}
 	_ resource.ResourceWithImportState    = &pocResource{}
+	_ resource.ResourceWithModifyPlan     = &pocResource{}
 )
 
 type pocResource struct{ client *arin.Client }
@@ -46,12 +47,13 @@ type pocModel struct {
 	Phones             types.Set    `tfsdk:"phones"`
 }
 type pocPhoneModel struct {
-	Type      types.String `tfsdk:"type"`
-	Number    types.String `tfsdk:"number"`
-	Extension types.String `tfsdk:"extension"`
+	Description types.String `tfsdk:"description"`
+	Type        types.String `tfsdk:"type"`
+	Number      types.String `tfsdk:"number"`
+	Extension   types.String `tfsdk:"extension"`
 }
 
-var pocPhoneType = types.ObjectType{AttrTypes: map[string]attr.Type{"type": types.StringType, "number": types.StringType, "extension": types.StringType}}
+var pocPhoneType = types.ObjectType{AttrTypes: map[string]attr.Type{"type": types.StringType, "number": types.StringType, "extension": types.StringType, "description": types.StringType}}
 
 func NewPOCResource() resource.Resource { return &pocResource{} }
 func (r *pocResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -84,9 +86,10 @@ func (r *pocResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 		"registration_date":    schema.StringAttribute{Computed: true, MarkdownDescription: "Server-generated registration date, preserved on update."},
 		"emails":               schema.SetAttribute{Required: true, Sensitive: true, ElementType: types.StringType, MarkdownDescription: "Complete collection of email addresses. At least one is required."},
 		"phones": schema.SetNestedAttribute{Required: true, Sensitive: true, MarkdownDescription: "Complete phone collection. At least one office phone is required; each type/number pair must be unique.", NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
-			"type":      schema.StringAttribute{Required: true, MarkdownDescription: "O (office), F (fax), or M (mobile)."},
-			"number":    schema.StringAttribute{Required: true, MarkdownDescription: "Phone number, including international dialing prefix, for example +1-202-555-0100."},
-			"extension": optional("Phone extension. Omission clears it.", false),
+			"type":        schema.StringAttribute{Required: true, MarkdownDescription: "O (office), F (fax), or M (mobile)."},
+			"number":      schema.StringAttribute{Required: true, MarkdownDescription: "Phone number, including international dialing prefix, for example +1-202-555-0100."},
+			"extension":   schema.StringAttribute{Optional: true, Computed: true, Sensitive: true, MarkdownDescription: "Phone extension. Omission clears it."},
+			"description": schema.StringAttribute{Computed: true, MarkdownDescription: "Phone type description returned by ARIN."},
 		}}},
 	}}
 }
@@ -145,7 +148,7 @@ func pocState(ctx context.Context, p *arin.POC) (pocModel, diag.Diagnostics) {
 	d.Append(next...)
 	phones := []pocPhoneModel{}
 	for _, ph := range p.Phones {
-		phones = append(phones, pocPhoneModel{Type: types.StringValue(ph.Type), Number: types.StringValue(ph.Number), Extension: types.StringValue(ph.Extension)})
+		phones = append(phones, pocPhoneModel{Description: types.StringValue(ph.Description), Type: types.StringValue(ph.Type), Number: types.StringValue(ph.Number), Extension: types.StringValue(ph.Extension)})
 	}
 	m.Phones, next = types.SetValueFrom(ctx, pocPhoneType, phones)
 	d.Append(next...)
@@ -233,4 +236,45 @@ func (r *pocResource) ImportState(ctx context.Context, req resource.ImportStateR
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+}
+
+// ModifyPlan defaults omitted extensions after unknown marking. A nested static
+// default changes set element identity before computed descriptions are marked
+// unknown, which can erase configured extensions or leave descriptions null.
+func (r *pocResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+	var plan, config pocModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() || plan.Phones.IsNull() || plan.Phones.IsUnknown() || config.Phones.IsNull() || config.Phones.IsUnknown() {
+		return
+	}
+	var phones, configured []pocPhoneModel
+	resp.Diagnostics.Append(plan.Phones.ElementsAs(ctx, &phones, false)...)
+	resp.Diagnostics.Append(config.Phones.ElementsAs(ctx, &configured, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	changed := false
+	for i, phone := range phones {
+		if phone.Type.IsUnknown() || phone.Number.IsUnknown() {
+			continue
+		}
+		for _, input := range configured {
+			if input.Type.Equal(phone.Type) && input.Number.Equal(phone.Number) && input.Extension.IsNull() {
+				phones[i].Extension = types.StringValue("")
+				changed = true
+				break
+			}
+		}
+	}
+	if changed {
+		value, d := types.SetValueFrom(ctx, pocPhoneType, phones)
+		resp.Diagnostics.Append(d...)
+		if !resp.Diagnostics.HasError() {
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("phones"), value)...)
+		}
+	}
 }

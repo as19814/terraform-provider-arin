@@ -84,7 +84,7 @@ func (c *Client) AddPOCPhone(ctx context.Context, handle string, phone POCPhone)
 		return nil, err
 	}
 	for _, ph := range p.Phones {
-		if ph == phone {
+		if ph.Type == phone.Type && ph.Number == phone.Number && ph.Extension == phone.Extension {
 			return p, nil
 		}
 	}

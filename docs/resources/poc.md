@@ -73,6 +73,10 @@ Optional:
 
 - `extension` (String, Sensitive) Phone extension. Omission clears it.
 
+Read-Only:
+
+- `description` (String) Phone type description returned by ARIN.
+
 ## Import
 
 Import is supported using the following syntax:

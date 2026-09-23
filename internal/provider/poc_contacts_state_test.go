@@ -20,7 +20,7 @@ func contactStateFixture(t *testing.T, phone bool) (*contactFake, resource.Resou
 	var model any
 	if phone {
 		r = &pocPhoneResource{client: c}
-		model = &pocPhoneResourceModel{ID: types.StringValue("TEST-ARIN/F/+1-202-555-0101"), Handle: types.StringValue("TEST-ARIN"), Type: types.StringValue("F"), Number: types.StringValue("+1-202-555-0101"), Extension: types.StringValue("42")}
+		model = &pocPhoneResourceModel{Description: types.StringValue("Phone category"), ID: types.StringValue("TEST-ARIN/F/+1-202-555-0101"), Handle: types.StringValue("TEST-ARIN"), Type: types.StringValue("F"), Number: types.StringValue("+1-202-555-0101"), Extension: types.StringValue("42")}
 	} else {
 		r = &pocEmailResource{client: c}
 		model = &pocEmailModel{ID: types.StringValue("TEST-ARIN/extra@example.net"), Handle: types.StringValue("TEST-ARIN"), Email: types.StringValue("extra@example.net")}

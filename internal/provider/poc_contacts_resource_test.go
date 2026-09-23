@@ -20,7 +20,8 @@ import (
 
 type contactPhoneXML struct {
 	Type struct {
-		Code string `xml:"code"`
+		Code        string `xml:"code"`
+		Description string `xml:"description"`
 	} `xml:"type"`
 	Number    string `xml:"number"`
 	Extension string `xml:"extension,omitempty"`
@@ -77,6 +78,7 @@ func (f *contactFake) handler(w http.ResponseWriter, r *http.Request) {
 		for _, ph := range f.phones {
 			x := contactPhoneXML{Number: ph.Number, Extension: ph.Extension}
 			x.Type.Code = ph.Type
+			x.Type.Description = "Phone category"
 			p.Phones = append(p.Phones, x)
 		}
 		_ = xml.NewEncoder(w).Encode(p)
@@ -185,7 +187,7 @@ func contactSteps(handle string) []resource.TestStep {
 	changed := contactConfig(handle, "replacement@example.net", `extension = "43"`)
 	cleared := contactConfig(handle, "replacement@example.net", "")
 	return []resource.TestStep{
-		{Config: first, Check: resource.TestCheckResourceAttr("arin_poc_phone.test", "extension", "42")},
+		{Config: first, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_poc_phone.test", "extension", "42"), resource.TestCheckResourceAttrSet("arin_poc_phone.test", "description"), resource.TestCheckResourceAttrSet("arin_poc_phone.sibling", "description"))},
 		{ResourceName: "arin_poc_email.test", ImportState: true, ImportStateId: handle + "/extra+tag@example.net", ImportStateVerify: true},
 		{ResourceName: "arin_poc_phone.test", ImportState: true, ImportStateId: handle + "/F/+1-202-555-0101", ImportStateVerify: true},
 		{Config: changed, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_poc_phone.test", "extension", "43"), resource.TestCheckResourceAttr("arin_poc_email.test", "email", "replacement@example.net"))},

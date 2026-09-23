@@ -153,3 +153,22 @@ func TestPOCReadFailurePreventsWrite(t *testing.T) {
 		})
 	}
 }
+
+func TestPOCPhoneDescriptionIsReadOnly(t *testing.T) {
+	p := examplePOC()
+	p.Phones[0].Description = "server-only-metadata"
+	body, err := p.marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(body), "server-only-metadata") || strings.Contains(string(body), "<description>") {
+		t.Fatal("phone response metadata was sent as writable configuration")
+	}
+	body, err = xml.Marshal(phoneXML(p.Phones[0]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(body), "server-only-metadata") || strings.Contains(string(body), "<description>") {
+		t.Fatal("phone addition sent response metadata")
+	}
+}

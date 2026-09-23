@@ -38,6 +38,7 @@ resource "arin_poc_phone" "example" {
 
 ### Read-Only
 
+- `description` (String) Phone type description returned by ARIN.
 - `id` (String, Sensitive) POC-HANDLE/TYPE/NUMBER.
 
 ## Import
