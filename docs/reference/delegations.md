@@ -2,7 +2,8 @@
 
 The client supports full delegation updates, individual nameserver addition,
 update and deletion, bulk nameserver deletion, and DNSSEC DS records. IPv4 and
-IPv6 sandbox lifecycles pass. Terraform resource integration remains pending.
+IPv6 sandbox lifecycles pass. `arin_delegation` manages the complete nameserver
+and DS collections, with import, drift correction and explicit clearing.
 
 ## Object lifecycle
 
@@ -14,9 +15,9 @@ through the authenticated NET delegation-list endpoint rather than constructing
 a zone name from an arbitrary reassignment prefix.
 
 Delegation objects appear/disappear with their registrations. The API provides
-no independent create/delete operation for a delegation object. A Terraform
-resource must manage records on an existing zone and explicitly define whether
-destroy clears those records or only relinquishes management.
+no independent create/delete operation for a delegation object. `arin_delegation`
+manages records on an existing zone. Destroy clears all nameservers and DS
+records. Creating Terraform management of a nonempty zone requires import first.
 
 ## Payload behavior verified in OT&E
 
@@ -33,8 +34,9 @@ differences were verified against OT&E:
 - Full replacement uses explicit empty `nameservers` and `delegationKeys`
   containers to clear both collections. This was verified, not inferred from
   the individual DELETE endpoints.
-- Nameserver TTL omission resets the record to inherited TTL, including when
-  using the single-nameserver POST method.
+- Single-nameserver POST with omitted TTL resets that nameserver to inherited
+  TTL. Full-delegation PUT instead preserves the existing TTL, as confirmed by
+  the Terraform lifecycle tests. A new nameserver without TTL inherits it.
 - Omitting TTL on an existing DS record preserves its previous explicit TTL.
   Omitting TTL on a new DS record yields an inherited/null TTL. Terraform must
   account for this distinction rather than assume omission always clears TTL.
@@ -45,7 +47,8 @@ differences were verified against OT&E:
 
 ## Validation and recovery
 
-`TestOTEDelegationClientLifecycle` selects an existing delegation under an owned
+`TestOTEDelegationClientLifecycle` and `TestOTEDelegationLifecycle` share a
+snapshot/restoration helper that selects an existing delegation under an owned
 direct allocation in each address family. It verifies full nameserver replacement,
 explicit/inherited TTLs, DS addition/replacement/clearing, single nameserver
 addition/update/deletion, bulk deletion and a fully empty PUT.
@@ -72,9 +75,22 @@ writes and does not retry mutations automatically. Mock tests cover the live
 namespace/name requirements, explicit clearing, request paths, read failures and
 failed-write behavior.
 
+## Terraform lifecycle
+
+The resource uses complete sets for nameservers and DS records. Omitted
+`ds_records` defaults to an empty set and clears DNSSEC records. TTLs are optional
+and computed: omitted values preserve matching existing records, using hostname
+or DS tuple identity instead of set position. New records without TTL inherit it.
+To reset an explicit TTL to inheritance, remove the record in one apply and add
+it without TTL in a subsequent apply. The provider does not silently remove and
+re-add DNSSEC records within one update.
+
+Fake-server acceptance tests cover create, updates, import, stable plans, drift,
+clearing and destroy. Error tests distinguish missing delegations from access,
+rate-limit and server failures. Terraform OT&E tests exercise the lifecycle in
+both address families, then restore and verify the original zone records.
+
 ## Remaining work
 
-- Implement Terraform management with import, refresh, drift and destroy tests.
-- Represent DS TTL preservation and inheritance accurately in plans and state.
-- Define ownership between full-delegation and individual-record resources.
-- Add Terraform OT&E acceptance tests using the same restoration guarantees.
+- Individual-record resources, with explicit ownership boundaries. Full-zone
+  management must not overlap other writers of the same NS or DS records.

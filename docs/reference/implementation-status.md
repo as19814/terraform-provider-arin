@@ -21,7 +21,7 @@ again before declaring full coverage.
 | Customers | Individual data source and managed recipient resource; mock and OT&E lifecycle pass | Network reassignment integration |
 | Organizations | Individual data source | Creation, update, deletion and POC associations; ticket semantics |
 | POCs | Individual and organization references data sources | Creation, update, deletion; phone/email suboperations |
-| DNS delegations | Read data sources; client full update, per-NS operations, DNSSEC and TTLs pass IPv4/IPv6 OT&E with verified restoration | Terraform resources, import, drift and destroy semantics; see [evidence](delegations.md) |
+| DNS delegations | Read data sources, arin_delegation full-zone management; import, TTLs, clearing and destroy tested; client per-NS operations supported | Individual-record resources and ownership boundaries; see [evidence](delegations.md) |
 | Hosted ROAs | Individual and organization list data sources | Transactional create/delete/replacement, import, IRR auto-link support |
 | Hosted ASPAs | Individual and organization list data sources | Transactional create/delete/replacement and import |
 | Tickets | Detail, summary, list, summaries, message and attachment data sources | Message submission, status/update, asynchronous workflow reconciliation |

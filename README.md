@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Seven managed resources cover existing network metadata, downstream network registrations, customer records, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Eight managed resources cover reverse DNS delegations, existing network metadata, downstream network registrations, customer records, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -200,9 +200,11 @@ Pending and uncertain writes retain recovery state. See the
 [network lifecycle and recovery guide](docs/reference/net-registration.md)
 before retrying a failed apply.
 
+[`arin_delegation`](docs/resources/delegation.md) manages all nameservers and DNSSEC DS records on an existing reverse zone. Import zones with existing records first. Destroy clears both collections. Omitted TTLs preserve existing values; newly added records inherit TTL. Do not manage the same records through multiple resources.
+
 ## Next steps
 
-Extend managed-resource support to additional IRR objects, network metadata, and delegations, with explicit lifecycle semantics and OT&E validation. Network discovery and authenticated detail reads are implemented; network metadata management can build on those models. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
+Extend managed-resource support to additional IRR objects, organizations, contacts, and hosted RPKI, with explicit lifecycle semantics and OT&E validation. Network and reverse DNS management are implemented. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
 
 Start with the [API index](docs/reference/arin-api/README.md), [provider notes](docs/reference/arin-api/PROVIDER-NOTES.md), and [schema findings](docs/reference/arin-api/schemas/README.md).
 

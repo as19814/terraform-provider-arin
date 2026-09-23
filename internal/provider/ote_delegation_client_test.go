@@ -20,7 +20,7 @@ func TestOTEDelegationClientLifecycle(t *testing.T) {
 		t.Run(family, func(t *testing.T) { testOTEDelegationClientLifecycle(t, family) })
 	}
 }
-func testOTEDelegationClientLifecycle(t *testing.T, family string) {
+func oteDelegationSnapshot(t *testing.T, family string) (*arin.Client, string) {
 	if os.Getenv("ARIN_OTE_WRITE_TESTS") != "1" || os.Getenv("TF_ACC") != "1" {
 		t.Skip("requires explicit OT&E write opt-in")
 	}
@@ -140,6 +140,12 @@ func testOTEDelegationClientLifecycle(t *testing.T, family string) {
 		}
 	})
 	t.Logf("OT&E delegation: %s (original nameservers=%d DS=%d)", zone, len(original.Nameservers), len(original.DSRecords))
+	return client, zone
+}
+func testOTEDelegationClientLifecycle(t *testing.T, family string) {
+	client, zone := oteDelegationSnapshot(t, family)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
 	ttl := int64(3600)
 	desired := arin.Delegation{Name: zone, Nameservers: []arin.DelegationNameserver{{Name: "ns1.example.net", TTL: &ttl}, {Name: "ns2.example.net"}}}
 	changed, err := client.UpdateDelegation(ctx, desired)
