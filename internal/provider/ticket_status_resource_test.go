@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -21,6 +22,8 @@ type ticketStatusFake struct {
 	tickets                       map[string]arin.Ticket
 	puts, writeStatus, readStatus int
 	ignoreClose                   bool
+	allowPayload                  bool
+	payloadPuts                   int
 }
 
 func (f *ticketStatusFake) handler(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +41,18 @@ func (f *ticketStatusFake) handler(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == "PUT" {
 		f.puts++
-		if r.URL.Path != "/rest/ticket/"+number+"/ticketStatus/CLOSED" || r.URL.RawQuery != "msgRefs=true" {
+		payload := f.allowPayload && r.URL.Path == "/rest/ticket/"+number
+		if payload {
+			raw, _ := io.ReadAll(r.Body)
+			expected := ticket
+			expected.Status = "CLOSED"
+			if string(raw) != reportFakeXML(expected) {
+				w.WriteHeader(400)
+				return
+			}
+			f.payloadPuts++
+		}
+		if (!payload && r.URL.Path != "/rest/ticket/"+number+"/ticketStatus/CLOSED") || r.URL.RawQuery != "msgRefs=true" {
 			w.WriteHeader(400)
 			return
 		}
@@ -54,7 +68,7 @@ func (f *ticketStatusFake) handler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(f.writeStatus)
 			return
 		}
-	} else if r.Method != "GET" || r.URL.Path != "/rest/ticket/"+number+"/summary" {
+	} else if r.Method != "GET" || (r.URL.Path != "/rest/ticket/"+number+"/summary" && !(f.allowPayload && r.URL.Path == "/rest/ticket/"+number && r.URL.RawQuery == "msgRefs=true")) {
 		w.WriteHeader(405)
 		return
 	} else if f.readStatus != 0 {
@@ -131,6 +145,36 @@ func TestAccTicketStatusRejectsInvalidTransition(t *testing.T) {
 			if f.puts != 0 {
 				t.Fatal("unsupported transition reached API")
 			}
+		})
+	}
+}
+
+func TestAccTicketStatusPayloadLifecycle(t *testing.T) {
+	for _, lost := range []bool{false, true} {
+		t.Run(fmt.Sprint(lost), func(t *testing.T) {
+			f, _ := setupTicketStatusFake(t)
+			f.allowPayload = true
+			config := strings.Replace(ticketStatusConfig("20260923-X1", "CLOSED"), "status =", "update_method = \"payload\"\nstatus =", 1)
+			steps := []resource.TestStep{}
+			if lost {
+				f.writeStatus = 500
+				steps = append(steps, resource.TestStep{Config: config, ExpectError: regexp.MustCompile("Could not confirm ticket closure")})
+			}
+			steps = append(steps,
+				resource.TestStep{Config: config, PreConfig: func() { f.mu.Lock(); defer f.mu.Unlock(); f.writeStatus = 0 }},
+				resource.TestStep{ResourceName: "arin_ticket_status.test", ImportState: true, ImportStateId: "20260923-X1", ImportStateVerify: true, ImportStateVerifyIgnore: []string{"update_method"}},
+				resource.TestStep{Config: config, PlanOnly: true},
+				resource.TestStep{Config: ticketStatusConfig("20260923-X1", "CLOSED")},
+				resource.TestStep{Config: config},
+				resource.TestStep{Config: config, PlanOnly: true})
+			resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("test")())}, Steps: steps, CheckDestroy: func(_ *terraform.State) error {
+				f.mu.Lock()
+				defer f.mu.Unlock()
+				if f.puts != 1 || f.payloadPuts != 1 || f.tickets["20260923-X1"].Status != "CLOSED" {
+					return fmt.Errorf("payload closure repeated or wrong endpoint")
+				}
+				return nil
+			}})
 		})
 	}
 }

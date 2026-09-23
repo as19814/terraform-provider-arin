@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -22,6 +23,7 @@ var (
 
 type ticketStatusResource struct{ client *arin.Client }
 type ticketStatusModel struct {
+	Method     types.String `tfsdk:"update_method"`
 	ID         types.String `tfsdk:"id"`
 	Ticket     types.String `tfsdk:"ticket_number"`
 	Status     types.String `tfsdk:"status"`
@@ -39,6 +41,7 @@ func (r *ticketStatusResource) Schema(_ context.Context, _ resource.SchemaReques
 	resp.Schema = schema.Schema{MarkdownDescription: "Close an existing resolved ARIN ticket. The only configurable status is CLOSED; ARIN does not allow this operation to close unresolved tickets or reopen closed tickets. An already closed ticket requires no write. Destroy forgets local management without reopening or deleting the ticket. A previously observed ticket that becomes unavailable remains in state with its last known status.", Attributes: map[string]schema.Attribute{
 		"id":               schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}, MarkdownDescription: "Ticket number."},
 		"ticket_number":    schema.StringAttribute{Required: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}, MarkdownDescription: "Existing ARIN ticket number. Changing it manages another ticket; the previous ticket stays closed."},
+		"update_method":    schema.StringAttribute{Optional: true, Computed: true, Default: stringdefault.StaticString("status"), MarkdownDescription: "status uses the status-only endpoint (default); payload reads and preserves the full ticket before PUT. Both close only RESOLVED tickets. Import defaults to status."},
 		"status":           schema.StringAttribute{Required: true, MarkdownDescription: "Desired status. Only CLOSED is supported; the existing ticket must be RESOLVED or already CLOSED when applying."},
 		"ticket_type":      schema.StringAttribute{Computed: true, MarkdownDescription: "ARIN ticket category."},
 		"resolution":       schema.StringAttribute{Computed: true, MarkdownDescription: "Server-assigned ticket resolution."},
@@ -68,11 +71,17 @@ func (r *ticketStatusResource) ValidateConfig(ctx context.Context, req resource.
 			resp.Diagnostics.AddError("Invalid ticket number", err.Error())
 		}
 	}
+	if !m.Method.IsNull() && !m.Method.IsUnknown() && m.Method.ValueString() != "status" && m.Method.ValueString() != "payload" {
+		resp.Diagnostics.AddError("Invalid ticket update method", "Use status or payload.")
+	}
 	if !m.Status.IsUnknown() && m.Status.ValueString() != "CLOSED" {
 		resp.Diagnostics.AddError("Unsupported ticket status", "Only CLOSED can be configured. The existing ticket must first be RESOLVED.")
 	}
 }
 func (m *ticketStatusModel) set(ticket *arin.Ticket) {
+	if m.Method.IsNull() || m.Method.IsUnknown() {
+		m.Method = types.StringValue("status")
+	}
 	m.ID = types.StringValue(ticket.Number)
 	m.Ticket = types.StringValue(ticket.Number)
 	m.Status = types.StringValue(ticket.Status)
@@ -80,6 +89,15 @@ func (m *ticketStatusModel) set(ticket *arin.Ticket) {
 	m.Resolution = types.StringValue(ticket.Resolution)
 	m.Closed = types.StringValue(ticket.ClosedDate)
 	m.Available = types.BoolValue(true)
+}
+func (r *ticketStatusResource) close(ctx context.Context, m ticketStatusModel) (*arin.Ticket, error) {
+	if m.Method.ValueString() == "payload" {
+		return r.client.CloseTicketWithPayload(ctx, m.Ticket.ValueString())
+	}
+	if !m.Method.IsNull() && m.Method.ValueString() != "status" {
+		return nil, fmt.Errorf("invalid ticket update method")
+	}
+	return r.client.CloseTicket(ctx, m.Ticket.ValueString())
 }
 func (r *ticketStatusResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var m ticketStatusModel
@@ -100,7 +118,7 @@ func (r *ticketStatusResource) Create(ctx context.Context, req resource.CreateRe
 		resp.Diagnostics.AddError("Ticket is not resolved", "ARIN only permits closing a RESOLVED ticket. Wait for its resolution before applying.")
 		return
 	}
-	result, err := r.client.CloseTicket(ctx, m.Ticket.ValueString())
+	result, err := r.close(ctx, m)
 	if result != nil {
 		m.set(result)
 	} else {
@@ -142,7 +160,7 @@ func (r *ticketStatusResource) Update(ctx context.Context, req resource.UpdateRe
 		resp.Diagnostics.AddError("Unsupported ticket status", "Only CLOSED can be configured.")
 		return
 	}
-	ticket, err := r.client.CloseTicket(ctx, m.Ticket.ValueString())
+	ticket, err := r.close(ctx, m)
 	if err != nil {
 		resp.Diagnostics.AddError("Could not confirm ticket closure", err.Error()+". Refresh before retrying; closed tickets are not written again.")
 		return
@@ -157,6 +175,7 @@ func (r *ticketStatusResource) ImportState(ctx context.Context, req resource.Imp
 		resp.Diagnostics.AddError("Invalid ticket import ID", err.Error())
 		return
 	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("update_method"), "status")...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("ticket_number"), req.ID)...)
 }

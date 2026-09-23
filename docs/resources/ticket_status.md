@@ -17,6 +17,8 @@ Close an existing resolved ARIN ticket. The only configurable status is CLOSED; 
 resource "arin_ticket_status" "example" {
   ticket_number = "20260923-X1"
   status        = "CLOSED"
+  # Optional: use the full-ticket PUT endpoint instead of the default status endpoint.
+  # update_method = "payload"
 }
 
 # Destroy forgets local management; it does not reopen or delete the ticket.
@@ -29,6 +31,10 @@ resource "arin_ticket_status" "example" {
 
 - `status` (String) Desired status. Only CLOSED is supported; the existing ticket must be RESOLVED or already CLOSED when applying.
 - `ticket_number` (String) Existing ARIN ticket number. Changing it manages another ticket; the previous ticket stays closed.
+
+### Optional
+
+- `update_method` (String) status uses the status-only endpoint (default); payload reads and preserves the full ticket before PUT. Both close only RESOLVED tickets. Import defaults to status.
 
 ### Read-Only
 

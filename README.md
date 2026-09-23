@@ -237,7 +237,7 @@ metadata resource when Terraform also manages the owning ROA or bundle.
 
 [`arin_report_request`](docs/resources/report_request.md) submits an associations, reassignment or WhoWas report and retains its ticket receipt. Refresh and ticket expiry never resubmit it; destroy only forgets the receipt. WhoWas requires account access. See [report lifecycle and recovery](docs/reference/reports-tickets.md).
 
-[`arin_ticket_status`](docs/resources/ticket_status.md) closes an existing resolved ticket, imports by ticket number, and avoids rewriting already closed tickets. Destroy leaves the server ticket intact. Open tickets cannot be closed through this operation.
+[`arin_ticket_status`](docs/resources/ticket_status.md) closes an existing resolved ticket, imports by ticket number, and avoids rewriting already closed tickets. Destroy leaves the server ticket intact. Open tickets cannot be closed through this operation. The optional `update_method = "payload"` uses a fresh full-ticket payload and preserves all fields except status; the default uses the status-only endpoint.
 
 [`arin_ticket_message`](docs/resources/ticket_message.md) appends correspondence and attachments to an existing ticket. Changes submit a new message; refresh and destroy never alter server correspondence. Import uses `TICKET/MESSAGE`. Uncertain responses block retries until reconciliation and import. Terraform lifecycle and recovery pass mocks; native correspondence remains unverified.
 

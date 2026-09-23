@@ -65,6 +65,21 @@ any write. A resolved ticket is closed and verified through a fresh summary.
 An already closed ticket needs no PUT. The `resolution`, `ticket_type` and
 `closed_date` fields remain server-owned.
 
+The optional `update_method` selects `status` (the existing status-only endpoint)
+or `payload` (the full-ticket PUT endpoint). The latter fetches fresh ticket
+XML with `msgRefs=true`, changes only the direct status element's text, and
+preserves every other byte, including dates, namespaces, sharing metadata and
+message references. It refuses missing/duplicate/foreign status elements, nested
+status content and embedded messages. It does not construct a PUT from the
+summary-only model or append correspondence. Both methods verify closure through
+a fresh summary. Import defaults to `status`; selecting `payload` afterwards on
+an already closed ticket requires no write.
+
+Client mocks verify exact preservation, scoped paths, closed-ticket no-op,
+unresolved rejection, lost responses, mismatched identities and failed read-back.
+Terraform mocks cover full-payload closure, import, clean plans, method changes
+and an accepted closure whose response is lost, with exactly one PUT.
+
 Closure recovery retains the existing ticket identity after an uncertain write.
 Refresh can discover that the transition succeeded. If Terraform tainted the
 failed creation, replacement observes the already closed ticket and does not
@@ -81,7 +96,10 @@ retain identity with an error.
 
 The OT&E Terraform lifecycle uses the disposable report saved by the report
 resource test, verifies configuration/import/refresh/destroy, and confirms zero
-writes when it starts CLOSED. Its transport is pinned to OT&E and rejects report
+writes when it starts CLOSED. It also switches to `update_method="payload"`,
+verifying the full detail read and a clean plan without any PUT. This proves the
+native read/no-op path, not a successful full-ticket mutation. Its transport is
+pinned to OT&E and rejects report
 submission and unrelated mutations. A separate native probe against the client's
 disposable report confirms that sending PUT to an already closed ticket returns
 HTTP 400 `E_BAD_REQUEST` and leaves its metadata unchanged. The normal client
@@ -111,7 +129,7 @@ attachments. Its typed model is intentionally not a full-record PUT payload.
 already closed ticket as a no-op, and verifies a fresh summary after writing.
 It cannot withdraw open requests or reopen tickets. Mock tests cover premature
 closure, mismatched response identities, ignored updates, lost responses and
-verification failures. Full-ticket PUT remains separate implementation work. The append-only message
+verification failures. Full-ticket PUT is implemented by `CloseTicketWithPayload`. The append-only message
 client and Terraform receipt resource are implemented as described below.
 
 ## Append-only message client
@@ -231,8 +249,8 @@ selected in ARIN Online. The API does not expose that retention setting.
 Native successful WhoWas generation requires account access. Report attachment
 access exists through ticket data sources and still needs its final integration
 audit. Message submission and its Terraform receipt lifecycle pass mocks; native
-correspondence evidence remains. Full-ticket modification still needs implementation
-and sandbox evidence. Successful native closure from RESOLVED also
+correspondence evidence remains. Full-ticket modification is implemented and passes mocks; a successful native
+RESOLVED-to-CLOSED write remains unverified. Successful native closure from RESOLVED also
 remains to be verified. See the
 [coverage inventory](implementation-status.md).
 

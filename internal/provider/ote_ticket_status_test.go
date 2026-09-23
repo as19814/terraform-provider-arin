@@ -99,6 +99,8 @@ func TestOTETicketStatusLifecycle(t *testing.T) {
 		{Config: config, Check: resource.TestCheckResourceAttr("arin_ticket_status.test", "status", "CLOSED")},
 		{ResourceName: "arin_ticket_status.test", ImportState: true, ImportStateId: receipt.TicketNumber, ImportStateVerify: true},
 		{Config: config, PlanOnly: true},
+		{Config: strings.Replace(config, "status =", "update_method = \"payload\"\nstatus =", 1)},
+		{Config: strings.Replace(config, "status =", "update_method = \"payload\"\nstatus =", 1), PlanOnly: true},
 	}, CheckDestroy: func(_ *terraform.State) error {
 		after, err := client.GetTicket(ctx, receipt.TicketNumber)
 		if err != nil {
