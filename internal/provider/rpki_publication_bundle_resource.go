@@ -62,7 +62,7 @@ func (r *rpkiPublicationBundleResource) Schema(_ context.Context, _ resource.Sch
 	attrs["id"] = schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}, MarkdownDescription: "Stable identity assigned to this managed bundle."}
 	attrs["objects"] = schema.MapAttribute{Required: true, ElementType: types.StringType, MarkdownDescription: "Map of owned rsync object URLs to canonical base64 content. Supply already-signed objects and their matching manifest together. Up to 10,000 objects and 3 MiB total decoded data; the encoded mutation request must fit 4 MiB. Contents remain in Terraform state."}
 	attrs["hashes"] = schema.MapAttribute{Computed: true, ElementType: types.StringType, MarkdownDescription: "Last observed hashes for owned objects. Plans compute desired hashes so out-of-band changes and missing objects produce reconciliation updates."}
-	resp.Schema = schema.Schema{MarkdownDescription: "Manage a set of caller-supplied RPKI publication objects with atomic RFC 8181 batches. Create requires absent URLs; update and destroy use hashes from the last refresh as server preconditions. Other repository objects are preserved. Do not overlap ownership with another resource or publisher. Does not generate or validate signed RPKI objects. Uses existing BPKI enrollment, private key files and persistent journals; uncertain mutations block further exchanges and require reconciliation. Import and uncertain-mutation recovery are not yet implemented. Native ARIN delegated sandbox verification remains unavailable.", Attributes: attrs}
+	resp.Schema = schema.Schema{MarkdownDescription: "Manage a set of caller-supplied RPKI publication objects with atomic RFC 8181 batches. Create requires absent URLs; update and destroy use hashes from the last refresh as server preconditions. Other repository objects are preserved. Do not overlap ownership with another resource or publisher. Does not generate or validate signed RPKI objects. Uses existing BPKI enrollment, private key files and persistent journals; uncertain mutations block further exchanges and require reconciliation. Import uses an absolute path to a private JSON manifest with exact object contents and BPKI configuration; see the [import format](../reference/delegated-rpki.md#publication-bundle-import). Uncertain-mutation recovery is not yet implemented. Native ARIN delegated sandbox verification remains unavailable.", Attributes: attrs}
 }
 func (m rpkiPublicationBundleModel) config() arin.RPKIPublicationReadConfig {
 	return arin.RPKIPublicationReadConfig{Endpoint: m.Endpoint.ValueString(), Publisher: m.Publisher.ValueString(), JournalDirectory: m.Journal.ValueString(), SigningKeyFile: m.KeyFile.ValueString(), SigningCertificatePEM: m.Certificate.ValueString(), SigningAnchorPEM: m.Anchor.ValueString(), SigningIntermediatesPEM: m.Intermediates.ValueString(), SigningCRLsPEM: m.CRLs.ValueString(), PeerAnchorPEM: m.Peer.ValueString(), PeerIntermediatesPEM: m.PeerIntermediates.ValueString()}
@@ -110,13 +110,7 @@ func (r *rpkiPublicationBundleResource) Create(ctx context.Context, req resource
 		resp.Diagnostics.AddError("Could not publish bundle", err.Error())
 		return
 	}
-	uris := make([]string, 0, len(desired))
-	for uri := range desired {
-		uris = append(uris, uri)
-	}
-	sort.Strings(uris)
-	raw, _ := json.Marshal([]any{m.Endpoint.ValueString(), m.Publisher.ValueString(), uris})
-	m.ID = types.StringValue(fmt.Sprintf("%x", sha256.Sum256(raw)))
+	m.assignID(desired)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
 }
 func (r *rpkiPublicationBundleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -173,4 +167,14 @@ func (r *rpkiPublicationBundleResource) Delete(ctx context.Context, req resource
 	if err := r.apply(ctx, m.config(), nil, prior); err != nil {
 		resp.Diagnostics.AddError("Could not withdraw publication bundle", err.Error())
 	}
+}
+
+func (m *rpkiPublicationBundleModel) assignID(desired map[string]string) {
+	uris := make([]string, 0, len(desired))
+	for uri := range desired {
+		uris = append(uris, uri)
+	}
+	sort.Strings(uris)
+	raw, _ := json.Marshal([]any{m.Endpoint.ValueString(), m.Publisher.ValueString(), uris})
+	m.ID = types.StringValue(fmt.Sprintf("%x", sha256.Sum256(raw)))
 }

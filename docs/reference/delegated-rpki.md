@@ -1007,3 +1007,38 @@ complement existing signed protocol tests and do not establish native ARIN
 interoperability. Import and uncertain-mutation recovery remain unfinished.
 A pending mutation blocks further peer exchanges; the read-only recovery command
 cannot abandon it. No native delegated publication was attempted.
+
+## Publication bundle import
+
+Import accepts the absolute path to a private regular JSON file, limited to
+16 MiB. Use the resource's attribute names for these fields:
+
+- Required: `endpoint`, `publisher_handle`, `journal_directory`,
+  `signing_key_file`, `signing_certificate_pem`, `signing_ca_pem`,
+  `signing_crls_pem`, `peer_ca_pem`, and a nonempty `objects` map.
+- Optional: `signing_intermediates_pem`, `peer_intermediates_pem`, and `id`.
+
+The `objects` values are the same canonical base64 contents used in configuration.
+Certificate fields contain PEM text; `signing_key_file` contains only the local
+key path. Never put private key bytes in this manifest. Create the file with
+permissions 0600 and keep it out of Git. Symlinks, permissive permissions,
+unknown fields, duplicate keys and invalid object contents are rejected.
+
+```sh
+terraform import arin_rpki_publication_bundle.example /absolute/path/publication-import.json
+```
+
+Import performs an authenticated inventory read and requires every listed object
+to exist with exactly the supplied content hash. It adopts only those URLs and
+performs no publication mutation. Align the resource configuration with the
+manifest to obtain a clean subsequent plan.
+
+If restoring an existing Terraform bundle after its membership has changed,
+include its original 64-character lowercase hexadecimal `id` from prior state.
+Otherwise the provider assigns an ID from the endpoint, publisher and imported
+URL set, as it does on creation. The ID is a Terraform identity, not authorization.
+
+Terraform tests cover initial import, import after membership updates, preserved
+IDs, clean plans and mismatch rejection. Parser tests cover malformed manifests,
+file permissions, symlinks and duplicate fields. Import cannot bypass a pending
+exchange, and uncertain-mutation recovery remains unfinished.

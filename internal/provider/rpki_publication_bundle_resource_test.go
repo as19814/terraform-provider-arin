@@ -3,9 +3,13 @@ package provider
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -102,6 +106,20 @@ func TestAccRPKIPublicationBundle(t *testing.T) {
 		}
 		return nil
 	}
+	importPath := filepath.Join(t.TempDir(), "import.json")
+	writeImport := func(id string, objects map[string]string) string {
+		manifest := publicationBundleImport{ID: id, Endpoint: "https://repo.example/publication", Publisher: "publisher", Journal: "/private/journal", KeyFile: "/private/key.pem", Certificate: "ee", Anchor: "local", CRLs: "crl", Peer: "peer", Objects: objects}
+		raw, err := json.Marshal(manifest)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(importPath, raw, 0600); err != nil {
+			t.Fatal(err)
+		}
+		return importPath
+	}
+	writeImport("", map[string]string{a: base64.StdEncoding.EncodeToString([]byte("first"))})
+
 	resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: factories, CheckDestroy: func(s *terraform.State) error {
 		mu.Lock()
 		defer mu.Unlock()
@@ -111,11 +129,19 @@ func TestAccRPKIPublicationBundle(t *testing.T) {
 		return nil
 	}, Steps: []resource.TestStep{
 		{Config: first, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_rpki_publication_bundle.test", "hashes."+a, hash([]byte("first"))), unchanged)},
+		{ResourceName: "arin_rpki_publication_bundle.test", ImportState: true, ImportStateVerify: true, ImportStateId: importPath},
 		{Config: first, PlanOnly: true},
 		{Config: second, Check: resource.TestCheckResourceAttr("arin_rpki_publication_bundle.test", "hashes.%", "2")},
 		{PreConfig: func() { mu.Lock(); defer mu.Unlock(); objects[a] = []byte("external") }, Config: second, Check: resource.TestCheckResourceAttr("arin_rpki_publication_bundle.test", "hashes."+a, hash([]byte("second")))},
 		{PreConfig: func() { mu.Lock(); defer mu.Unlock(); delete(objects, b) }, Config: second, Check: resource.TestCheckResourceAttr("arin_rpki_publication_bundle.test", "hashes.%", "2")},
 		{Config: third, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_rpki_publication_bundle.test", "hashes.%", "1"), unchanged)},
+		{ResourceName: "arin_rpki_publication_bundle.test", ImportState: true, ImportStateVerify: true, ImportStateIdFunc: func(state *terraform.State) (string, error) {
+			id := state.RootModule().Resources["arin_rpki_publication_bundle.test"].Primary.ID
+			return writeImport(id, map[string]string{b: base64.StdEncoding.EncodeToString([]byte("manifest2"))}), nil
+		}},
+		{ResourceName: "arin_rpki_publication_bundle.test", ImportState: true, ImportStateIdFunc: func(_ *terraform.State) (string, error) {
+			return writeImport("", map[string]string{b: base64.StdEncoding.EncodeToString([]byte("different"))}), nil
+		}, ExpectError: regexp.MustCompile("Publication bundle import mismatch")},
 		{Config: third, PlanOnly: true},
 	}})
 	resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: factories, Steps: []resource.TestStep{{Config: strings.Replace(first, `base64encode("first")`, `"invalid"`, 1), ExpectError: regexp.MustCompile("Invalid publication bundle")}}})

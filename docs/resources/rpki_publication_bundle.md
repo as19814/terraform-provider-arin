@@ -3,12 +3,12 @@
 page_title: "arin_rpki_publication_bundle Resource - arin"
 subcategory: ""
 description: |-
-  Manage a set of caller-supplied RPKI publication objects with atomic RFC 8181 batches. Create requires absent URLs; update and destroy use hashes from the last refresh as server preconditions. Other repository objects are preserved. Do not overlap ownership with another resource or publisher. Does not generate or validate signed RPKI objects. Uses existing BPKI enrollment, private key files and persistent journals; uncertain mutations block further exchanges and require reconciliation. Import and uncertain-mutation recovery are not yet implemented. Native ARIN delegated sandbox verification remains unavailable.
+  Manage a set of caller-supplied RPKI publication objects with atomic RFC 8181 batches. Create requires absent URLs; update and destroy use hashes from the last refresh as server preconditions. Other repository objects are preserved. Do not overlap ownership with another resource or publisher. Does not generate or validate signed RPKI objects. Uses existing BPKI enrollment, private key files and persistent journals; uncertain mutations block further exchanges and require reconciliation. Import uses an absolute path to a private JSON manifest with exact object contents and BPKI configuration; see the import format ../reference/delegated-rpki.md#publication-bundle-import. Uncertain-mutation recovery is not yet implemented. Native ARIN delegated sandbox verification remains unavailable.
 ---
 
 # arin_rpki_publication_bundle (Resource)
 
-Manage a set of caller-supplied RPKI publication objects with atomic RFC 8181 batches. Create requires absent URLs; update and destroy use hashes from the last refresh as server preconditions. Other repository objects are preserved. Do not overlap ownership with another resource or publisher. Does not generate or validate signed RPKI objects. Uses existing BPKI enrollment, private key files and persistent journals; uncertain mutations block further exchanges and require reconciliation. Import and uncertain-mutation recovery are not yet implemented. Native ARIN delegated sandbox verification remains unavailable.
+Manage a set of caller-supplied RPKI publication objects with atomic RFC 8181 batches. Create requires absent URLs; update and destroy use hashes from the last refresh as server preconditions. Other repository objects are preserved. Do not overlap ownership with another resource or publisher. Does not generate or validate signed RPKI objects. Uses existing BPKI enrollment, private key files and persistent journals; uncertain mutations block further exchanges and require reconciliation. Import uses an absolute path to a private JSON manifest with exact object contents and BPKI configuration; see the [import format](../reference/delegated-rpki.md#publication-bundle-import). Uncertain-mutation recovery is not yet implemented. Native ARIN delegated sandbox verification remains unavailable.
 
 ## Example Usage
 
@@ -56,3 +56,15 @@ resource "arin_rpki_publication_bundle" "example" {
 
 - `hashes` (Map of String) Last observed hashes for owned objects. Plans compute desired hashes so out-of-band changes and missing objects produce reconciliation updates.
 - `id` (String) Stable identity assigned to this managed bundle.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# The private JSON manifest contains BPKI configuration and exact object contents.
+# See docs/reference/delegated-rpki.md#publication-bundle-import for its fields.
+terraform import arin_rpki_publication_bundle.example /absolute/path/publication-import.json
+```

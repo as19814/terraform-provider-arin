@@ -385,5 +385,6 @@ The command cannot clear uncertain mutations or bypass process locks.
 [`arin_rpki_publication_bundle`](docs/resources/rpki_publication_bundle.md)
 manages caller-supplied signed objects and manifests in atomic publication
 batches. It uses inventory hashes for replacement and withdrawal, restores drift,
-and preserves unmanaged URLs. Import and uncertain-mutation recovery remain
-unfinished; native delegated verification requires existing sandbox enrollment.
+and preserves unmanaged URLs. Import verifies exact contents from a private JSON manifest. Uncertain-mutation
+recovery remains unfinished; native delegated verification requires existing
+sandbox enrollment.
