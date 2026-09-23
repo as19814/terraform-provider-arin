@@ -28,6 +28,7 @@ type fakeNetAPI struct {
 	writes                                                     map[string]int
 	createPending, deletePending, lostCreate, denied, resolved bool
 	pendingHandle, pendingBody                                 string
+	reuseHandle                                                bool
 }
 
 func (f *fakeNetAPI) ticket(w http.ResponseWriter) {
@@ -90,6 +91,9 @@ func (f *fakeNetAPI) serve(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			handle = fmt.Sprintf("NET-192-0-2-0-%d", f.writes["create"]+1)
+			if f.reuseHandle {
+				handle = "NET-192-0-2-0-2"
+			}
 			body = strings.Replace(body, "</net>", "<handle>"+handle+"</handle><registrationDate>2026-01-01T00:00:00Z</registrationDate></net>", 1)
 			if f.createPending {
 				f.pendingBody = body

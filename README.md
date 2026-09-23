@@ -323,3 +323,10 @@ IPv6, `show_details`, and `show_arin`. An IP address may resolve to a child
 reassignment, while the allocation CIDR resolves to its parent registration.
 `arin_whois_org` also supports `show_pocs` to include contact references without
 expanding network and ASN inventories.
+
+A customer and its simple network reassignment can be managed together by setting
+`arin_net.customer_handle = arin_customer.recipient.id`. Terraform orders creation,
+replacement and deletion through that reference. The combined IPv4/IPv6 lifecycle
+passes OT&E, including when ARIN reuses the NET handle during replacement. See the
+[configuration example](examples/customer-network/main.tf) and
+[lifecycle evidence](docs/reference/customer-network.md).

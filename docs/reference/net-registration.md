@@ -142,3 +142,10 @@ and a clean Terraform plan. Metadata destroy leaves the NET and final metadata
 intact; test cleanup then deletes the disposable registration. The direct
 allocation subtest submits the current metadata unchanged to an owned parent,
 then verifies the complete before/after record is identical.
+
+## Managed customer dependency
+
+The combined customer/NET Terraform graph passes IPv4 and IPv6 OT&E creation,
+updates, import, recipient replacement and cleanup. See the
+[graph lifecycle evidence](customer-network.md) for ordering and reused-handle
+behavior, and the [example](../../examples/customer-network/main.tf).
