@@ -945,3 +945,34 @@ request authentication, refresh and absent/empty output distinctions. Terraform
 acceptance tests cover configuration mapping, nested state, empty inventories,
 refresh and errors through an injected reader. Native delegated verification,
 managed resources and pending-operation recovery remain unfinished.
+
+## Recovering an interrupted inventory read
+
+The `tools/rpki-journal` command inspects an existing journal and can explicitly
+abandon one pending `publication-list` or `updown-list` request. Run from the
+provider repository with the peer ID from `rpki-exchange-<peer>.json`:
+
+```sh
+go run ./tools/rpki-journal -directory /private/arin-rpki -peer PEER_ID
+go run ./tools/rpki-journal -directory /private/arin-rpki -peer PEER_ID \
+  -recover-read-sha256 REQUEST_SHA256
+```
+
+Use the exact `pending.request_sha256` from inspection. Recovery sends no network
+request. It preserves both signing-time watermarks and stores the abandoned
+request in `recovered_read`; this is the latest recovery record, not an unbounded
+audit log. A later refresh must use a newer signing second, preventing identical
+signed bytes from being confused with the abandoned request. The next Terraform
+refresh can then perform a new authenticated list exchange.
+
+Recovery rejects pending issuance, revocation, publication batches, unknown
+operations, mismatched digests and repeated recovery of an already cleared read.
+It takes the ordinary exclusive lease and cannot bypass a live or crashed lock.
+It does not create missing journals or reset trust history. Crashed locks and
+uncertain mutations still require separate reconciliation, which is unfinished.
+Older provider builds reject journals containing the new recovery metadata;
+keep using a build that understands this field after recovery.
+
+Tests cover first-read and later-read recovery, reopen, unchanged timestamps,
+metadata ownership, replay prevention, mutation rejection and locking. A signed
+HTTP test covers failure, blocked retry, explicit recovery and successful reads.

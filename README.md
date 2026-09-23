@@ -375,3 +375,8 @@ credentials that are not available in the current sandbox account.
 parent's resource classes, allocations and issued certificate inventory using
 an existing BPKI identity. It authenticates the protocol response but does not
 independently validate the returned resource certificates' RPKI trust paths.
+
+
+Interrupted delegated inventory reads can be inspected and explicitly abandoned
+with `go run ./tools/rpki-journal`. See [read recovery](docs/reference/delegated-rpki.md#recovering-an-interrupted-inventory-read).
+The command cannot clear uncertain mutations or bypass process locks.

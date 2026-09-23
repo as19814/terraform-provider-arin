@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"io"
 	"net/http"
@@ -28,8 +29,14 @@ func TestRPKIPublicationRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	var calls atomic.Int32
+	var failFirst atomic.Bool
+	failFirst.Store(true)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
+		if failFirst.Swap(false) {
+			w.WriteHeader(503)
+			return
+		}
 		raw, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Error(err)
@@ -55,8 +62,35 @@ func TestRPKIPublicationRead(t *testing.T) {
 	}))
 	defer server.Close()
 	config := RPKIPublicationReadConfig{Endpoint: server.URL, Publisher: "publisher", JournalDirectory: privateExchangeDir(t), SigningKeyFile: keyFile, SigningCertificatePEM: encode("CERTIFICATE", local.Certificate.Raw), SigningAnchorPEM: encode("CERTIFICATE", local.Anchor.Raw), SigningCRLsPEM: encode("X509 CRL", local.CRLs[0].Raw), PeerAnchorPEM: encode("CERTIFICATE", remote.Anchor.Raw)}
+	if _, err := readRPKIPublication(context.Background(), config, cmsTrustNow); err == nil {
+		t.Fatal("unavailable repository accepted")
+	}
+	exchange, err := config.exchange()
+	if err != nil {
+		t.Fatal(err)
+	}
+	peer, err := exchange.peerID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, err := InspectRPKIJournal(config.JournalDirectory, peer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pending rpkiExchangeState
+	if err := json.Unmarshal(status, &pending); err != nil || pending.Pending == nil {
+		t.Fatal("failed read did not remain pending")
+	}
+	if _, err := readRPKIPublication(context.Background(), config, cmsTrustNow); err == nil || calls.Load() != 1 {
+		t.Fatal("pending read retried without recovery")
+	}
+	if _, err := RecoverRPKIRead(config.JournalDirectory, peer, pending.Pending.RequestSHA256); err != nil {
+		t.Fatal(err)
+	}
+	clock := func() time.Time { return cmsTrustNow().Add(time.Second) }
+
 	for i := 0; i < 2; i++ {
-		out, err := readRPKIPublication(context.Background(), config, cmsTrustNow)
+		out, err := readRPKIPublication(context.Background(), config, clock)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -64,13 +98,13 @@ func TestRPKIPublicationRead(t *testing.T) {
 			t.Fatal("inventory sorting/hash normalization failed")
 		}
 	}
-	if calls.Load() != 2 {
+	if calls.Load() != 3 {
 		t.Fatal("inventory not refreshed")
 	}
 	if err := os.Chmod(keyFile, 0644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := readRPKIPublication(context.Background(), config, cmsTrustNow); err == nil || calls.Load() != 2 {
+	if _, err := readRPKIPublication(context.Background(), config, clock); err == nil || calls.Load() != 3 {
 		t.Fatal("insecure key file accepted")
 	}
 }

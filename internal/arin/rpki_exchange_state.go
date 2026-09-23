@@ -22,11 +22,12 @@ type rpkiPendingExchange struct {
 	SigningTime   time.Time `json:"signing_time"`
 }
 type rpkiExchangeState struct {
-	Version      int                  `json:"version"`
-	PeerID       string               `json:"peer_id"`
-	LastSent     time.Time            `json:"last_sent"`
-	LastReceived time.Time            `json:"last_received"`
-	Pending      *rpkiPendingExchange `json:"pending,omitempty"`
+	Version       int                  `json:"version"`
+	PeerID        string               `json:"peer_id"`
+	LastSent      time.Time            `json:"last_sent"`
+	LastReceived  time.Time            `json:"last_received"`
+	Pending       *rpkiPendingExchange `json:"pending,omitempty"`
+	RecoveredRead *rpkiPendingExchange `json:"recovered_read,omitempty"`
 }
 
 // rpkiExchangeLease holds an exclusive filesystem lease for one protocol peer.
@@ -40,6 +41,9 @@ type rpkiExchangeLease struct {
 }
 
 func openRPKIExchange(directory, peerID string) (*rpkiExchangeLease, error) {
+	return openRPKIExchangeMode(directory, peerID, true)
+}
+func openRPKIExchangeMode(directory, peerID string, create bool) (*rpkiExchangeLease, error) {
 	if !filepath.IsAbs(directory) || !exchangeDigest.MatchString(peerID) {
 		return nil, errRPKIExchangeState
 	}
@@ -63,6 +67,9 @@ func openRPKIExchange(directory, peerID string) (*rpkiExchangeLease, error) {
 	}
 	info, err = os.Lstat(path)
 	if os.IsNotExist(err) {
+		if !create {
+			return nil, errRPKIExchangeState
+		}
 		if err = lease.save(); err != nil {
 			return nil, errRPKIExchangeState
 		}
@@ -95,8 +102,13 @@ func openRPKIExchange(directory, peerID string) (*rpkiExchangeLease, error) {
 		if decoder.Decode(&extra) != io.EOF || lease.state.Version != 1 || lease.state.PeerID != peerID || !validExchangeTime(lease.state.LastSent) || !validExchangeTime(lease.state.LastReceived) {
 			return nil, errRPKIExchangeState
 		}
-		if lease.state.Pending == nil && lease.state.LastSent.IsZero() != lease.state.LastReceived.IsZero() {
+		if lease.state.Pending == nil && lease.state.RecoveredRead == nil && lease.state.LastSent.IsZero() != lease.state.LastReceived.IsZero() {
 			return nil, errRPKIExchangeState
+		}
+		if p := lease.state.RecoveredRead; p != nil {
+			if !readOnlyRPKIOperation(p.Operation) || !exchangeDigest.MatchString(p.RequestSHA256) || p.SigningTime.IsZero() || !validExchangeTime(p.SigningTime) || p.SigningTime.After(lease.state.LastSent) || (lease.state.Pending != nil && !lease.state.Pending.SigningTime.After(p.SigningTime)) {
+				return nil, errRPKIExchangeState
+			}
 		}
 		if p := lease.state.Pending; p != nil {
 			if !exchangeDigest.MatchString(p.RequestSHA256) || !exchangeOperation.MatchString(p.Operation) || p.SigningTime.IsZero() || !validExchangeTime(p.SigningTime) || !p.SigningTime.Equal(lease.state.LastSent) {
@@ -121,6 +133,10 @@ func (l *rpkiExchangeLease) State() (rpkiExchangeState, error) {
 		pending := *state.Pending
 		state.Pending = &pending
 	}
+	if state.RecoveredRead != nil {
+		recovered := *state.RecoveredRead
+		state.RecoveredRead = &recovered
+	}
 	return state, nil
 }
 
@@ -129,7 +145,7 @@ func (l *rpkiExchangeLease) State() (rpkiExchangeState, error) {
 func (l *rpkiExchangeLease) Begin(digest, operation string, signingTime time.Time) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.closed || l.poisoned || l.state.Pending != nil || !exchangeDigest.MatchString(digest) || !exchangeOperation.MatchString(operation) || signingTime.IsZero() || !validExchangeTime(signingTime) || signingTime.Before(l.state.LastSent) {
+	if l.closed || l.poisoned || l.state.Pending != nil || !exchangeDigest.MatchString(digest) || !exchangeOperation.MatchString(operation) || signingTime.IsZero() || !validExchangeTime(signingTime) || signingTime.Before(l.state.LastSent) || (l.state.RecoveredRead != nil && !signingTime.After(l.state.RecoveredRead.SigningTime)) {
 		return errRPKIExchangeState
 	}
 	l.state.LastSent = signingTime.UTC()
