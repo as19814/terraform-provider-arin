@@ -111,4 +111,7 @@ are managed by `arin_delegation` through the full replacement endpoint; no
 separate read-modify-write DS resource is needed for that API coverage. The
 client also supports bulk nameserver deletion, while the full-zone resource
 represents empty desired collections through PUT. A final live-documentation
-endpoint audit remains part of the overall coverage audit.
+endpoint and field audit remains part of the overall coverage audit. In particular,
+the data source exposes `algorithm_name` and `digest_type_name`, but the managed
+DS model currently keeps only their numeric IDs. Those response metadata fields
+still need resource-state coverage and native verification.
