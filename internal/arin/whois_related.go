@@ -25,6 +25,7 @@ var whoisRelations = []whoisRelation{
 	{"net_children", "net", "children", "net", "nets", "networks"},
 	{"net_delegations", "net", "rdns", "delegation", "delegations", "delegations"},
 	{"delegation_nets", "delegation", "nets", "net", "nets", "networks"},
+	{"customer_nets", "customer", "nets", "net", "nets", "networks"},
 }
 
 func whoisRelationship(name string) (whoisRelation, bool) {

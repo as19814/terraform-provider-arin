@@ -143,6 +143,7 @@ func TestLiveWhoisRelationships(t *testing.T) {
 				{"org_pocs", "pocs", "FT-684", false},
 				{"org_asns", "asns", "FT-684", false},
 				{"org_nets", "nets", "FT-684", false},
+				{"customer_nets", "nets", "C00000055", false},
 				{"asn_pocs", "pocs", "AS15169", false},
 				{"net_pocs", "pocs", "NET-216-239-32-0-1", false},
 				{"net_parent", "parent", "NET-23-189-120-0-1", false},
@@ -175,6 +176,9 @@ func TestLiveWhoisRelationships(t *testing.T) {
 							key = "name"
 						}
 						checks = append(checks, resource.TestCheckResourceAttrSet(address, spec.Output+".0."+key), resource.TestCheckResourceAttrSet(address, "whois_xml"))
+						if tc.kind == "customer_nets" && details {
+							checks = append(checks, resource.TestCheckResourceAttr(address, "networks.0.customer_handle", tc.identity))
+						}
 						if strings.HasPrefix(tc.kind, "poc_") || strings.HasSuffix(tc.kind, "_pocs") {
 							checks = append(checks, resource.TestCheckResourceAttrSet(address, spec.Output+".0.poc_functions.0"))
 						}

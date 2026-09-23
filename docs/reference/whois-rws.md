@@ -78,7 +78,8 @@ ambiguity and the final coverage reconciliation remain open.
 
 ## Relationships
 
-All twelve documented relationship operations have data sources:
+All twelve documented relationship operations have data sources. The native
+service also supports customer-to-network lookup, bringing the total to thirteen:
 
 | Data source | Path after `/rest/` | Output list |
 | --- | --- | --- |
@@ -88,6 +89,7 @@ All twelve documented relationship operations have data sources:
 | `arin_whois_org_pocs` | `org/HANDLE/pocs` | `pocs` |
 | `arin_whois_org_asns` | `org/HANDLE/asns` | `asns` |
 | `arin_whois_org_nets` | `org/HANDLE/nets` | `networks` |
+| `arin_whois_customer_nets` | `customer/HANDLE/nets` | `networks` |
 | `arin_whois_asn_pocs` | `asn/HANDLE/pocs` | `pocs` |
 | `arin_whois_net_pocs` | `net/HANDLE/pocs` | `pocs` |
 | `arin_whois_net_parent` | `net/HANDLE/parent` | `networks` |
@@ -112,6 +114,34 @@ and exact no-results messages trigger an independent owner lookup. A confirmed
 existing owner permits an empty list and null `whois_xml`; unknown owners,
 unrecognized 404 pages, partial responses and referrals remain errors. An org's
 POCs are not automatically inherited by its network/ASN relationship endpoints.
+
+### Customer network relationship
+
+The 2026-09-23 field audit found a `nets/netRef` container in a native customer
+record. Although the guide omits customer relationships from its endpoint list,
+`/rest/customer/HANDLE/nets` returns a network collection on OT&E and production.
+`arin_whois_customer_nets` exposes it using the shared network reference/full-record
+decoder, complete XML, deterministic ordering and truncation checks.
+
+```hcl
+data "arin_whois_customer_nets" "example" {
+  handle       = "C00000055"
+  show_details = true
+}
+```
+
+Reference results include the network handle and published name/address range;
+full results also expose blocks and the returned customer handle. This is a
+read-only public query and uses no API key. Recognized empty HTTP 404 responses
+require an independent lookup confirming that the requested customer exists;
+a missing or mismatched customer remains an error.
+
+The extended relationship Terraform suite passed on both origins on 2026-09-23
+(30.49 seconds total), including references, expanded records, the exact customer
+link and clean subsequent plans. Mock Terraform coverage verifies null fields in
+references and populated customer links in details. Unit coverage checks the
+existing/missing/mismatched owner cases without following links or sending keys.
+All fixtures committed to the repository use synthetic documentation records.
 
 ## Searches
 
@@ -205,6 +235,17 @@ unsupported. Existing exact delegation lookup and network-to-delegation queries
 remain available. The current guide and its linked schema archive were rechecked:
 the archive still contains Reg-RWS payload schemas, so it cannot resolve this
 public Whois-RWS ambiguity. Keep it in the final endpoint audit.
+
+A later bounded check added `/rdns;q=NAME`, `/rdns/;name=NAME` and
+`/rdns/;q=NAME`. The script also supports `--nicname` to compare the guide's
+TCP/43 `d / NAME` syntax with a trailing-wildcard query, without printing returned
+contact data. The new slash/matrix variants returned 404 on both origins; the
+non-slash `q` variant returned 400 on OT&E and a transport error on production.
+The later run also confirmed both network-to-delegation controls with HTTP 200. Exact TCP/43 lookups returned the expected delegation and an RDAP
+domain reference on both origins; wildcard lookups returned no match. The current
+service did not provide a Whois-RWS search URL, so this does not establish a
+separate delegation search contract. The exact lookup and network relationship
+remain the verified operations.
 
 ## Origins and XML handling
 

@@ -179,3 +179,54 @@ func TestWhoisRelationshipValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestWhoisCustomerNetworksEmpty(t *testing.T) {
+	var spec ReadSpec
+	for _, s := range WhoisRelationshipReads() {
+		if s.Name == "whois_customer_nets" {
+			spec = s
+		}
+	}
+	if spec.Name == "" {
+		t.Fatal("missing customer network relationship")
+	}
+	for _, mode := range []string{"existing", "missing", "mismatched"} {
+		t.Run(mode, func(t *testing.T) {
+			calls := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				if r.Method != http.MethodGet || r.Header.Get("Authorization") != "" {
+					t.Error("unexpected authenticated mutation")
+				}
+				switch r.URL.RequestURI() {
+				case "/rest/customer/C00000001/nets":
+					w.WriteHeader(404)
+					fmt.Fprint(w, `<html><title>Whois-RWS</title>Sorry, no related resources were found for the handle provided.</html>`)
+				case "/rest/customer/C00000001":
+					if mode == "missing" {
+						w.WriteHeader(404)
+						fmt.Fprint(w, "Not Found")
+						return
+					}
+					handle := "C00000001"
+					if mode == "mismatched" {
+						handle = "C00000002"
+					}
+					fmt.Fprint(w, whoisFixture("customer", "<handle>"+handle+"</handle>"))
+				default:
+					t.Error("unexpected lookup path")
+					w.WriteHeader(400)
+				}
+			}))
+			defer server.Close()
+			c, _ := New(Config{WhoisBaseURL: server.URL, APIKey: "must-not-send"})
+			result, err := c.ReadRegistration(context.Background(), spec, map[string]string{"handle": "C00000001", "show_details": "false"})
+			if (err == nil) != (mode == "existing") || calls != 2 {
+				t.Fatalf("mode=%s calls=%d err=%v", mode, calls, err)
+			}
+			if err == nil && (len(result["networks"].([]any)) != 0 || result["whois_xml"] != nil) {
+				t.Fatal("invented empty response data")
+			}
+		})
+	}
+}

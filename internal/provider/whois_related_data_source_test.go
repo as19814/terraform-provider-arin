@@ -56,6 +56,13 @@ func TestAccWhoisRelationships(t *testing.T) {
 			if spec.Output == "pocs" || owner == "poc" {
 				checks = append(checks, resource.TestCheckResourceAttr(address, spec.Output+".0.poc_functions.0", "T"))
 			}
+			if spec.Name == "whois_customer_nets" {
+				if detail {
+					checks = append(checks, resource.TestCheckResourceAttr(address, "networks.0.customer_handle", "C00000001"))
+				} else {
+					checks = append(checks, resource.TestCheckNoResourceAttr(address, "networks.0.customer_handle"))
+				}
+			}
 			if spec.Output == "networks" {
 				checks = append(checks, resource.TestCheckResourceAttr(address, "networks.0.ip_version", "v4"))
 				blocks := "0"
