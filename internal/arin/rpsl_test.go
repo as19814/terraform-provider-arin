@@ -175,3 +175,32 @@ func TestRPSLWriteResponseIdentity(t *testing.T) {
 		})
 	}
 }
+
+func TestRPSLComparison(t *testing.T) {
+	raw := rpslFixture("aut-num", "AS64496") + "import: from AS64497\n  accept ANY\nremarks: keep  internal spacing\n"
+	equivalent := "aut-num:    AS64496\nsource: ARIN\nmnt-by: MNT-EXAMPLE-1\ndescr: Example\nimport: from AS64497 accept ANY\nremarks: keep  internal spacing\ncreated: 2026-01-01\nlast-modified: 2026-09-23\n"
+	if !EqualRPSL(raw, equivalent) {
+		t.Fatal("formatting or timestamps caused drift")
+	}
+	for _, changed := range []string{strings.Replace(equivalent, "ANY", "AS64498", 1), strings.Replace(equivalent, "keep  internal", "keep internal", 1), equivalent + "remarks: extra\n", equivalent + "x-policy: opaque\n"} {
+		if EqualRPSL(raw, changed) {
+			t.Fatal("policy change was ignored")
+		}
+	}
+	if EqualRPSL(raw+"remarks: second\n", strings.Replace(raw, "remarks: keep  internal spacing", "remarks: second\nremarks: keep  internal spacing", 1)) {
+		t.Fatal("repeated attribute order was ignored")
+	}
+}
+func TestRPSLImportIdentity(t *testing.T) {
+	for _, id := range []string{"as-set/AS-EXAMPLE", "route-set/RS-EXAMPLE", "aut-num/AS64496", "route/192.0.2.0/24,AS64496", "route6/2001:db8::/48,AS64496"} {
+		key, err := ParseRPSLID(id)
+		if err != nil || key.ID() != id {
+			t.Fatalf("identity round trip: %v", err)
+		}
+	}
+	for _, id := range []string{"AS-EXAMPLE", "as-set/AS-EXAMPLE,", "route/2001:db8::/48,AS64496", "route/192.0.2.0/24", "as-set/AS-EXAMPLE/extra"} {
+		if _, err := ParseRPSLID(id); err == nil {
+			t.Fatal("accepted invalid import identity")
+		}
+	}
+}

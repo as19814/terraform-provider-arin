@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 33 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Eighteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs and ASPAs, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 33 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Nineteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs and ASPAs, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes, and advanced RPSL objects, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -127,7 +127,7 @@ check whether the object exists and import it if necessary before retrying.
 Updates and deletes retain state on errors. Only a 404 means the object is absent;
 authentication and server errors never cause state removal.
 
-Advanced objects created through RPSL can be read with [`arin_irr_rpsl`](docs/data-sources/irr_rpsl.md), which returns the full policy text for routes, route6, AS sets, route sets and aut-num. RPSL mutations have a tested client, but the Terraform resource is still pending. See [RPSL evidence](docs/reference/irr-rpsl.md).
+Advanced objects created through RPSL can be read with [`arin_irr_rpsl`](docs/data-sources/irr_rpsl.md), which returns the full policy text for routes, route6, AS sets, route sets and aut-num. [`arin_irr_rpsl`](docs/resources/irr_rpsl.md) also manages those advanced objects with CRUD, import, drift detection and uncertain-write recovery. See [RPSL evidence](docs/reference/irr-rpsl.md).
 
 ## Managed IRR routes
 

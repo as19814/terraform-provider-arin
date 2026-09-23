@@ -59,7 +59,7 @@ Mock acceptance tests cover every catalog entry through real Terraform, includin
 
 The opt-in live suite follows existing records from the selected organization. Network, contact, ASN, IRR, ROA, and ASPA reads were exercised against FT-684. Live customer, individual aut-num/route-set, and ticket-content reads require suitable existing records; mock coverage does not imply live verification of those cases.
 
-Advanced RPSL AS-set and route-set reads passed native Terraform tests using disposable sandbox fixtures. The RPSL data source has fake-server Terraform coverage for all five object types. Native RPSL route/route6 and aut-num coverage remains pending; see [RPSL evidence](irr-rpsl.md).
+Advanced RPSL reads passed native Terraform tests for all five object types using disposable sandbox fixtures, alongside managed-resource lifecycles. Fake-server coverage also checks refresh and mismatched identities; see [RPSL evidence](irr-rpsl.md).
 
 The ASPA endpoint requires Content-Type: application/xml even on GET. The client supplies it for authenticated reads.
 

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -65,6 +66,7 @@ type RPSLObject struct {
 	Key       RPSLKey
 	OrgHandle string
 	Text      string
+	fields    map[string][]string
 }
 
 var rpslAttribute = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
@@ -160,7 +162,7 @@ func ParseRPSL(raw string) (*RPSLObject, error) {
 	if org == maintainer || !handlePattern.MatchString(org) || org != strings.ToUpper(org) {
 		return nil, errors.New("RPSL mnt-by must identify one uppercase MNT- organization handle")
 	}
-	return &RPSLObject{Key: key, OrgHandle: org, Text: strings.TrimSpace(raw) + "\n"}, nil
+	return &RPSLObject{Key: key, OrgHandle: org, Text: strings.TrimSpace(raw) + "\n", fields: fields}, nil
 }
 
 func (c *Client) GetRPSL(ctx context.Context, key RPSLKey) (*RPSLObject, error) {
@@ -212,7 +214,20 @@ func (c *Client) UpdateRPSL(ctx context.Context, raw string) (*RPSLObject, error
 	path, _ := input.Key.path()
 	return c.writeRPSL(ctx, http.MethodPut, path, input)
 }
-func (c *Client) writeRPSL(ctx context.Context, method, path string, input *RPSLObject) (*RPSLObject, error) {
+
+// RPSLWriteError means a mutation was attempted. Callers must reconcile the
+// natural identity before retrying errors whose outcome is uncertain.
+type RPSLWriteError struct{ Err error }
+
+func (e *RPSLWriteError) Error() string { return e.Err.Error() }
+func (e *RPSLWriteError) Unwrap() error { return e.Err }
+
+func (c *Client) writeRPSL(ctx context.Context, method, path string, input *RPSLObject) (_ *RPSLObject, err error) {
+	defer func() {
+		if err != nil {
+			err = &RPSLWriteError{Err: err}
+		}
+	}()
 	response, err := c.request(ctx, method, c.baseURL, path, rpslMediaType, true, []byte(input.Text))
 	if err != nil {
 		return nil, err
@@ -255,4 +270,45 @@ func (c *Client) DeleteRPSL(ctx context.Context, key RPSLKey, org string) error 
 		return errors.New("ARIN did not confirm completed RPSL deletion; refresh before retrying")
 	}
 	return nil
+}
+
+// EqualRPSL ignores attribute alignment, ordering between different attribute
+// names, continuation folding and ARIN timestamps. Repeated attribute ordering
+// and all policy/text values remain significant.
+func EqualRPSL(a, b string) bool {
+	left, err := ParseRPSL(a)
+	if err != nil {
+		return false
+	}
+	right, err := ParseRPSL(b)
+	if err != nil {
+		return false
+	}
+	for _, fields := range []map[string][]string{left.fields, right.fields} {
+		delete(fields, "created")
+		delete(fields, "last-modified")
+	}
+	return reflect.DeepEqual(left.fields, right.fields)
+}
+func (k RPSLKey) ID() string {
+	id := k.Kind + "/" + k.Name
+	if k.OriginAS != "" {
+		id += "," + k.OriginAS
+	}
+	return id
+}
+func ParseRPSLID(id string) (RPSLKey, error) {
+	kind, rest, ok := strings.Cut(id, "/")
+	if !ok {
+		return RPSLKey{}, errors.New("RPSL import ID must be type/name, with ,AS<number> appended for routes")
+	}
+	name, origin, _ := strings.Cut(rest, ",")
+	key := RPSLKey{Kind: kind, Name: name, OriginAS: origin}
+	if err := key.Validate(); err != nil {
+		return RPSLKey{}, err
+	}
+	if key.ID() != id {
+		return RPSLKey{}, errors.New("RPSL import ID must be canonical")
+	}
+	return key, nil
 }
