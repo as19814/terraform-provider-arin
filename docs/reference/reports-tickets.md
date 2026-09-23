@@ -244,11 +244,47 @@ receipts for accepted or uncertain requests to force a retry.
 ARIN documents report-ticket deletion 90 days after closure unless retention is
 selected in ARIN Online. The API does not expose that retention setting.
 
+## Read endpoint and payload audit
+
+The collected methods guide defines six ticket read operations. All are mapped
+to data sources and exercised together by `TestOTEReportReadLifecycle` using the
+existing saved associations-report receipt:
+
+| Operation | Data source | Native assertions |
+| --- | --- | --- |
+| Ticket details, `msgRefs=true` | `arin_ticket` | Saved ticket identity and populated message references |
+| Ticket details, `msgRefs=false` | `arin_ticket` | Same message count; embedded report attachment matches direct download |
+| Ticket summary | `arin_ticket_summary` | Same saved ticket identity |
+| Ticket payload list | `arin_tickets` | Saved ticket included under ASSOCIATIONS_REPORT/CLOSED filters |
+| Ticket summary list | `arin_ticket_summaries` | Same filtered ticket identity |
+| Individual message | `arin_ticket_message` data source | Message ID matches its reference; attachment references are populated |
+| Attachment bytes | `arin_ticket_attachment` | Nonempty decoded bytes, correct size and SHA-256, reference filename and application/octet-stream headers |
+
+The test also reads the message through the typed client and checks a subsequent
+clean Terraform plan. Its transport accepts only GETs on sandbox ticket paths;
+it cannot generate reports or submit messages. Requests are spaced at least 1.1
+seconds apart because concurrent Terraform refreshes hit OT&E's HTTP 429 limit
+in the initial unpaced audit. Failed requests are not replayed by the test.
+Account content stays in temporary test state and is not logged or committed.
+
+`TicketPayload.rnc` fields are represented by ticket number, four dates, type,
+status, resolution, sharing metadata, `flagged`, and message/reference collections.
+`flagged` is an optional string in ARIN's schema, so the data sources preserve it
+as a string rather than guessing a Boolean type. It remains null when absent.
+The mock fixture and decoder tests cover populated, absent and non-Boolean values.
+Full-ticket PUT preserves this field along with all other unchanged payload bytes.
+
+`MessagePayload.rnc` fields map to generated identity/date, subject, ordered text,
+category, embedded filename/base64 attachments and attachment references. Reference
+IDs select fixed authenticated endpoints; response URLs are never followed.
+These checks establish the associations report's attachment path. Successful
+WhoWas reports remain dependent on account access and are not inferred from this
+result.
+
 ## Remaining work
 
-Native successful WhoWas generation requires account access. Report attachment
-access exists through ticket data sources and still needs its final integration
-audit. Message submission and its Terraform receipt lifecycle pass mocks; native
+Native successful WhoWas generation requires account access. Associations report attachment access and the ticket read endpoint/payload audit
+are verified through the existing receipt. Message submission and its Terraform receipt lifecycle pass mocks; native
 correspondence evidence remains. Full-ticket modification is implemented and passes mocks; a successful native
 RESOLVED-to-CLOSED write remains unverified. Successful native closure from RESOLVED also
 remains to be verified. See the

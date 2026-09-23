@@ -266,3 +266,31 @@ func TestEmptyCollectionsAndMissingSelection(t *testing.T) {
 		}
 	}
 }
+
+func TestTicketFlaggedField(t *testing.T) {
+	for _, name := range []string{"ticket", "ticket_summary", "tickets", "ticket_summaries"} {
+		spec := readSpec(t, name)
+		for _, raw := range []string{"true", "false", "custom-server-value", ""} {
+			body := `<ticket xmlns="http://www.arin.net/regrws/core/v1"><ticketNo>20260923-X1</ticketNo>`
+			if raw != "" {
+				body += "<flagged>" + raw + "</flagged>"
+			}
+			body += "</ticket>"
+			node, err := parseXML([]byte(body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			values, err := decodeFields(node, spec.Fields)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if raw == "" {
+				if values["flagged"] != nil {
+					t.Fatalf("%s invented absent flagged value", name)
+				}
+			} else if values["flagged"] != raw {
+				t.Fatalf("%s lost raw flagged field", name)
+			}
+		}
+	}
+}

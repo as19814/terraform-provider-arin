@@ -32,6 +32,7 @@ data "arin_ticket_summary" "example" {
 
 - `closed_date` (String, Sensitive) closed date returned by ARIN.
 - `created_date` (String, Sensitive) created date returned by ARIN.
+- `flagged` (String, Sensitive) flagged returned by ARIN.
 - `message_references` (Attributes List, Sensitive) message references returned by ARIN. (see [below for nested schema](#nestedatt--message_references))
 - `messages` (Attributes List, Sensitive) messages returned by ARIN. (see [below for nested schema](#nestedatt--messages))
 - `org_handle` (String, Sensitive) org handle returned by ARIN.

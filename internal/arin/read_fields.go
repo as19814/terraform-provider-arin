@@ -67,7 +67,7 @@ var messageFields = []Field{
 	objects("attachments", "attachments/attachment", text("filename", "filename"), secret(text("content_base64", "data"))),
 }
 var ticketFields = []Field{
-	required(text("ticket_number", "ticketNo")), text("org_handle", "orgHandle"), boolean("shared", "shared"), text("created_date", "createdDate"), text("resolved_date", "resolvedDate"), text("closed_date", "closedDate"), text("updated_date", "updatedDate"), text("ticket_type", "webTicketType"), text("ticket_status", "webTicketStatus"), text("resolution", "webTicketResolution"),
+	required(text("ticket_number", "ticketNo")), text("flagged", "flagged"), text("org_handle", "orgHandle"), boolean("shared", "shared"), text("created_date", "createdDate"), text("resolved_date", "resolvedDate"), text("closed_date", "closedDate"), text("updated_date", "updatedDate"), text("ticket_type", "webTicketType"), text("ticket_status", "webTicketStatus"), text("resolution", "webTicketResolution"),
 	objects("messages", "messages/message", messageFields...),
 	objects("message_references", "messageReferences/messageReference", integer("message_id", "messageId"), text("created_date", "createdDate"), text("subject", "subject"), objects("attachment_references", "attachmentReferences/attachmentReference", attachmentRefFields...)),
 }
