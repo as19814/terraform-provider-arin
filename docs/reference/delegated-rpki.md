@@ -664,3 +664,23 @@ manifest, path-length and file-count limits still apply.
 This connects supplied publication snapshots to an explicit resource anchor.
 It does not fetch repositories, persist manifest rollback history, perform
 uncertain-outcome recovery or connect validation to issuance/Terraform yet.
+
+## Persistent manifest version history
+
+The private durable path-validation entry point now holds an exclusive
+filesystem lock while reading history, verifying the full manifest-backed path,
+and atomically recording all accepted versions. History is scoped to the exact
+configured anchor DER; entries are keyed by issuer public key and manifest URI.
+An identical manifest can be reused while current. A replacement must increase
+both its manifest number and thisUpdate; equal-number changes and rollback fail.
+
+History uses bounded, canonical JSON in a private directory with mode-0600
+atomic replacement and file/directory fsync. Invalid paths or rejected versions
+do not partially advance history. Tests cover reopen/reuse, increasing versions,
+rollback, conflicting versions, incomplete paths, existing locks, corruption,
+symlinks and permissions. A process crash leaves a lock requiring recovery.
+
+The directory must persist across runs. Removing it discards local history;
+changing the configured anchor creates a separate history scope. Anchor rotation,
+crash recovery, repository retrieval and issuance/Terraform integration remain
+unfinished. This storage does not add native delegated sandbox evidence.
