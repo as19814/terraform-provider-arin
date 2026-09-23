@@ -36,26 +36,31 @@ type NetPOC struct {
 	Description string `xml:"description,attr,omitempty"`
 }
 type registeredNetXML struct {
-	XMLName          xml.Name             `xml:"http://www.arin.net/regrws/core/v1 net"`
-	Version          int                  `xml:"version"`
-	Comments         *irrLinesXML         `xml:"comment,omitempty"`
-	RegistrationDate string               `xml:"registrationDate,omitempty"`
-	OrgHandle        string               `xml:"orgHandle,omitempty"`
-	Handle           string               `xml:"handle,omitempty"`
-	Blocks           []RegisteredNetBlock `xml:"netBlocks>netBlock"`
-	CustomerHandle   string               `xml:"customerHandle,omitempty"`
-	ParentNetHandle  string               `xml:"parentNetHandle"`
-	Name             string               `xml:"netName"`
-	OriginASNs       []string             `xml:"originASes>originAS"`
-	POCs             []NetPOC             `xml:"pocLinks>pocLinkRef"`
+	XMLName          xml.Name                 `xml:"http://www.arin.net/regrws/core/v1 net"`
+	Version          int                      `xml:"version"`
+	Comments         *irrLinesXML             `xml:"comment,omitempty"`
+	RegistrationDate string                   `xml:"registrationDate,omitempty"`
+	OrgHandle        string                   `xml:"orgHandle,omitempty"`
+	Handle           string                   `xml:"handle,omitempty"`
+	Blocks           []RegisteredNetBlock     `xml:"netBlocks>netBlock"`
+	CustomerHandle   string                   `xml:"customerHandle,omitempty"`
+	ParentNetHandle  string                   `xml:"parentNetHandle"`
+	Name             string                   `xml:"netName"`
+	OriginASNs       []string                 `xml:"originASes>originAS"`
+	POCs             []NetPOC                 `xml:"pocLinks>pocLinkRef"`
+	Messages         *registrationMessagesXML `xml:"messages,omitempty"`
 }
 
 func (n RegisteredNet) marshal() ([]byte, error) {
+	return n.marshalMessages(nil)
+}
+
+func (n RegisteredNet) marshalMessages(messages *registrationMessagesXML) ([]byte, error) {
 	origins := make([]string, len(n.OriginASNs))
 	for i, asn := range n.OriginASNs {
 		origins[i] = strings.TrimPrefix(asn, "AS")
 	}
-	return xml.Marshal(registeredNetXML{Version: n.Version, Comments: xmlPolicy(n.Comments), RegistrationDate: n.RegistrationDate, OrgHandle: n.OrgHandle, Handle: n.Handle, Blocks: n.Blocks, CustomerHandle: n.CustomerHandle, ParentNetHandle: n.ParentNetHandle, Name: n.Name, OriginASNs: origins, POCs: n.POCs})
+	return xml.Marshal(registeredNetXML{Version: n.Version, Comments: xmlPolicy(n.Comments), RegistrationDate: n.RegistrationDate, OrgHandle: n.OrgHandle, Handle: n.Handle, Blocks: n.Blocks, CustomerHandle: n.CustomerHandle, ParentNetHandle: n.ParentNetHandle, Name: n.Name, OriginASNs: origins, POCs: n.POCs, Messages: messages})
 }
 
 // NetAssignment creates a reassignment (customer or org) or reallocation (org).
@@ -433,6 +438,21 @@ func (c *Client) UpdateNetMetadata(ctx context.Context, handle string, patch Net
 	return updated, nil
 }
 func (c *Client) DeleteNetAssignment(ctx context.Context, handle string) (*NetWriteResult, error) {
+	return c.deleteNetAssignment(ctx, handle, false, nil)
+}
+
+// RemoveNetAssignment uses the NET removal endpoint with optional correspondence.
+// A ticket is a receipt, not proof of deletion. Callers must persist uncertain
+// outcomes and reconcile before retrying, just as for DeleteNetAssignment.
+func (c *Client) RemoveNetAssignment(ctx context.Context, handle string, messages []RegistrationMessage) (*NetWriteResult, error) {
+	payload, err := registrationMessages(messages)
+	if err != nil {
+		return nil, err
+	}
+	return c.deleteNetAssignment(ctx, handle, true, payload)
+}
+
+func (c *Client) deleteNetAssignment(ctx context.Context, handle string, remove bool, messages *registrationMessagesXML) (*NetWriteResult, error) {
 	n, err := c.GetRegisteredNet(ctx, handle)
 	if IsNotFound(err) {
 		return &NetWriteResult{}, nil
@@ -445,8 +465,30 @@ func (c *Client) DeleteNetAssignment(ctx context.Context, handle string) (*NetWr
 			return nil, errors.New("only reassigned or reallocated NET records can be deleted")
 		}
 	}
-	response, err := c.request(ctx, http.MethodDelete, c.baseURL, "/rest/net/"+url.PathEscape(handle), "application/xml", true, nil)
+	method, endpoint := http.MethodDelete, "/rest/net/"+url.PathEscape(handle)
+	var body []byte
+	if remove {
+		method, endpoint = http.MethodPut, endpoint+"/remove"
+		body, err = n.marshalMessages(messages)
+		if err != nil {
+			return nil, err
+		}
+		if len(body) > maxResponseBytes {
+			return nil, errors.New("NET removal exceeds the client payload limit")
+		}
+	}
+	response, err := c.request(ctx, method, c.baseURL, endpoint, "application/xml", true, body)
 	if IsNotFound(err) {
+		// A missing /remove route does not establish that the NET is absent.
+		if remove {
+			_, readErr := c.GetRegisteredNet(ctx, handle)
+			if !IsNotFound(readErr) {
+				if readErr != nil {
+					return nil, readErr
+				}
+				return nil, errors.New("NET removal returned 404 but the NET still exists")
+			}
+		}
 		return &NetWriteResult{}, nil
 	}
 	if err != nil {

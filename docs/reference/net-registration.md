@@ -106,7 +106,7 @@ routing information.
 
 - Exercise a genuinely asynchronous OT&E ticket, including failure/rejection.
 - Audit any additional range edge cases beyond the verified minimal CIDR covers.
-- Evaluate the remove-NET workflow with message/attachment payloads.
+- Verify remove-NET and message/attachment submission in OT&E; implementation and mock lifecycle coverage are complete, but correspondence has not been sent to ARIN.
 
 
 ## Multi-block registration
@@ -153,3 +153,37 @@ The combined customer/NET Terraform graph passes IPv4 and IPv6 OT&E creation,
 updates, import, recipient replacement and cleanup. See the
 [graph lifecycle evidence](customer-network.md) for ordering and reused-handle
 behavior, and the [example](../../examples/customer-network/main.tf).
+
+## Removal messages and attachments
+
+`arin_net.removal_messages` is an optional local destroy policy. A nonempty list
+selects `PUT /rest/net/HANDLE/remove`; omission or an empty list selects ordinary
+DELETE. Each message accepts a subject, ordered text lines, category (`NONE` by
+default or `JUSTIFICATION`) and a map of filenames to base64 attachment contents.
+The client places these in `net/messages/message`, preserving the freshly read NET
+record. This nesting follows the collected `NetPayload.rnc` and `MessagePayload.rnc`
+schemas and the official methods/payload guides rechecked on 2026-09-23.
+
+Apply policy changes before removing the NET from configuration. Creation,
+refresh and metadata updates never send the configured messages. A change only
+to this policy makes no metadata PUT. Imports have no removal messages, since
+these are local instructions rather than registered NET fields. The collection
+is sensitive, but its text and attachment contents remain in Terraform state.
+
+The client validates XML text, category, filenames and base64 contents before
+submission. The encoded NET request has a 4 MiB client limit; this is not a claim
+about ARIN's server-side attachment limit. Invalid correspondence never becomes
+a removal request. Direct allocations remain ineligible for either deletion path.
+A 404 from the remove endpoint is accepted only after a separate NET lookup
+confirms absence.
+
+Mock client tests verify payload preservation, multiple messages, binary
+attachments, pending tickets, malformed responses that retain a ticket, and
+lost connections without replay. Terraform acceptance verifies policy changes,
+import behavior, clean plans and destroy through the remove endpoint. Resource
+recovery tests prove a second destroy cannot resubmit an uncertain removal, then
+reconcile confirmed absence. Existing pending-ticket completion rules also apply.
+The existing ordinary NET Terraform lifecycle was rerun in OT&E on 2026-09-23
+for IPv4 and IPv6, including import, replacement and verified cleanup; it passed.
+The new remove endpoint and live message/attachment submission remain unverified.
+No correspondence was sent to ARIN during this work.

@@ -20,3 +20,12 @@ resource "arin_net" "example" {
 
 # For detailed reassignment, replace customer_handle with org_handle.
 # For reallocation, use org_handle and set reallocate = true.
+
+# Optional: configure supporting correspondence to send only on destroy.
+# Apply this policy before removing the resource from configuration.
+# removal_messages = [{
+#   subject     = "Remove downstream assignment"
+#   text        = ["This customer's assignment is no longer in use."]
+#   category    = "JUSTIFICATION"
+#   attachments = { "evidence.txt" = filebase64("evidence.txt") }
+# }]

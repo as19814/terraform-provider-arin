@@ -33,6 +33,7 @@ var (
 
 type netResource struct{ client *arin.Client }
 type netModel struct {
+	RemovalMessages  types.List   `tfsdk:"removal_messages"`
 	ID               types.String `tfsdk:"id"`
 	Name             types.String `tfsdk:"name"`
 	Parent           types.String `tfsdk:"parent_net_handle"`
@@ -63,6 +64,7 @@ func (r *netResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 		"org_handle":        recipient("Recipient organization for a detailed reassignment or reallocation. Mutually exclusive with customer_handle."),
 		"reallocate":        schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false), PlanModifiers: []planmodifier.Bool{boolplanmodifier.RequiresReplace()}, MarkdownDescription: "Create a reallocation instead of a reassignment. Requires org_handle."},
 		"prefixes":          schema.SetAttribute{Required: true, ElementType: types.StringType, PlanModifiers: []planmodifier.Set{setplanmodifier.RequiresReplace()}, MarkdownDescription: "Minimal canonical CIDRs describing one contiguous range of one address family. IPv6 blocks must be /64 or larger."},
+		"removal_messages":  netRemovalMessagesSchema(),
 		"comments":          schema.ListAttribute{Optional: true, Computed: true, ElementType: types.StringType, Default: listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})), MarkdownDescription: "Ordered operational comments. Omission clears comments."},
 		"ip_version":        schema.Int64Attribute{Computed: true, MarkdownDescription: "Address family, 4 or 6."},
 		"registration_date": schema.StringAttribute{Computed: true, MarkdownDescription: "ARIN registration date preserved on updates."},
@@ -94,7 +96,7 @@ func (r *netResource) ValidateConfig(ctx context.Context, req resource.ValidateC
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	for _, v := range []attr.Value{m.Name, m.Parent, m.Customer, m.Org, m.Reallocate, m.Prefixes, m.Comments} {
+	for _, v := range []attr.Value{m.Name, m.Parent, m.Customer, m.Org, m.Reallocate, m.Prefixes, m.Comments, m.RemovalMessages} {
 		tv, err := v.ToTerraformValue(ctx)
 		if err != nil || !tv.IsFullyKnown() {
 			return
@@ -108,9 +110,11 @@ func (r *netResource) ValidateConfig(ctx context.Context, req resource.ValidateC
 	if err := a.Validate(); err != nil {
 		resp.Diagnostics.AddError("Invalid network assignment", err.Error())
 	}
+	_, messagesDiagnostics := netRemovalMessages(ctx, m.RemovalMessages)
+	resp.Diagnostics.Append(messagesDiagnostics...)
 }
 func netState(ctx context.Context, n *arin.RegisteredNet) (netModel, diag.Diagnostics) {
-	m := netModel{ID: types.StringValue(n.Handle), Name: types.StringValue(n.Name), Parent: types.StringValue(n.ParentNetHandle), Customer: types.StringValue(n.CustomerHandle), Org: types.StringValue(n.OrgHandle), Version: types.Int64Value(int64(n.Version)), Date: types.StringValue(n.RegistrationDate), PendingOperation: types.StringValue(""), PendingTicket: types.StringValue("")}
+	m := netModel{RemovalMessages: types.ListNull(netRemovalMessageType), ID: types.StringValue(n.Handle), Name: types.StringValue(n.Name), Parent: types.StringValue(n.ParentNetHandle), Customer: types.StringValue(n.CustomerHandle), Org: types.StringValue(n.OrgHandle), Version: types.Int64Value(int64(n.Version)), Date: types.StringValue(n.RegistrationDate), PendingOperation: types.StringValue(""), PendingTicket: types.StringValue("")}
 	var d, next diag.Diagnostics
 	prefixes := []string{}
 	kind := ""
@@ -156,6 +160,11 @@ func (r *netResource) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	_, messageDiagnostics := netRemovalMessages(ctx, m.RemovalMessages)
+	resp.Diagnostics.Append(messageDiagnostics...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	a, d := m.api(ctx)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
@@ -176,7 +185,7 @@ func (r *netResource) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 	result, err := r.client.CreateNetAssignment(ctx, a)
 	if err == nil && result.Net != nil {
-		m, d = netState(ctx, result.Net)
+		m, d = netStateWithRemoval(ctx, result.Net, m.RemovalMessages)
 		resp.Diagnostics.Append(d...)
 		if !resp.Diagnostics.HasError() {
 			resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
@@ -257,7 +266,7 @@ func (r *netResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		resp.Diagnostics.AddError("Could not reconcile network", err.Error())
 		return
 	}
-	out, d := netState(ctx, n)
+	out, d := netStateWithRemoval(ctx, n, m.RemovalMessages)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -280,17 +289,29 @@ func (r *netResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		resp.Diagnostics.AddError("Network operation is unresolved", "Reconcile the pending operation before updating network metadata.")
 		return
 	}
+	_, messageDiagnostics := netRemovalMessages(ctx, m.RemovalMessages)
+	resp.Diagnostics.Append(messageDiagnostics...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	a, d := m.api(ctx)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	n, err := r.client.UpdateRegisteredNet(ctx, prior.ID.ValueString(), a.Name, a.Comments, nil, nil)
+	var n *arin.RegisteredNet
+	var err error
+	if m.Name.Equal(prior.Name) && m.Comments.Equal(prior.Comments) {
+		// Changing the destroy policy must not issue a metadata PUT or send messages.
+		n, err = r.client.GetRegisteredNet(ctx, prior.ID.ValueString())
+	} else {
+		n, err = r.client.UpdateRegisteredNet(ctx, prior.ID.ValueString(), a.Name, a.Comments, nil, nil)
+	}
 	if err != nil {
 		resp.Diagnostics.AddError("Could not update network", err.Error())
 		return
 	}
-	m, d = netState(ctx, n)
+	m, d = netStateWithRemoval(ctx, n, m.RemovalMessages)
 	resp.Diagnostics.Append(d...)
 	if !resp.Diagnostics.HasError() {
 		resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
@@ -312,7 +333,7 @@ func (r *netResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 			return
 		}
 		var d diag.Diagnostics
-		m, d = netState(ctx, n)
+		m, d = netStateWithRemoval(ctx, n, m.RemovalMessages)
 		resp.Diagnostics.Append(d...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -347,10 +368,21 @@ func (r *netResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 				return
 			}
 		}
-		resp.Diagnostics.AddError("Network deletion still requires reconciliation", "The NET remains visible. No additional DELETE was sent. Ticket: "+ticket)
+		resp.Diagnostics.AddError("Network deletion still requires reconciliation", "The NET remains visible. No additional deletion request was sent. Ticket: "+ticket)
 		return
 	}
-	result, writeErr := r.client.DeleteNetAssignment(ctx, m.ID.ValueString())
+	messages, d := netRemovalMessages(ctx, m.RemovalMessages)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	var result *arin.NetWriteResult
+	var writeErr error
+	if len(messages) == 0 {
+		result, writeErr = r.client.DeleteNetAssignment(ctx, m.ID.ValueString())
+	} else {
+		result, writeErr = r.client.RemoveNetAssignment(ctx, m.ID.ValueString(), messages)
+	}
 	if netDefinitiveFailure(writeErr) {
 		resp.Diagnostics.AddError("Could not delete network", writeErr.Error())
 		return

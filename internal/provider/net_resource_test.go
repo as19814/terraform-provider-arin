@@ -29,6 +29,8 @@ type fakeNetAPI struct {
 	createPending, deletePending, lostCreate, denied, resolved bool
 	pendingHandle, pendingBody                                 string
 	reuseHandle                                                bool
+	removalPayload                                             string
+	lostRemove                                                 bool
 }
 
 func (f *fakeNetAPI) ticket(w http.ResponseWriter) {
@@ -81,6 +83,28 @@ func (f *fakeNetAPI) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		if xml.Unmarshal(b, &identity) != nil {
 			w.WriteHeader(400)
+			return
+		}
+		if strings.HasSuffix(handle, "/remove") {
+			handle = strings.TrimSuffix(handle, "/remove")
+			if identity.Handle != handle || f.objects[handle] == "" {
+				w.WriteHeader(400)
+				return
+			}
+			f.writes["remove"]++
+			f.removalPayload = string(b)
+			if f.lostRemove {
+				w.WriteHeader(500)
+				return
+			}
+			fmt.Fprint(w, `<ticketedRequest xmlns="http://www.arin.net/regrws/core/v1">`)
+			if f.deletePending {
+				f.ticket(w)
+			} else {
+				fmt.Fprint(w, f.objects[handle])
+				delete(f.objects, handle)
+			}
+			fmt.Fprint(w, "</ticketedRequest>")
 			return
 		}
 		create := strings.HasSuffix(handle, "/reassign") || strings.HasSuffix(handle, "/reallocate")
@@ -191,7 +215,7 @@ func netTestPlan(t *testing.T, r *netResource) (tfsdk.State, tfsdk.Plan) {
 	ctx := context.Background()
 	var sr resource.SchemaResponse
 	r.Schema(ctx, resource.SchemaRequest{}, &sr)
-	m := netModel{ID: types.StringUnknown(), Name: types.StringValue("EXAMPLE-NET"), Parent: types.StringValue("NET-192-0-2-0-1"), Customer: types.StringValue("C123"), Org: types.StringValue(""), Reallocate: types.BoolValue(false), Date: types.StringUnknown(), Version: types.Int64Unknown(), PendingOperation: types.StringUnknown(), PendingTicket: types.StringUnknown()}
+	m := netModel{RemovalMessages: types.ListNull(netRemovalMessageType), ID: types.StringUnknown(), Name: types.StringValue("EXAMPLE-NET"), Parent: types.StringValue("NET-192-0-2-0-1"), Customer: types.StringValue("C123"), Org: types.StringValue(""), Reallocate: types.BoolValue(false), Date: types.StringUnknown(), Version: types.Int64Unknown(), PendingOperation: types.StringUnknown(), PendingTicket: types.StringUnknown()}
 	m.Prefixes, _ = types.SetValueFrom(ctx, types.StringType, []string{"192.0.2.0/29"})
 	m.Comments, _ = types.ListValueFrom(ctx, types.StringType, []string{})
 	state := tfsdk.State{Schema: sr.Schema}
