@@ -16,7 +16,16 @@ type rpkiIssuanceRecoveryObservation struct {
 // observePendingIssuance reads authenticated inventory under the original
 // lease. A match requires the saved CSR/request and validated resource path.
 // Observation never authorizes replay or clears the original pending mutation.
-func (client rpkiUpDownClient) observePendingIssuance(ctx context.Context, digest string, validation RPKICertificateValidation, repository rrdpHTTPClient) (observation rpkiIssuanceRecoveryObservation, err error) {
+func (client rpkiUpDownClient) observePendingIssuance(ctx context.Context, digest string, validation RPKICertificateValidation, repository rrdpHTTPClient) (rpkiIssuanceRecoveryObservation, error) {
+	return client.readPendingIssuance(ctx, digest, "", validation, repository)
+}
+func (client rpkiUpDownClient) reconcilePendingIssuance(ctx context.Context, digest, expectedCertificate string, validation RPKICertificateValidation, repository rrdpHTTPClient) (rpkiIssuanceRecoveryObservation, error) {
+	if !exchangeDigest.MatchString(expectedCertificate) {
+		return rpkiIssuanceRecoveryObservation{}, errRPKIExchangeState
+	}
+	return client.readPendingIssuance(ctx, digest, expectedCertificate, validation, repository)
+}
+func (client rpkiUpDownClient) readPendingIssuance(ctx context.Context, digest, expectedCertificate string, validation RPKICertificateValidation, repository rrdpHTTPClient) (observation rpkiIssuanceRecoveryObservation, err error) {
 	c := client.Exchange
 	scope, _ := json.Marshal([]string{upDownToken(client.Child), upDownToken(client.Parent)})
 	c.PeerScope = string(scope)
@@ -83,5 +92,17 @@ func (client rpkiUpDownClient) observePendingIssuance(ctx context.Context, diges
 		return observation, errRPKIExchangeState
 	}
 	observation = rpkiIssuanceRecoveryObservation{Plan: plan, RecoveryPeerID: recoveryPeer, Outcome: outcome, Sent: recovered.LastSent, Received: recovered.LastReceived, Certificate: certificate}
+	if expectedCertificate != "" {
+		hash, err := issuanceObservationHash(observation)
+		if err != nil || hash != expectedCertificate {
+			return observation, errRPKIExchangeState
+		}
+		if err := ctx.Err(); err != nil {
+			return observation, err
+		}
+		if err := lease.reconcileIssuance(observation); err != nil {
+			return observation, err
+		}
+	}
 	return observation, nil
 }

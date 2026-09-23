@@ -1418,3 +1418,27 @@ evidence. End-to-end signed inventory/TLS RRDP tests verify matching and absent
 outcomes, cache reuse and byte-identical original pending journal state. Normal
 certificate refresh shares the same validation path. Durable issuance recovery
 commit, CLI integration and native verification remain unfinished.
+
+### Durable issuance reconciliation
+
+The private reconciliation entry point now accepts an exact pending request
+digest and an explicitly selected certificate DER SHA-256. While retaining the
+original exchange lease, it re-reads signed parent inventory and validates the
+saved CSR/resource request through the current RRDP resource path. Only a
+matching request and certificate hash permit commit. Absent keys, mismatched
+certificates and validation failures leave the original mutation pending.
+
+Successful commit atomically records the original request metadata, recovery
+peer, certificate hash, resource class, key identifier and sent/received times;
+it advances the original journal watermarks and clears pending state. This is
+an observation of a valid current certificate, not proof that the interrupted
+request caused its issuance. It does not resend issuance or create Terraform
+state. A create failure without state still needs validated import afterward.
+
+Signed/TLS tests cover successful persistence and reopen, rejection of absent
+keys and different certificate hashes, receipt ownership and repeat commit
+without dispatch. Journal tests cover invalid identities/operations/timestamps,
+malformed receipts and failed persistence preserving the original pending state.
+Older binaries that do not recognize the new `reconciled_issuance` field reject
+such journals rather than ignoring it. Public API/CLI integration, revocation
+completion and native delegated verification remain unfinished.

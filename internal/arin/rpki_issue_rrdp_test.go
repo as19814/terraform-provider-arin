@@ -260,6 +260,43 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 				if posts.Load() != 8 || gets.Load() != 4 {
 					t.Fatal("recovery resubmitted issuance or bypassed cache")
 				}
+				certificateHash := fmt.Sprintf("%x", sha256.Sum256(f.certs[0].Raw))
+				if _, err := probe.reconcilePendingIssuance(context.Background(), digest, certificateHash, apiValidation, validation.Client); err == nil {
+					t.Fatal("absent key reconciled issuance")
+				}
+				listResponse.Store(listSigned)
+				if _, err := probe.reconcilePendingIssuance(context.Background(), digest, strings.Repeat("f", 64), apiValidation, validation.Client); err == nil {
+					t.Fatal("different certificate reconciled issuance")
+				}
+				unchanged, err := os.ReadFile(path)
+				if err != nil || !bytes.Equal(before, unchanged) {
+					t.Fatal("rejected commit changed pending state")
+				}
+				observed, err = probe.reconcilePendingIssuance(context.Background(), digest, certificateHash, apiValidation, validation.Client)
+				if err != nil {
+					t.Fatal(err)
+				}
+				completed, err := openRPKIExchange(exchange.Directory, peer)
+				if err != nil {
+					t.Fatal(err)
+				}
+				state, err := completed.State()
+				if err != nil || state.Pending != nil || state.ReconciledIssuance == nil || state.ReconciledIssuance.CertificateSHA256 != certificateHash || !state.LastSent.Equal(observed.Sent) || !state.LastReceived.Equal(observed.Received) {
+					t.Fatal("issuance reconciliation not durable")
+				}
+				state.ReconciledIssuance.CertificateSHA256 = "changed"
+				copy, err := completed.State()
+				if err != nil || copy.ReconciledIssuance.CertificateSHA256 != certificateHash {
+					t.Fatal("receipt aliases journal")
+				}
+				if err := completed.Close(); err != nil {
+					t.Fatal(err)
+				}
+				count := posts.Load()
+				if _, err := probe.reconcilePendingIssuance(context.Background(), digest, certificateHash, apiValidation, validation.Client); err == nil || posts.Load() != count {
+					t.Fatal("repeated reconciliation dispatched")
+				}
+
 			}
 
 		})
