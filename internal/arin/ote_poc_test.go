@@ -3,8 +3,11 @@ package arin
 import (
 	"context"
 	"crypto/rand"
+	"encoding/xml"
 	"fmt"
+	"net/http"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -75,6 +78,68 @@ func TestOTEPOCClientLifecycle(t *testing.T) {
 			}
 			if len(cleared.Phones) != 1 || cleared.Phones[0].Extension != "" {
 				t.Fatal("phone extension was not cleared")
+			}
+
+			baseline := cleared
+			email := "subop+test@example.net"
+			if _, err = c.AddPOCEmail(ctx, handle, email); err != nil {
+				t.Fatal(err)
+			}
+			if _, err = c.DeletePOCEmail(ctx, handle, email); err != nil {
+				t.Fatal(err)
+			}
+			ph := POCPhone{Type: "F", Number: "+1-202-555-0102", Extension: "42"}
+			if _, err = c.AddPOCPhone(ctx, handle, ph); err != nil {
+				t.Fatal(err)
+			}
+			ph.Extension = "43"
+			// A successful duplicate add does not necessarily update extension.
+			payload, err := xml.Marshal(phoneXML(ph))
+			if err != nil {
+				t.Fatal(err)
+			}
+			unchanged, err := c.mutatePOCContact(ctx, http.MethodPut, "/rest/poc/"+handle+"/phone", handle, payload)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, actual := range unchanged.Phones {
+				if actual.Type == ph.Type && actual.Number == ph.Number {
+					found = true
+					if actual.Extension != "42" {
+						t.Fatal("duplicate-add extension behavior changed")
+					}
+				}
+			}
+			if !found {
+				t.Fatal("duplicate add lost the existing phone")
+			}
+			if _, err = c.AddPOCPhone(ctx, handle, ph); err == nil {
+				t.Fatal("extension update must be rejected")
+			}
+
+			if _, err = c.DeletePOCPhones(ctx, handle, ph.Number, ph.Type); err != nil {
+				t.Fatal(err)
+			}
+			for _, phoneType := range []string{"F", "M"} {
+				ph.Type = phoneType
+				if _, err = c.AddPOCPhone(ctx, handle, ph); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if _, err = c.DeletePOCPhones(ctx, handle, ph.Number, ""); err != nil {
+				t.Fatal(err)
+			}
+			ph.Type = "F"
+			if _, err = c.AddPOCPhone(ctx, handle, ph); err != nil {
+				t.Fatal(err)
+			}
+			restored, err := c.DeletePOCPhones(ctx, handle, "", "F")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(restored, baseline) {
+				t.Fatal("contact suboperations changed unrelated POC fields")
 			}
 			if err = c.DeletePOC(ctx, handle); err != nil {
 				t.Fatal(err)

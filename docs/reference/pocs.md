@@ -1,7 +1,7 @@
 # POC implementation evidence
 
-`arin_poc` manages role and person points of contact. The client implements GET,
-POST, PUT and DELETE using authenticated Reg-RWS calls. The existing `arin_poc`
+`arin_poc` manages role and person points of contact. The client implements full-record GET, POST, PUT and DELETE plus individual
+email and phone operations using authenticated Reg-RWS calls. The existing `arin_poc`
 data source remains available for read-only use.
 
 ## Ownership and identity
@@ -49,9 +49,37 @@ Mock tests cover complete payloads, account linking, preservation of generated
 identity, immutable-field rejection, strict response decoding, preflight read
 failures, drift correction and state retention on API errors.
 
+## Individual contact endpoint evidence
+
+The client supports email POST/DELETE and phone PUT/DELETE without replacing
+unrelated contact collections. Phone deletion accepts an exact number/type pair,
+a number across all types, or a type across all numbers; an empty selector is
+rejected before a request. All mutations read the resulting POC and verify the
+requested addition/removal. Unconfirmed writes are not retried automatically.
+
+OT&E role and person tests verify email addition/removal (including a plus-tag
+address), phone addition, exact deletion, number-only deletion, and type-only
+deletion. The complete POC is compared with its baseline afterward and the
+disposable contact is then deleted and verified missing.
+
+The phone addition URL is `/rest/poc/HANDLE/phone`. The collected method guide's
+header-auth example omits `/phone`, while its query-auth example includes it;
+OT&E confirms that `/phone` works with header authentication and a phone payload.
+
+An existing phone is identified by type and number. A duplicate phone PUT returns
+success but leaves the old extension unchanged, even if a different nonempty
+extension is supplied. `AddPOCPhone` returns an existing identical phone without
+writing and rejects a changed extension. Use a full POC update to modify an
+extension, or remove and re-add the individual record. This differs from the
+full POC update, which can clear or replace extensions.
+
+Mock tests cover request paths, validation, unrelated-record preservation,
+no retries after mutation errors, and rejection of success responses whose
+requested changes cannot be observed.
+
 ## Remaining work
 
-Individual phone/email mutation endpoints and resource ownership boundaries
+Individual phone/email Terraform resources and their ownership boundaries
 remain to be implemented. Organization associations will be covered with the
 organization resources. The full implementation inventory remains authoritative
 for broader outstanding API families.
