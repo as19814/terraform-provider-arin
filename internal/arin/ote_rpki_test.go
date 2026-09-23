@@ -208,6 +208,15 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 		t.Fatal("no disposable provider ASN available")
 	}
 	request := ROARequest{Name: name, ASN: original.CustomerASN, Resources: resources}
+	// Prove ownership of every potential auto-created route before any mutation.
+	routeIDs := make([]string, 0, len(resources))
+	for _, resource := range resources {
+		id := fmt.Sprintf("%s,AS%d", resource.Prefix, original.CustomerASN)
+		if _, err := c.GetIRRRoute(ctx, id); !IsNotFound(err) {
+			t.Fatalf("disposable route must be absent before testing: %v", err)
+		}
+		routeIDs = append(routeIDs, id)
+	}
 	cache, err := os.UserCacheDir()
 	if err != nil {
 		t.Fatal(err)
@@ -254,7 +263,7 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 		cleanup := RPKITransaction{}
 		for _, r := range roas {
 			if r.Name == name {
-				cleanup.DeleteROAs = append(cleanup.DeleteROAs, ROADelete{Handle: r.Handle})
+				cleanup.DeleteROAs = append(cleanup.DeleteROAs, ROADelete{Handle: r.Handle, AutoLink: true})
 			}
 		}
 		aspas, err := c.ListASPAs(ctx, org)
@@ -295,6 +304,24 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 			t.Errorf("original RPKI inventory not restored; retain %s", snapshot)
 			return
 		}
+		for _, id := range routeIDs {
+			route, err := c.GetIRRRoute(ctx, id)
+			if IsNotFound(err) {
+				continue
+			}
+			if err != nil || route.AutoLinkedROAHandle != "" {
+				t.Errorf("cannot safely remove disposable IRR route; retain %s: %v", snapshot, err)
+				return
+			}
+			if err := c.DeleteIRRRoute(ctx, id); err != nil {
+				t.Errorf("disposable IRR cleanup failed; retain %s: %v", snapshot, err)
+				return
+			}
+			if _, err := c.GetIRRRoute(ctx, id); !IsNotFound(err) {
+				t.Errorf("disposable IRR route remains; retain %s: %v", snapshot, err)
+				return
+			}
+		}
 		if err = os.Remove(snapshot); err != nil {
 			t.Error(err)
 		}
@@ -326,8 +353,79 @@ func TestOTERPKIClientLifecycle(t *testing.T) {
 	t.Log("combined IPv4/IPv6 ROA creation and ASPA replacement passed")
 	next := request
 	next.Resources = []ROAResource{resources[0]}
-	if _, err = c.ApplyRPKITransaction(ctx, org, RPKITransaction{DeleteROAs: []ROADelete{{Handle: result.ROAs[0].Handle}}, AddROAs: []ROARequest{next}}); err != nil {
+	result, err = c.ApplyRPKITransaction(ctx, org, RPKITransaction{DeleteROAs: []ROADelete{{Handle: result.ROAs[0].Handle}}, AddROAs: []ROARequest{next}})
+	if err != nil {
 		t.Fatalf("ROA replacement failed: %v; XML shape: %s", err, trace.shape)
 	}
-	t.Log("atomic ROA replacement passed; cleanup will restore the original inventories")
+	t.Log("atomic ROA replacement passed")
+	// Authorize one level of more-specific prefixes, not just an explicit default.
+	// Verify the entire expanded range still belongs to the original parent.
+	next = request
+	next.ASN = 0
+	next.Resources = slices.Clone(resources)
+	for i := range next.Resources {
+		host := netip.MustParsePrefix(next.Resources[i].Prefix)
+		expanded := netip.PrefixFrom(host.Addr(), host.Bits()-1).Masked()
+		for _, spec := range RegistrationReads() {
+			if spec.Name != "parent_net" {
+				continue
+			}
+			parent, err := c.ReadRegistration(ctx, spec, map[string]string{"start_address": host.Addr().String(), "end_address": host.Addr().String()})
+			if err != nil {
+				t.Fatal(err)
+			}
+			wider, err := c.ReadRegistration(ctx, spec, map[string]string{"start_address": expanded.Addr().String(), "end_address": prefixEnd(expanded).String()})
+			if err != nil || wider["org_handle"] != org || wider["handle"] != parent["handle"] {
+				t.Fatalf("expanded test prefix is not owned by the original parent: %v", err)
+			}
+			break
+		}
+		length := int64(host.Bits())
+		next.Resources[i].Prefix = expanded.String()
+		next.Resources[i].MaxLength = &length
+	}
+	result, err = c.ApplyRPKITransaction(ctx, org, RPKITransaction{DeleteROAs: []ROADelete{{Handle: result.ROAs[0].Handle}}, AddROAs: []ROARequest{next}})
+	if err != nil {
+		t.Fatalf("AS0 with explicit maximum lengths failed: %v", err)
+	}
+	t.Log("IPv4/IPv6 AS0 ROA with explicit maximum lengths passed")
+	for _, deleteLinked := range []bool{false, true} {
+		next = request
+		next.AutoLink = true
+		transaction := RPKITransaction{AddROAs: []ROARequest{next}}
+		if len(result.ROAs) > 0 {
+			transaction.DeleteROAs = []ROADelete{{Handle: result.ROAs[0].Handle}}
+		}
+		result, err = c.ApplyRPKITransaction(ctx, org, transaction)
+		if err != nil {
+			t.Fatalf("auto-linked ROA creation failed: %v", err)
+		}
+		for _, id := range routeIDs {
+			route, err := c.GetIRRRoute(ctx, id)
+			if err != nil || route.AutoLinkedROAHandle != result.ROAs[0].Handle {
+				t.Fatalf("IRR route does not link to the created ROA: %v", err)
+			}
+		}
+		result, err = c.ApplyRPKITransaction(ctx, org, RPKITransaction{DeleteROAs: []ROADelete{{Handle: result.ROAs[0].Handle, AutoLink: deleteLinked}}})
+		if err != nil {
+			t.Fatalf("auto-linked ROA deletion failed: %v", err)
+		}
+		for _, id := range routeIDs {
+			route, err := c.GetIRRRoute(ctx, id)
+			if deleteLinked {
+				if !IsNotFound(err) {
+					t.Fatalf("autoLink=true did not remove its IRR route: %v", err)
+				}
+			} else {
+				if err != nil || route.AutoLinkedROAHandle != "" {
+					t.Fatalf("autoLink=false did not preserve an unlinked IRR route: %v", err)
+				}
+				if err = c.DeleteIRRRoute(ctx, id); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		t.Logf("ROA delete autoLink=%t verified for IPv4 and IPv6 IRR routes", deleteLinked)
+	}
+	t.Log("cleanup will verify restoration of both RPKI inventories and route absence")
 }

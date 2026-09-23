@@ -29,8 +29,8 @@ than evidence that a managed object disappeared.
 An omitted ROA maxLength remains absent in the model. Authorization comparisons
 use the prefix length as its effective default. IPv4/IPv6 prefixes must be
 canonical and maximum lengths must fit their address families. The transaction
-client exposes creation and deletion autoLink flags; coordinated IRR lifecycle
-verification is still outstanding.
+client exposes creation and deletion autoLink flags. Sandbox evidence below
+confirms their effects on disposable IPv4 and IPv6 IRR routes.
 
 ## ASPA resource
 
@@ -58,8 +58,22 @@ The combined client lifecycle passes creation of one ROA containing an owned
 IPv4 /32 and IPv6 /128, an ASPA provider-set replacement in the same transaction,
 and atomic ROA replacement. A rejected reserved-provider probe left both original
 inventories unchanged. Successful writes also completed cleanup and restored the
-complete baseline inventories. Tests use `autoLink=false` and do not create IRR
-objects.
+complete baseline inventories. The lifecycle also replaces the ROA with an AS0
+ROA containing IPv4 /31 with maxLength 32 and IPv6 /127 with maxLength 128.
+The expanded ranges are checked against the original owned parent before use.
+These non-default maximum lengths survive the transaction and inventory reads.
+
+The test then creates linked IPv4 /32 and IPv6 /128 IRR routes through a ROA,
+verifies their `autoLinkedRoaHandle`, and exercises both deletion flags:
+
+- `autoLink=false` deletes the ROA and retains the routes with their ROA links
+  cleared. The now-independent routes can be deleted through the IRR API.
+- `autoLink=true` deletes the ROA and both linked routes.
+
+Each candidate route is proven absent before any mutation. Cleanup removes only
+these disposable routes, verifies their absence, and restores both complete RPKI
+inventories. This establishes behavior for newly created routes, not for adopting
+pre-existing manual routes, shared links, or AS0 combined with auto-linking.
 
 The Terraform ASPA lifecycle imports an existing sandbox record, changes its
 providers, verifies import and a clean plan, changes to an AS0-only declaration,
@@ -77,15 +91,18 @@ and must not enter Git. A surviving snapshot blocks another test against that
 organization. `make testote` runs packages sequentially to avoid overlapping tests.
 
 If cleanup fails, inspect the snapshot locally. Remove only the disposable ROAs
-identified by the saved request and restore the recorded customer ASPA. Verify
-both complete inventories before removing the snapshot. Do not replace unrelated
+identified by the saved request and restore the recorded customer ASPA. Delete
+the disposable ROAs with `autoLink=true`. Check each saved request prefix and ASN
+for a leftover IRR route; remove it only if it is unlinked. The test proved those
+route identities absent before mutation. Verify both complete inventories and
+route absence before removing the snapshot. Do not replace unrelated
 objects or submit a second creation merely because the first response was lost.
 All test origins are pinned to OT&E; normal CI uses fake servers only.
 
 ## Remaining work
 
-The Terraform ROA resource and import, auto-linked IRR ownership, explicit maximum
-length cases, AS0 ROA live verification and the final endpoint audit remain in the
+The Terraform ROA resource and import, ownership of pre-existing or shared linked
+IRR routes, AS0 auto-link behavior and the final endpoint audit remain in the
 [implementation inventory](implementation-status.md). The shared transaction
 client already supports combined operations, while the ASPA resource manages a
 single customer identity. Any need for a declarative multi-object transaction
