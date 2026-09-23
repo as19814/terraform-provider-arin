@@ -1,0 +1,1 @@
+<asns xmlns="https://www.arin.net/whoisrws/core/v1"><limitExceeded>false</limitExceeded><asn xmlns="https://www.arin.net/whoisrws/core/v1"><handle>AS64496</handle><name>EXAMPLE-AS</name><startAsNumber>64496</startAsNumber><endAsNumber>64497</endAsNumber><orgRef handle="EXAMPLE-1">https://example.net</orgRef></asn></asns>

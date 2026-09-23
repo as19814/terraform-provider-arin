@@ -57,7 +57,7 @@ func TestAccWhoisLookups(t *testing.T) {
 	t.Setenv("ARIN_WHOIS_BASE_URL", server.URL)
 	config := "provider \"arin\" {}\n"
 	checks := []resource.TestCheckFunc{}
-	for _, spec := range arin.WhoisReads() {
+	for _, spec := range arin.WhoisRecordReads() {
 		in := spec.Inputs[0]
 		config += fmt.Sprintf("data %q \"test\" {\n %s=%q\n show_details=true\n}\n", "arin_"+spec.Name, in.Name, in.Example)
 		checks = append(checks, resource.TestCheckResourceAttrSet("data.arin_"+spec.Name+".test", "whois_xml"))

@@ -157,7 +157,10 @@ func outputFields(spec arin.ReadSpec) []arin.Field {
 		if spec.Name == "rdap_entities" {
 			description = "Entity records returned by ARIN, ordered by handle. No matches, including a structured RDAP 404, produce an empty list. Other failures remain errors."
 		}
-		return []arin.Field{{Name: spec.Output, Kind: arin.ObjectsKind, Fields: spec.Fields, Description: description}}
+		if strings.HasPrefix(spec.Name, "whois_") {
+			description = "Related records ordered deterministically. Distinct POC role links are preserved. Reference responses omit detail-only fields; show_details requests full records. Confirmed no matches produce an empty list."
+		}
+		return append([]arin.Field{{Name: spec.Output, Kind: arin.ObjectsKind, Fields: spec.Fields, Description: description}}, spec.ResponseFields...)
 	}
 	return spec.Fields
 }

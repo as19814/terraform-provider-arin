@@ -22,7 +22,9 @@ var whoisAddressFields = []Field{
 	lines("street_address", "streetAddress"), text("city", "city"), text("state", "iso3166-2"), text("postal_code", "postalCode"), text("country_code", "iso3166-1/code2"),
 }
 
-func WhoisReads() []ReadSpec {
+func WhoisReads() []ReadSpec { return append(WhoisRecordReads(), WhoisRelationshipReads()...) }
+
+func WhoisRecordReads() []ReadSpec {
 	identity := []Field{required(text("handle", "handle")), text("name", "name")}
 	return []ReadSpec{
 		whoisSpec("org", "org", joinFields(identity, whoisAddressFields, []Field{{Name: "can_allocate", Path: "canAllocate", Kind: BoolKind}})),
@@ -96,6 +98,9 @@ func (c *Client) readWhois(ctx context.Context, spec ReadSpec, p map[string]stri
 	if c.whoisBaseURL == "" {
 		return nil, errors.New("whois_base_url is required for Whois reads with a custom base_url")
 	}
+	if info, ok := whoisRelationship(spec.Name); ok {
+		return c.readWhoisRelated(ctx, spec, info, p)
+	}
 	endpoint := strings.TrimPrefix(spec.Name, "whois_")
 	if !slices.Contains([]string{"org", "customer", "poc", "asn", "net", "delegation"}, endpoint) {
 		return nil, errors.New("unsupported Whois lookup")
@@ -132,7 +137,7 @@ func (c *Client) readWhois(ctx context.Context, spec ReadSpec, p map[string]stri
 	if err := normalizeWhoisTree(root); err != nil {
 		return nil, err
 	}
-	record, err := decodeFields(root, spec.Fields)
+	record, err := decodeWhoisRecord(root, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +148,17 @@ func (c *Client) readWhois(ctx context.Context, spec ReadSpec, p map[string]stri
 	if !strings.EqualFold(strings.TrimSuffix(record[field].(string), "."), identity) {
 		return nil, errors.New("ARIN returned a mismatched Whois registration")
 	}
+	record["whois_xml"] = string(body)
+	return record, nil
+}
+
+// decodeWhoisRecord consumes a namespace-checked and normalized XML tree.
+func decodeWhoisRecord(root *xmlNode, spec ReadSpec) (map[string]any, error) {
+	record, err := decodeFields(root, spec.Fields)
+	if err != nil {
+		return nil, err
+	}
+	endpoint := spec.Root
 	if endpoint == "asn" {
 		first, last := record["start_asn"].(int64), record["end_asn"].(int64)
 		if first < 0 || last > 4294967295 || first > last {
@@ -174,7 +190,7 @@ func (c *Client) readWhois(ctx context.Context, spec ReadSpec, p map[string]stri
 			}
 		}
 	}
-	if endpoint == "rdns" {
+	if endpoint == "delegation" {
 		for _, raw := range record["ds_records"].([]any) {
 			ds := raw.(map[string]any)
 			if ds["key_tag"].(int64) < 0 || ds["key_tag"].(int64) > 65535 || ds["algorithm"].(int64) < 0 || ds["algorithm"].(int64) > 255 || ds["digest_type"].(int64) < 0 || ds["digest_type"].(int64) > 255 {
@@ -185,6 +201,5 @@ func (c *Client) readWhois(ctx context.Context, spec ReadSpec, p map[string]stri
 			}
 		}
 	}
-	record["whois_xml"] = string(body)
 	return record, nil
 }

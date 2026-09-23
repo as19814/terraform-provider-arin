@@ -125,6 +125,8 @@ type APIError struct {
 	// True only for a complete, structured RDAP 404 response. Search callers
 	// can distinguish no matches from a proxy or wrong-origin HTTP 404.
 	rdapNotFound bool
+	// Native Whois 404 page explicitly identifies an empty result, not an unknown handle.
+	whoisNoMatches bool
 	// Some hierarchy searches express no matches as an empty array on HTTP 404.
 	rdapEmptyDomains  bool
 	rdapEmptyNetworks bool
@@ -250,6 +252,10 @@ func (c *Client) doRequest(ctx context.Context, method, origin, path, accept str
 			AdditionalInfo []string `xml:"additionalInfo>message"`
 		}
 		apiErr := &APIError{StatusCode: resp.StatusCode}
+		if !authenticated && origin == c.whoisBaseURL && accept == "application/xml" && resp.StatusCode == http.StatusNotFound {
+			page := string(body)
+			apiErr.whoisNoMatches = strings.Contains(page, "<title>Whois-RWS</title>") && (strings.Contains(page, "Sorry, no related resources were found for the handle provided.") || strings.Contains(page, "Sorry, there were no results."))
+		}
 		if xml.Unmarshal(body, &payload) == nil {
 			apiErr.Code = c.redact(payload.Code)
 			details := []string{payload.Message}

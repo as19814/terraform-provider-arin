@@ -27,7 +27,7 @@ func whoisFixtures() map[string]string {
 	}
 }
 func TestWhoisLookups(t *testing.T) {
-	for _, spec := range WhoisReads() {
+	for _, spec := range WhoisRecordReads() {
 		t.Run(spec.Name, func(t *testing.T) {
 			kind := strings.TrimPrefix(spec.Name, "whois_")
 			pathKind := kind
@@ -65,7 +65,7 @@ func TestWhoisLookups(t *testing.T) {
 	}
 }
 func TestWhoisResponseValidation(t *testing.T) {
-	spec := WhoisReads()[0]
+	spec := WhoisRecordReads()[0]
 	base := whoisFixtures()["org"]
 	for name, body := range map[string]string{
 		"identity":              whoisFixture("org", strings.Replace(base, "EXAMPLE-1", "OTHER-1", 1)),
@@ -113,7 +113,7 @@ func TestWhoisOrigins(t *testing.T) {
 			t.Fatal("incorrect Whois origin")
 		}
 		if tc.want == "" {
-			if _, err := c.ReadRegistration(context.Background(), WhoisReads()[0], map[string]string{"handle": "EXAMPLE-1", "show_details": "false"}); err == nil {
+			if _, err := c.ReadRegistration(context.Background(), WhoisRecordReads()[0], map[string]string{"handle": "EXAMPLE-1", "show_details": "false"}); err == nil {
 				t.Fatal("custom origin fell back to production")
 			}
 		}
@@ -138,7 +138,7 @@ func TestWhoisInvalidTypedFields(t *testing.T) {
 	} {
 		t.Run(tc.kind+tc.to, func(t *testing.T) {
 			var spec ReadSpec
-			for _, s := range WhoisReads() {
+			for _, s := range WhoisRecordReads() {
 				if s.Name == "whois_"+tc.kind {
 					spec = s
 				}

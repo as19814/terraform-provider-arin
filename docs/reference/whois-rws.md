@@ -24,7 +24,44 @@ errors for these individual lookups.
 Optional `show_details = true` sends `showDetails=true`. Additional inline records
 remain in the complete XML. Any nested `limitExceeded=true` rejects the entire
 response, even when the primary record appears complete. Invalid limit flags also
-remain errors. Collection and search operations are separate remaining work.
+remain errors. Search operations are separate remaining work.
+
+## Relationships
+
+All twelve documented relationship operations have data sources:
+
+| Data source | Path after `/rest/` | Output list |
+| --- | --- | --- |
+| `arin_whois_poc_orgs` | `poc/HANDLE/orgs` | `orgs` |
+| `arin_whois_poc_asns` | `poc/HANDLE/asns` | `asns` |
+| `arin_whois_poc_nets` | `poc/HANDLE/nets` | `networks` |
+| `arin_whois_org_pocs` | `org/HANDLE/pocs` | `pocs` |
+| `arin_whois_org_asns` | `org/HANDLE/asns` | `asns` |
+| `arin_whois_org_nets` | `org/HANDLE/nets` | `networks` |
+| `arin_whois_asn_pocs` | `asn/HANDLE/pocs` | `pocs` |
+| `arin_whois_net_pocs` | `net/HANDLE/pocs` | `pocs` |
+| `arin_whois_net_parent` | `net/HANDLE/parent` | `networks` |
+| `arin_whois_net_children` | `net/HANDLE/children` | `networks` |
+| `arin_whois_net_delegations` | `net/HANDLE/rdns` | `delegations` |
+| `arin_whois_delegation_nets` | `rdns/NAME/nets` | `networks` |
+
+References are the default. They expose identity, available name and address
+range attributes, and POC function codes. Unpublished detail fields are null or
+empty; ASN ranges are not inferred from handles. `show_details = true` requests
+full records using the same validators as individual lookups. Parent responses
+always contain a full network, returned in a one-element list.
+
+The complete response is stored once in top-level `whois_xml`. Lists sort by
+identity and field values, retaining repeated handles with distinct POC role
+links. `poc_functions` preserves reference role codes and collects expanded POC
+roles from inline links to the requested owner. These are Whois associations,
+which may differ from RDAP direct-registrant inventories.
+
+Native empty relationships can return HTML HTTP 404. Only the known Whois page
+and exact no-results messages trigger an independent owner lookup. A confirmed
+existing owner permits an empty list and null `whois_xml`; unknown owners,
+unrecognized 404 pages, partial responses and referrals remain errors. An org's
+POCs are not automatically inherited by its network/ASN relationship endpoints.
 
 ## Origins and XML handling
 
@@ -69,10 +106,20 @@ ARIN_LIVE_TESTS=1 TF_ACC=1 go test ./internal/provider \
   -run '^TestLiveWhoisLookups$' -v -count=1
 ```
 
+`TestLiveWhoisRelationships` also passed on both origins on 2026-09-23 with
+credentials unset. All twelve operations were exercised in reference and detail
+modes, with populated results, POC function codes, IPv4/IPv6 delegation links,
+confirmed empty relationships, complete XML and clean subsequent plans. Existing
+public `ZG39-ARIN`, `AS15169` and `NET-216-239-32-0-1` records supply positive
+direct POC links; FT-684 records supply organization and network cases.
+
+```sh
+ARIN_LIVE_TESTS=1 TF_ACC=1 go test ./internal/provider \
+  -run '^TestLiveWhois' -v -count=1 -timeout 5m
+```
+
 ## Remaining coverage
 
-- Related-resource lists: POC orgs/ASNs/nets, org POCs/ASNs/nets, ASN POCs,
-  network POCs/parent/children/delegations, and delegation networks.
 - Documented handle/name and other field searches, including wildcard and
   multi-predicate behavior, reference/full-detail modes, and truncated results.
 - IP address and CIDR lookup, including more/less-specific relations.

@@ -1,0 +1,1 @@
+<orgs xmlns="https://www.arin.net/whoisrws/core/v1"><limitExceeded>false</limitExceeded><org pocHandle="EXAMPLE-ARIN" pocFunction="T" xmlns="https://www.arin.net/whoisrws/core/v1"><handle>EXAMPLE-1</handle><name>Example</name><canAllocate>Y</canAllocate><streetAddress><line number="1">Second</line><line number="0">First</line></streetAddress></org></orgs>

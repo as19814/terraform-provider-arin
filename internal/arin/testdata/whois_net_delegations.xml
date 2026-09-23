@@ -1,0 +1,1 @@
+<delegations xmlns="https://www.arin.net/whoisrws/rdns/v1"><limitExceeded>false</limitExceeded><delegationRef name="2.0.192.in-addr.arpa.">https://example.net</delegationRef></delegations>

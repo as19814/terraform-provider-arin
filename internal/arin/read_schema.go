@@ -49,8 +49,10 @@ type ReadSpec struct {
 	Name, Description, Root, Item, Output string
 	Inputs                                []Input
 	Fields                                []Field
-	Path                                  func(map[string]string) string
-	Collection, Binary, Sensitive         bool
+	// ResponseFields are additional top-level outputs for collection responses.
+	ResponseFields                []Field
+	Path                          func(map[string]string) string
+	Collection, Binary, Sensitive bool
 	// Select identifies an individual object using a supported collection endpoint.
 	SelectInput, SelectField string
 }

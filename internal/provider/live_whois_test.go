@@ -23,7 +23,7 @@ func TestLiveWhoisLookups(t *testing.T) {
 	t.Setenv("ARIN_RDAP_BASE_URL", "")
 	t.Setenv("ARIN_WHOIS_BASE_URL", "")
 	specs := map[string]arin.ReadSpec{}
-	for _, s := range arin.WhoisReads() {
+	for _, s := range arin.WhoisRecordReads() {
 		specs[s.Name] = s
 	}
 	for _, origin := range []string{arin.WhoisOTEURL, arin.WhoisProductionURL} {
@@ -74,6 +74,75 @@ func TestLiveWhoisLookups(t *testing.T) {
 			}
 			resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("live-test")())}, Steps: []resource.TestStep{{Config: config, Check: resource.ComposeAggregateTestCheckFunc(checks...)}, {Config: config, PlanOnly: true}}})
 			t.Log("verified all six Whois record types on " + strings.TrimPrefix(origin, "https://"))
+		})
+	}
+}
+
+func TestLiveWhoisRelationships(t *testing.T) {
+	if os.Getenv("ARIN_LIVE_TESTS") != "1" || os.Getenv("TF_ACC") != "1" {
+		t.Skip("requires read-only live opt-in")
+	}
+	for _, key := range []string{"ARIN_API_KEY", "ARIN_BASE_URL", "ARIN_RDAP_BASE_URL", "ARIN_WHOIS_BASE_URL"} {
+		t.Setenv(key, "")
+	}
+	specs := map[string]arin.ReadSpec{}
+	for _, spec := range arin.WhoisRelationshipReads() {
+		specs[spec.Name] = spec
+	}
+	for _, origin := range []string{arin.WhoisOTEURL, arin.WhoisProductionURL} {
+		t.Run(origin, func(t *testing.T) {
+			config := fmt.Sprintf("provider \"arin\" { whois_base_url=%q }\n", origin)
+			previous := ""
+			checks := []resource.TestCheckFunc{}
+			for _, tc := range []struct {
+				kind, label, identity string
+				empty                 bool
+			}{
+				{"poc_orgs", "orgs", "ADMIN8834-ARIN", false},
+				{"poc_asns", "asns", "ZG39-ARIN", false},
+				{"poc_nets", "nets", "ZG39-ARIN", false},
+				{"org_pocs", "pocs", "FT-684", false},
+				{"org_asns", "asns", "FT-684", false},
+				{"org_nets", "nets", "FT-684", false},
+				{"asn_pocs", "pocs", "AS15169", false},
+				{"net_pocs", "pocs", "NET-216-239-32-0-1", false},
+				{"net_parent", "parent", "NET-23-189-120-0-1", false},
+				{"net_children", "children", "NET6-2602-F805-1", false},
+				{"net_delegations", "v4", "NET-23-189-120-0-1", false},
+				{"net_delegations", "v6", "NET6-2602-F805-1", false},
+				{"delegation_nets", "v4", "120.189.23.in-addr.arpa.", false},
+				{"delegation_nets", "v6", "0.5.0.8.f.2.0.6.2.ip6.arpa.", false},
+				{"poc_asns", "empty", "ADMIN8834-ARIN", true},
+				{"poc_nets", "empty", "ADMIN8834-ARIN", true},
+				{"asn_pocs", "empty", "AS19814", true},
+				{"net_pocs", "empty", "NET-23-189-120-0-1", true},
+				{"net_children", "empty", "NET-23-189-120-0-1", true},
+			} {
+				for _, details := range []bool{false, true} {
+					spec := specs["whois_"+tc.kind]
+					label := fmt.Sprintf("%s_%t", tc.label, details)
+					address := "data.arin_" + spec.Name + "." + label
+					config += fmt.Sprintf("data %q %q {\n %s=%q\n show_details=%t\n", "arin_"+spec.Name, label, spec.Inputs[0].Name, tc.identity, details)
+					if previous != "" {
+						config += " depends_on=[" + previous + "]\n"
+					}
+					config += "}\n"
+					previous = address
+					if tc.empty {
+						checks = append(checks, resource.TestCheckResourceAttr(address, spec.Output+".#", "0"), resource.TestCheckNoResourceAttr(address, "whois_xml"))
+					} else {
+						key := "handle"
+						if tc.kind == "net_delegations" {
+							key = "name"
+						}
+						checks = append(checks, resource.TestCheckResourceAttrSet(address, spec.Output+".0."+key), resource.TestCheckResourceAttrSet(address, "whois_xml"))
+						if strings.HasPrefix(tc.kind, "poc_") || strings.HasSuffix(tc.kind, "_pocs") {
+							checks = append(checks, resource.TestCheckResourceAttrSet(address, spec.Output+".0.poc_functions.0"))
+						}
+					}
+				}
+			}
+			resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("live-test")())}, Steps: []resource.TestStep{{Config: config, Check: resource.ComposeAggregateTestCheckFunc(checks...)}, {Config: config, PlanOnly: true}}})
 		})
 	}
 }
