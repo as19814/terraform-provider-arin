@@ -132,7 +132,7 @@ func (p *ARINProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{NewASSetResource, NewIRRRouteResource, NewIRRRouteMetadataResource, NewIRRLinkedRouteResource, NewRouteSetResource, NewAutnumResource, NewCustomerResource, NewNetResource, NewNetMetadataResource, NewDelegationResource, NewDelegationNameserverResource, NewPOCResource, NewPOCEmailResource, NewPOCPhoneResource, NewOrgPOCResource, NewOrgResource, NewASPAResource, NewROAResource, NewRPKIBundleResource, NewRPKIPublicationBundleResource, NewRPKICertificateResource, NewReportRequestResource, NewTicketMessageResource, NewTicketStatusResource, NewRPSLResource}
 }
 func (p *ARINProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	sources := []func() datasource.DataSource{NewNetworksDataSource, NewRPSLDataSource, NewRPKISetupDataSource, NewRPKISetupRequestDataSource, NewRPKIPublicationDataSource, NewRPKIProvisioningDataSource, NewBulkWhoisDataSource, NewInvalidPOCsDataSource}
+	sources := []func() datasource.DataSource{NewNetworksDataSource, NewRPSLDataSource, NewRPKISetupDataSource, NewRPKISetupRequestDataSource, NewRPKICertificatePathDataSource, NewRPKIPublicationDataSource, NewRPKIProvisioningDataSource, NewBulkWhoisDataSource, NewInvalidPOCsDataSource}
 	for _, spec := range append(arin.RegistrationReads(), arin.PublicReads()...) {
 		sources = append(sources, func() datasource.DataSource { return newRegistrationDataSource(spec) })
 	}

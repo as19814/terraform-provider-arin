@@ -1956,7 +1956,17 @@ cache reuse, missing/wrong/ambiguous issuers, a different anchor, an intermediat
 omitted from its manifest and invalid notification configuration. Discovery does
 not accept an unvalidated chain merely because its certificates parse.
 
-Terraform integration remains to be implemented. The existing certificate
-resource still requires `issuer_chain_pem`; this API is a verified building block
-for supplying that input. Native discovery has not yet been exercised against
-ARIN's repository.
+The Terraform data source [arin_rpki_certificate_path](../data-sources/rpki_certificate_path.md)
+exposes these inputs and returns `issuer_chain_pem`, excluding the input leaf.
+Its content identity binds the leaf, anchor, ordered notifications and returned
+chain, independent of local directory names. Terraform acceptance tests cover
+input mapping, clean plans, cache relocation, refreshed chain/identity changes,
+validation failures and rejection of empty discovery results. Use an independently
+available certificate when feeding its output into a certificate resource to avoid
+a dependency cycle. Native intermediate discovery remains unverified.
+
+On 2026-09-23 the credential-free public OT&E repository test also passed direct-child
+issuer discovery against the TAL-pinned anchor, reusing persistent RRDP data and
+durable manifest history. The snapshot contained 235,888 objects and 510,127,932
+decoded bytes; one published child path was validated. This native test covers a
+one-link path, not intermediate issuer selection. It passed in 19.05 seconds.

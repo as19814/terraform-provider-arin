@@ -10,6 +10,7 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 | --- | --- | --- |
 | [arin_rpki_provisioning](../data-sources/rpki_provisioning.md) | RFC 6492 | Read parent resource classes and certificate inventories with an existing BPKI identity. |
 | [arin_rpki_publication](../data-sources/rpki_publication.md) | RFC 8181 | Read a signed publication inventory with an existing BPKI identity and persistent exchange journal. |
+| [arin_rpki_certificate_path](../data-sources/rpki_certificate_path.md) | Public RPKI repositories | Discover a validated issuer chain for an existing resource certificate using pinned trust and ordered RRDP repositories. |
 | [arin_rpki_setup_request](../data-sources/rpki_setup_request.md) | Local RFC 8183 | Generate child and publisher setup requests from an existing BPKI certificate, without submitting them. |
 | [arin_rpki_setup](../data-sources/rpki_setup.md) | Local RFC 8183 | Inspect delegated RPKI and publication setup XML, BPKI certificates and referrals without network access. |
 | [arin_bulk_whois](../data-sources/bulk_whois.md) | Account downloads | Read an approved Bulk Whois artifact with optional object selection and ZIP/XML/text format. |

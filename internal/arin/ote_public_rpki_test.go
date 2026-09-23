@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/asn1"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
@@ -226,10 +227,21 @@ func TestOTEPublicRPKIRepository(t *testing.T) {
 				t.Fatal(fmt.Errorf("published child path validation: %w", err))
 			}
 		}
+		chain, err := discoverRPKIIssuerChain(ctx, string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: child.Raw})), RPKICertificateValidation{
+			AnchorPEM:     string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: anchor.Raw})),
+			Notifications: []string{notificationURI}, CacheDirectory: directory, HistoryDirectory: history,
+		}, fetchedAt, client)
+		if err != nil {
+			t.Fatalf("native direct-child issuer discovery: %v", err)
+		}
+		issuers, err := rpkiPEMCertificates(chain, 1)
+		if err != nil || len(issuers) != 1 || !bytes.Equal(issuers[0].Raw, anchor.Raw) {
+			t.Fatal("discovered chain does not match the pinned anchor")
+		}
 		children++
 	}
 	if children == 0 {
 		t.Fatal("no published child CA to validate")
 	}
-	t.Logf("validated root manifest/CRL and %d child CA paths; reopened durable history", children)
+	t.Logf("validated root manifest/CRL and %d child CA paths; discovered direct-child issuer chains and reopened durable history", children)
 }

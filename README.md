@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 76 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-five managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, delegated publication bundles and resource certificates, report requests, ticket messages and closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md), with an [operation-by-operation Reg-RWS map](docs/reference/reg-rws-coverage.md). The repository is private and the provider has not been published to a registry.
+The provider includes 77 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-five managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, delegated publication bundles and resource certificates, report requests, ticket messages and closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md), with an [operation-by-operation Reg-RWS map](docs/reference/reg-rws-coverage.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -398,3 +398,9 @@ batches. It uses inventory hashes for replacement and withdrawal, restores drift
 and preserves unmanaged URLs. Import verifies exact contents from a private JSON manifest. Publication
 reconciliation is available through the recovery CLI; native delegated
 verification still requires existing sandbox enrollment.
+
+[`arin_rpki_certificate_path`](docs/data-sources/rpki_certificate_path.md) discovers
+and validates an existing resource certificate's issuer chain from ordered RRDP
+repositories and an explicitly pinned anchor. Its output can supply the certificate
+resource's `issuer_chain_pem`. No API credentials are used; persistent private
+cache and manifest-history directories preserve polling and rollback protection.
