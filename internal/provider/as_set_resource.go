@@ -1,0 +1,229 @@
+package provider
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/as19814/terraform-provider-arin/internal/arin"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+var (
+	_ resource.Resource                   = &asSetResource{}
+	_ resource.ResourceWithConfigure      = &asSetResource{}
+	_ resource.ResourceWithImportState    = &asSetResource{}
+	_ resource.ResourceWithValidateConfig = &asSetResource{}
+)
+
+type asSetResource struct{ client *arin.Client }
+type asSetModel struct {
+	ID               types.String `tfsdk:"id"`
+	Name             types.String `tfsdk:"name"`
+	OrgHandle        types.String `tfsdk:"org_handle"`
+	Description      types.List   `tfsdk:"description"`
+	Remarks          types.List   `tfsdk:"remarks"`
+	Members          types.Set    `tfsdk:"members"`
+	MembersByRef     types.Set    `tfsdk:"members_by_ref"`
+	POCs             types.Set    `tfsdk:"poc_links"`
+	CreationDate     types.String `tfsdk:"creation_date"`
+	LastModifiedDate types.String `tfsdk:"last_modified_date"`
+}
+type irrPOCModel struct {
+	Handle   types.String `tfsdk:"handle"`
+	Function types.String `tfsdk:"function"`
+}
+
+var irrPOCType = types.ObjectType{AttrTypes: map[string]attr.Type{"handle": types.StringType, "function": types.StringType}}
+
+func NewASSetResource() resource.Resource { return &asSetResource{} }
+func (r *asSetResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_irr_as_set"
+}
+func (r *asSetResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: "Manage a simple (XML) ARIN IRR AS set. Owns its full description, remarks, POC links, membership, and membership-by-reference. Advanced RPSL objects are not supported. Import existing sets by name before managing them. Removing this resource from configuration deletes the AS set from ARIN. Writes have been tested against a fake server; production write behavior has not yet been validated.",
+		Attributes: map[string]schema.Attribute{
+			"id":             schema.StringAttribute{Computed: true, MarkdownDescription: "AS set name, also used as the import ID.", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"name":           schema.StringAttribute{Required: true, MarkdownDescription: "Uppercase AS set name (for example AS-EXAMPLE or AS64496:AS-EXAMPLE). Changing it replaces the object.", PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
+			"org_handle":     schema.StringAttribute{Required: true, MarkdownDescription: "Uppercase maintaining organization handle. Changing it replaces the object.", PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
+			"description":    schema.ListAttribute{Required: true, ElementType: types.StringType, MarkdownDescription: "Ordered description lines, at least one. Each entry is one nonempty line without surrounding whitespace."},
+			"remarks":        schema.ListAttribute{Optional: true, Computed: true, ElementType: types.StringType, Default: listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})), MarkdownDescription: "Ordered remarks lines. Defaults to empty; omission clears existing remarks on apply."},
+			"members":        schema.SetAttribute{Optional: true, Computed: true, ElementType: types.StringType, Default: setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})), MarkdownDescription: "Uppercase AS numbers or AS set names. Defaults to empty; omission clears explicit membership on apply."},
+			"members_by_ref": schema.SetAttribute{Optional: true, Computed: true, ElementType: types.StringType, Default: setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})), MarkdownDescription: "Maintainers in MNT-ORG format, or ANY. Defaults to empty; omission clears membership-by-reference on apply."},
+			"poc_links": schema.SetNestedAttribute{Optional: true, Computed: true, Default: setdefault.StaticValue(types.SetValueMust(irrPOCType, []attr.Value{})), MarkdownDescription: "Complete set of POC links. Defaults to empty. Functions are AD (admin), T (technical), or R (routing).", NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
+				"handle":   schema.StringAttribute{Required: true, MarkdownDescription: "Uppercase POC handle, as returned by ARIN."},
+				"function": schema.StringAttribute{Required: true, MarkdownDescription: "AD, T, or R."},
+			}}},
+			"creation_date":      schema.StringAttribute{Computed: true, MarkdownDescription: "Creation timestamp reported by ARIN, or null when absent."},
+			"last_modified_date": schema.StringAttribute{Computed: true, MarkdownDescription: "Last modification timestamp reported by ARIN, or null when absent."},
+		},
+	}
+}
+func (r *asSetResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+	client, ok := req.ProviderData.(*arin.Client)
+	if !ok {
+		resp.Diagnostics.AddError("Unexpected provider configuration", fmt.Sprintf("Expected *arin.Client, got %T", req.ProviderData))
+		return
+	}
+	r.client = client
+}
+func (m asSetModel) api(ctx context.Context) (arin.ASSet, diag.Diagnostics) {
+	s := arin.ASSet{Name: m.Name.ValueString(), OrgHandle: m.OrgHandle.ValueString()}
+	var d diag.Diagnostics
+	d.Append(m.Description.ElementsAs(ctx, &s.Description, false)...)
+	d.Append(m.Remarks.ElementsAs(ctx, &s.Remarks, false)...)
+	d.Append(m.Members.ElementsAs(ctx, &s.Members, false)...)
+	d.Append(m.MembersByRef.ElementsAs(ctx, &s.MembersByRef, false)...)
+	var pocs []irrPOCModel
+	d.Append(m.POCs.ElementsAs(ctx, &pocs, false)...)
+	for _, p := range pocs {
+		s.POCs = append(s.POCs, arin.IRRPOC{Handle: p.Handle.ValueString(), Function: p.Function.ValueString()})
+	}
+	return s, d
+}
+func (r *asSetResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var m asSetModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &m)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// Unknown expressions are validated after Terraform resolves the plan.
+	for _, v := range []attr.Value{m.Name, m.OrgHandle, m.Description, m.Remarks, m.Members, m.MembersByRef, m.POCs} {
+		tv, err := v.ToTerraformValue(ctx)
+		if err != nil || !tv.IsFullyKnown() {
+			return
+		}
+	}
+	s, d := m.api(ctx)
+	resp.Diagnostics.Append(d...)
+	if !resp.Diagnostics.HasError() {
+		if err := s.Validate(); err != nil {
+			resp.Diagnostics.AddError("Invalid AS set configuration", err.Error())
+		}
+	}
+}
+func asSetState(ctx context.Context, s *arin.ASSet) (asSetModel, diag.Diagnostics) {
+	m := asSetModel{ID: types.StringValue(s.Name), Name: types.StringValue(s.Name), OrgHandle: types.StringValue(s.OrgHandle), CreationDate: types.StringNull(), LastModifiedDate: types.StringNull()}
+	if s.CreationDate != "" {
+		m.CreationDate = types.StringValue(s.CreationDate)
+	}
+	if s.LastModifiedDate != "" {
+		m.LastModifiedDate = types.StringValue(s.LastModifiedDate)
+	}
+	var d, next diag.Diagnostics
+	m.Description, next = types.ListValueFrom(ctx, types.StringType, nonNilStrings(s.Description))
+	d.Append(next...)
+	m.Remarks, next = types.ListValueFrom(ctx, types.StringType, nonNilStrings(s.Remarks))
+	d.Append(next...)
+	m.Members, next = types.SetValueFrom(ctx, types.StringType, nonNilStrings(s.Members))
+	d.Append(next...)
+	m.MembersByRef, next = types.SetValueFrom(ctx, types.StringType, nonNilStrings(s.MembersByRef))
+	d.Append(next...)
+	pocs := []irrPOCModel{}
+	for _, p := range s.POCs {
+		pocs = append(pocs, irrPOCModel{types.StringValue(p.Handle), types.StringValue(p.Function)})
+	}
+	m.POCs, next = types.SetValueFrom(ctx, irrPOCType, pocs)
+	d.Append(next...)
+	return m, d
+}
+func nonNilStrings(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
+}
+func (r *asSetResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var m asSetModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &m)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	s, d := m.api(ctx)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	result, err := r.client.CreateASSet(ctx, s)
+	if err != nil {
+		resp.Diagnostics.AddError("Could not create AS set", err.Error()+". If a write was sent, verify the object before retrying; import it by name if creation succeeded.")
+		return
+	}
+	m, d = asSetState(ctx, result)
+	resp.Diagnostics.Append(d...)
+	if !resp.Diagnostics.HasError() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
+	}
+}
+func (r *asSetResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var m asSetModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &m)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	result, err := r.client.GetASSet(ctx, m.ID.ValueString())
+	if arin.IsNotFound(err) {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if err != nil {
+		resp.Diagnostics.AddError("Could not read AS set", err.Error())
+		return
+	}
+	m, d := asSetState(ctx, result)
+	resp.Diagnostics.Append(d...)
+	if !resp.Diagnostics.HasError() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
+	}
+}
+func (r *asSetResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var m asSetModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &m)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	s, d := m.api(ctx)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	result, err := r.client.UpdateASSet(ctx, s)
+	if err != nil {
+		resp.Diagnostics.AddError("Could not update AS set", err.Error()+". Refresh the object before retrying an uncertain write.")
+		return
+	}
+	m, d = asSetState(ctx, result)
+	resp.Diagnostics.Append(d...)
+	if !resp.Diagnostics.HasError() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
+	}
+}
+func (r *asSetResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var m asSetModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &m)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if err := r.client.DeleteASSet(ctx, m.ID.ValueString()); err != nil {
+		resp.Diagnostics.AddError("Could not delete AS set", err.Error()+". Refresh the object before retrying an uncertain write.")
+	}
+}
+func (r *asSetResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	if err := arin.ValidateASSetName(req.ID); err != nil {
+		resp.Diagnostics.AddError("Invalid AS set import ID", err.Error())
+		return
+	}
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}

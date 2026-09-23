@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Managed resources are not implemented yet. The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). The first managed resource, [`arin_irr_as_set`](docs/resources/irr_as_set.md), supports simple IRR AS set creation, updates, deletion, and import. The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -97,8 +97,37 @@ API requests have deadlines and bounded responses. Redirects are rejected, raw r
 
 Every non-report read endpoint in the collected Reg-RWS, IRR, and hosted RPKI guides is covered. Report-request endpoints are excluded because they create tickets, even when called with GET. Existing ticket summaries, messages, and attachments can be read. Sensitive customer/ticket content and organization tax IDs remain in Terraform state even when Terraform masks them. Full API coverage and live-test limitations are recorded in the [catalog](docs/reference/data-sources.md).
 
+## Managed AS sets
+
+`arin_irr_as_set` manages the full XML representation of a simple IRR AS set.
+Names and organization handles are uppercase and changes to either require
+replacement. Membership and POC links are unordered sets; description and remarks
+are ordered lists of lines. Optional collections default to empty, so omitting
+existing values after import plans to remove them. Source is always `ARIN`.
+Advanced RPSL objects are not supported.
+
+Import an existing set by name before applying configuration:
+
+```sh
+terraform import arin_irr_as_set.peers AS-EXAMPLE-PEERS
+terraform plan
+```
+
+Match configuration to the imported record and review the plan before applying.
+For an existing operational set, consider `lifecycle { prevent_destroy = true }`.
+This guards planned deletion/replacement while the resource block remains in
+configuration; removing the block also removes that protection.
+Deletion removes the AS set from ARIN, not just from Terraform state.
+
+Resource lifecycle tests use a stateful fake API. Live mutation testing has not
+been performed; use OT&E before relying on production writes. Requests are never
+automatically retried. If a create times out or returns an unreadable result,
+check whether the object exists and import it if necessary before retrying.
+Updates and deletes retain state on errors. Only a 404 means the object is absent;
+authentication and server errors never cause state removal.
+
 ## Next steps
 
-Build resource support one API family at a time, with import, refresh, update, deletion, and error behavior tested against both a fake server and OT&E. Network discovery and authenticated detail reads are implemented; network metadata management can build on those models. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
+Extend managed-resource support to additional IRR objects, network metadata, and delegations, with explicit lifecycle semantics and OT&E validation. Network discovery and authenticated detail reads are implemented; network metadata management can build on those models. Registration workflows and tickets need their own lifecycle decisions before being exposed as managed resources.
 
 Start with the [API index](docs/reference/arin-api/README.md), [provider notes](docs/reference/arin-api/PROVIDER-NOTES.md), and [schema findings](docs/reference/arin-api/schemas/README.md).

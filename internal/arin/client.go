@@ -2,6 +2,7 @@
 package arin
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"encoding/xml"
@@ -141,8 +142,9 @@ func (c *Client) getXML(ctx context.Context, path string, out any) error {
 }
 
 type readResponse struct {
-	Body   []byte
-	Header http.Header
+	StatusCode int
+	Body       []byte
+	Header     http.Header
 }
 
 func (c *Client) get(ctx context.Context, origin, path, accept string, authenticated bool) ([]byte, error) {
@@ -154,10 +156,15 @@ func (c *Client) get(ctx context.Context, origin, path, accept string, authentic
 }
 
 func (c *Client) fetch(ctx context.Context, origin, path, accept string, authenticated bool) (*readResponse, error) {
+	return c.request(ctx, http.MethodGet, origin, path, accept, authenticated, nil)
+}
+
+// request performs one attempt. Mutations are never replayed automatically.
+func (c *Client) request(ctx context.Context, method, origin, path, accept string, authenticated bool, payload []byte) (*readResponse, error) {
 	if authenticated && c.apiKey == "" {
 		return nil, errors.New("api_key or ARIN_API_KEY is required for Reg-RWS operations")
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, origin+path, nil)
+	req, err := http.NewRequestWithContext(ctx, method, origin+path, bytes.NewReader(payload))
 	if err != nil {
 		return nil, errors.New("could not construct ARIN request")
 	}
@@ -210,7 +217,7 @@ func (c *Client) fetch(ctx context.Context, origin, path, accept string, authent
 		}
 		return nil, apiErr
 	}
-	return &readResponse{Body: body, Header: resp.Header.Clone()}, nil
+	return &readResponse{Body: body, Header: resp.Header.Clone(), StatusCode: resp.StatusCode}, nil
 }
 
 func (c *Client) redact(s string) string {

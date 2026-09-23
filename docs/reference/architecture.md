@@ -22,7 +22,7 @@ The default origin is production. OT&E is selected explicitly with `base_url` or
 
 The HTTP timeout defaults to 30 seconds. The provider allows 1 to 300 seconds. Context cancellation reaches the HTTP request. Responses are limited to 4 MiB; operations requiring larger payloads will need a deliberate change. There are no automatic retries yet, including on 429 responses, to avoid prematurely defining behavior for future writes.
 
-Non-success HTTP responses become `APIError` values with status code and sanitized XML or JSON error fields. Unstructured errors report status only. Missing organizations are data source errors. A future managed resource must decide separately whether a missing object should remove it from Terraform state.
+Non-success HTTP responses become `APIError` values with status code and sanitized XML or JSON error fields. Unstructured errors report status only. Missing organizations are data source errors. Managed AS sets remove missing objects from state on a 404, while other API errors preserve state.
 
 ## Verification
 
@@ -32,10 +32,32 @@ Fake-server acceptance tests exercise Terraform protocol negotiation, provider c
 
 ## Deferred decisions
 
-- Managed-resource identity and import formats.
+- Identity and import formats for additional resource families.
 - RPKI transaction batching and concurrent updates.
 - Ticket polling and eventual consistency.
 - Resource-specific retries and rate-limit backoff.
 - Release signing, packaging, registry publication, and license selection.
 
 No release workflow is enabled. Documentation generation uses a pinned Go tool dependency. GitHub Actions are pinned to commits and dependency updates are configured through Dependabot.
+
+## Managed simple IRR AS sets
+
+`arin_irr_as_set` uses a dedicated complete write model in `internal/arin/as_set.go`,
+not the generic data-source model. XML uses the published `AsSetPayload.rnc`
+spelling `membersByRef`, despite the prose guide's `mbrsByRef` label.
+It includes empty collection containers to clear removed values, XML-escapes
+text and attributes, and omits server-owned timestamps and POC descriptions.
+Unsupported top-level fields fail reads rather than allowing a lossy update.
+
+The AS set name is the state ID and import ID. Names and organization handles
+require replacement. Creates check for an existing object first and require
+import instead of adoption. POST and PUT responses must contain the completed
+matching AS set; asynchronous responses are not treated as completion. Deletes
+accept completed 200/204 responses or 404. Only read 404 removes a resource from
+state. No automatic write retries or redirect following are enabled.
+
+Stateful fake-server acceptance tests cover create, update, clearing collections,
+import verification, drift correction, external deletion, replacement, and
+final deletion. Client tests cover payload serialization, error redaction,
+conflicts, redirects, asynchronous responses, malformed results, and no replay.
+Live write testing is deferred to an explicit OT&E exercise.

@@ -102,7 +102,9 @@ func (p *ARINProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	resp.DataSourceData = client
 	resp.ResourceData = client
 }
-func (p *ARINProvider) Resources(_ context.Context) []func() resource.Resource { return nil }
+func (p *ARINProvider) Resources(_ context.Context) []func() resource.Resource {
+	return []func() resource.Resource{NewASSetResource}
+}
 func (p *ARINProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	sources := []func() datasource.DataSource{NewNetworksDataSource}
 	for _, spec := range append(arin.RegistrationReads(), arin.PublicReads()...) {
