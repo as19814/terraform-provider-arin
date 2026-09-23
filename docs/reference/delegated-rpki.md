@@ -1265,3 +1265,33 @@ key does not prove CRL publication; a present key can still be scheduled for
 revocation. No outcome clears the original journal or permits mutation replay.
 Durable outcome reconciliation, resource-path/CRL evidence and provider lifecycle
 integration remain to be implemented and verified with native delegated setup.
+
+### Revocation observation CLI
+
+Use a private JSON configuration file (mode `0600`) with the same transport and
+BPKI fields as the publication recovery configuration above. Replace
+`publisher_handle` with both `child_handle` and `parent_handle`; `endpoint` must
+be the provisioning service URI. The signing key remains in a separate private
+file referenced by `signing_key_file`. Publication-only fields, unknown fields,
+duplicate keys and non-string values are rejected.
+
+```sh
+go run ./tools/rpki-journal \
+  -provisioning-config /absolute/private/provisioning.json \
+  -request-sha256 EXACT_PENDING_REVOCATION_SHA256
+```
+
+The command verifies the retained revocation request and performs a signed list
+read. Its JSON report includes child/parent handles, resource class, normalized
+key identifier, outcome, probe journal peer and durable sent/received timestamps.
+`committed` is always false. The original mutation stays pending for every
+outcome. `-expect`, publication configuration and local journal modes cannot be
+combined with this mode. Errors include the recovery peer ID when available, so
+an interrupted probe can be inspected with the existing local journal commands.
+Only a pending inventory read may be explicitly abandoned by those commands.
+
+This CLI does not issue certificates, resubmit revocations or establish CRL
+publication. It is not yet an end-to-end recovery path for a Terraform
+certificate resource. Signed local API tests verify report mapping and unchanged
+pending state; CLI tests verify mode isolation, error handling and rejection of
+commit flags. Native delegated verification still requires sandbox enrollment.

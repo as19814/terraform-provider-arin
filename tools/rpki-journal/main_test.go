@@ -91,3 +91,66 @@ func TestJournalCommandModes(t *testing.T) {
 		})
 	}
 }
+
+func TestJournalRevocationModes(t *testing.T) {
+	for _, mode := range []string{"observe", "load_error", "read_error", "expect", "publication", "directory", "read", "missing"} {
+		t.Run(mode, func(t *testing.T) {
+			calls := []string{}
+			actions := journalActions{
+				loadProvisioning: func(path string) (arin.RPKIProvisioningReadConfig, error) {
+					calls = append(calls, "load")
+					if path != "/private/provisioning.json" {
+						t.Fatal("config path changed")
+					}
+					if mode == "load_error" {
+						return arin.RPKIProvisioningReadConfig{}, errors.New("invalid config")
+					}
+					return arin.RPKIProvisioningReadConfig{Child: "child", Parent: "parent"}, nil
+				},
+				revocation: func(_ context.Context, config arin.RPKIProvisioningReadConfig, digest string) (*arin.RPKIRevocationRecoveryReport, error) {
+					calls = append(calls, "observe")
+					if config.Child != "child" || config.Parent != "parent" || digest != "digest" {
+						t.Fatal("observation arguments changed")
+					}
+					if mode == "read_error" {
+						return nil, errors.New("read failed")
+					}
+					return &arin.RPKIRevocationRecoveryReport{Outcome: "key_absent"}, nil
+				},
+			}
+			args := []string{"-provisioning-config", "/private/provisioning.json", "-request-sha256", "digest"}
+			switch mode {
+			case "expect":
+				args = append(args, "-expect", "matches_after")
+			case "publication":
+				args = append(args, "-publication-config", "/private/publication.json")
+			case "directory":
+				args = append(args, "-directory", "/private/journal")
+			case "read":
+				args = append(args, "-recover-read-sha256", "digest")
+			case "missing":
+				args = args[:2]
+			}
+			var out, stderr bytes.Buffer
+			code := runJournal(args, &out, &stderr, actions)
+			switch mode {
+			case "observe":
+				if code != 0 || strings.Join(calls, ",") != "load,observe" || !strings.Contains(out.String(), `"committed": false`) || !strings.Contains(out.String(), `"outcome": "key_absent"`) {
+					t.Fatalf("observation failed: %s", stderr.String())
+				}
+			case "load_error", "read_error":
+				want := "load"
+				if mode == "read_error" {
+					want = "load,observe"
+				}
+				if code != 1 || strings.Join(calls, ",") != want || out.Len() != 0 {
+					t.Fatal("failed operation produced report")
+				}
+			default:
+				if code != 2 || len(calls) != 0 || out.Len() != 0 {
+					t.Fatal("invalid mode performed action")
+				}
+			}
+		})
+	}
+}

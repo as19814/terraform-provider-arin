@@ -378,7 +378,9 @@ independently validate the returned resource certificates' RPKI trust paths.
 
 
 Interrupted delegated inventory reads can be inspected and explicitly abandoned
-with `go run ./tools/rpki-journal`. See [read recovery](docs/reference/delegated-rpki.md#recovering-an-interrupted-inventory-read).
+with `go run ./tools/rpki-journal`. Pending revocations also support
+[authenticated observation](docs/reference/delegated-rpki.md#revocation-observation-cli)
+without clearing the mutation. See [read recovery](docs/reference/delegated-rpki.md#recovering-an-interrupted-inventory-read).
 Publication mutations have a separate [authenticated reconciliation mode](docs/reference/delegated-rpki.md#publication-recovery-cli). The command cannot bypass process locks.
 
 

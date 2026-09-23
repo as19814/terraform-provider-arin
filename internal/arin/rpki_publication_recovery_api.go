@@ -61,7 +61,20 @@ func recoverRPKIPublication(ctx context.Context, config RPKIPublicationReadConfi
 // Terraform BPKI attribute names. It accepts no private key bytes or object data.
 func LoadRPKIPublicationConfig(path string) (RPKIPublicationReadConfig, error) {
 	var config RPKIPublicationReadConfig
-	fail := func() (RPKIPublicationReadConfig, error) { return RPKIPublicationReadConfig{}, errRPKIIdentityConfig }
+	fields := rpkiConfigFields(&config)
+	fields["publisher_handle"] = &config.Publisher
+	if err := loadPrivateRPKIConfig(path, fields); err != nil {
+		return RPKIPublicationReadConfig{}, err
+	}
+	return config, nil
+}
+
+func rpkiConfigFields(config *RPKIPublicationReadConfig) map[string]*string {
+	return map[string]*string{"endpoint": &config.Endpoint, "journal_directory": &config.JournalDirectory, "signing_key_file": &config.SigningKeyFile, "signing_certificate_pem": &config.SigningCertificatePEM, "signing_ca_pem": &config.SigningAnchorPEM, "signing_intermediates_pem": &config.SigningIntermediatesPEM, "signing_crls_pem": &config.SigningCRLsPEM, "peer_ca_pem": &config.PeerAnchorPEM, "peer_intermediates_pem": &config.PeerIntermediatesPEM}
+}
+
+func loadPrivateRPKIConfig(path string, fields map[string]*string) error {
+	fail := func() error { return errRPKIIdentityConfig }
 	if !filepath.IsAbs(path) {
 		return fail()
 	}
@@ -79,7 +92,6 @@ func LoadRPKIPublicationConfig(path string) (RPKIPublicationReadConfig, error) {
 	if statErr != nil || !os.SameFile(info, actual) || readErr != nil || closeErr != nil || len(raw) > 16<<20 {
 		return fail()
 	}
-	fields := map[string]*string{"endpoint": &config.Endpoint, "publisher_handle": &config.Publisher, "journal_directory": &config.JournalDirectory, "signing_key_file": &config.SigningKeyFile, "signing_certificate_pem": &config.SigningCertificatePEM, "signing_ca_pem": &config.SigningAnchorPEM, "signing_intermediates_pem": &config.SigningIntermediatesPEM, "signing_crls_pem": &config.SigningCRLsPEM, "peer_ca_pem": &config.PeerAnchorPEM, "peer_intermediates_pem": &config.PeerIntermediatesPEM}
 	d := json.NewDecoder(bytes.NewReader(raw))
 	token, err := d.Token()
 	if err != nil || token != json.Delim('{') {
@@ -116,5 +128,5 @@ func LoadRPKIPublicationConfig(path string) (RPKIPublicationReadConfig, error) {
 			return fail()
 		}
 	}
-	return config, nil
+	return nil
 }
