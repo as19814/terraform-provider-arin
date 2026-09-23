@@ -118,8 +118,8 @@ const terraformRemovalMessageConfig = `removal_messages = [{
  attachments = { "evidence.txt" = base64encode("Disposable OT&E test evidence.") }
 }]`
 
-// No new correspondence has been authorized. Enabling the environment variable
-// alone must not reuse the two consumed client-test approvals.
+// Both additional Terraform messages completed on 2026-09-23. This approval
+// is consumed; an environment opt-in or missing receipt cannot authorize replay.
 const terraformRemovalMessagesApproved = false
 
 func TestOTENetTerraformRemovalMessages(t *testing.T) {
