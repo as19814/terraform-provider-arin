@@ -198,5 +198,10 @@ rejects message and message-reference elements before dispatch. Cleanup removes
 the receipt only after all tracked NETs and customers are confirmed absent.
 `make testote` includes this no-correspondence lifecycle.
 
-Live message/attachment submission remains unverified. No correspondence was
-sent to ARIN during this work.
+Live message/attachment submission remains unverified. No correspondence has
+been sent by this test. The user has now explicitly approved exactly two OT&E
+removal messages, one per IP family, with subject "Terraform provider OT&E removal
+test", text "Removing a disposable sandbox network for provider verification.",
+and attachment evidence.txt containing "Disposable OT&E test evidence." A durable
+one-time fixture must prevent later test runs from resending that correspondence;
+this approval does not cover unrelated messages or production writes.

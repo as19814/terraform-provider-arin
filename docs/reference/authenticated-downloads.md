@@ -1,7 +1,7 @@
 # Authenticated download audit
 
 The Bulk Whois and invalid-POC families now have a streaming client and mock
-coverage. Terraform data sources remain to be implemented. OT&E routing and
+coverage. `arin_bulk_whois` and `arin_invalid_pocs` provide Terraform reads with mock coverage. OT&E routing and
 authentication have been probed, but successful content retrieval has not been
 verified with the available account.
 
@@ -78,9 +78,33 @@ describes a complete archive and combinations of `asns`, `pocs`, `orgs` and
 is a ZIP containing reports and schemas. Both require approved Bulk Whois access.
 The documented download authentication uses an API key query parameter.
 
-Next steps are Terraform data-source integration, approved sandbox access, and
+The user confirmed there is no existing OT&E Bulk Whois approval. No agreement
+or enrollment request has been submitted. Next steps are approved sandbox access and
 successful retrieval with validation of the returned report/schema formats.
 Selection, transport bounds and error redaction have client mock coverage; native
 format support and large-report behavior remain unverified.
 An authorization failure must never become an empty successful data source.
 Neither family is classified as unsupported by OT&E.
+
+## Terraform data sources
+
+`arin_bulk_whois` accepts an optional `objects` set and `format` (zip, xml or txt).
+`arin_invalid_pocs` selects the fixed invalid-POC ZIP. Both accept `max_bytes`
+(default 64 MiB) and `include_content` (default true). They return the canonical
+selection ID, optional filename, media type, byte count, SHA-256 and sensitive
+base64 content. With `include_content=false`, content stays null and the client
+streams to a discard writer while computing metadata. This avoids storing the
+artifact in Terraform state but still downloads all bytes on every refresh.
+
+No local files are created. Content mode buffers bytes and stores base64 in state,
+so callers should choose limits appropriate for their report size and state
+backend. The provider's request timeout applies. `download_base_url` and
+`ARIN_DOWNLOAD_BASE_URL` configure the separate account service; otherwise its
+origin follows production/OT&E `base_url`. Custom registration origins need an
+explicit download origin. No enrollment or report-generation request is made.
+
+Terraform mocks cover content, metadata-only reads, input defaults, changed
+remote artifacts, clean plans, environment and explicit origins, authorization
+failure, size limits, invalid selection, redirects and unexpected media types.
+The user-confirmed lack of account approval blocks successful native Terraform
+download evidence; HTTP 403 is never represented as an empty result.

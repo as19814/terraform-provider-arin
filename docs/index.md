@@ -34,6 +34,7 @@ provider "arin" {
 
 - `api_key` (String, Sensitive) ARIN API key. Defaults to `ARIN_API_KEY`. Required for Reg-RWS operations, but not public RDAP or Whois-RWS reads. Your account must have authority over requested registration records.
 - `base_url` (String) API origin. Defaults to `ARIN_BASE_URL`, then `https://reg.arin.net`. Use `https://reg.ote.arin.net` for OT&E. HTTPS is required except for loopback test servers.
+- `download_base_url` (String) Authenticated download origin. Defaults to ARIN_DOWNLOAD_BASE_URL, then the production or OT&E accountws origin matching base_url. Required with a custom base_url. This separate service requires approved download access and uses API-key query authentication.
 - `rdap_base_url` (String) Public RDAP origin. Defaults to `ARIN_RDAP_BASE_URL`, then the production or OT&E RDAP origin matching `base_url`. Required for network discovery with a custom `base_url`. No API key is sent to this origin.
 - `timeout_seconds` (Number) HTTP request timeout in seconds, from 1 to 300. Defaults to 30.
 - `whois_base_url` (String) Public Whois-RWS origin. Defaults to ARIN_WHOIS_BASE_URL, then the production or OT&E Whois origin matching base_url. Required for Whois reads with a custom base_url. No API key is sent. HTTPS is required except for loopback test servers.

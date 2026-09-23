@@ -8,6 +8,8 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 
 | Data source | API | Purpose |
 | --- | --- | --- |
+| [arin_bulk_whois](../data-sources/bulk_whois.md) | Account downloads | Read an approved Bulk Whois artifact with optional object selection and ZIP/XML/text format. |
+| [arin_invalid_pocs](../data-sources/invalid_pocs.md) | Account downloads | Read the approved invalid-POC ZIP report. |
 | [arin_networks](../data-sources/networks.md) | Public RDAP | Discover networks directly registered to an organization. |
 | [arin_irr_rpsl](../data-sources/irr_rpsl.md) | IRR RPSL | Read the complete text of an advanced route, route6, AS set, route set or aut-num object. |
 | [arin_asn](../data-sources/asn.md) | Public RDAP | Read an ASN registration through public ARIN RDAP. No API key is sent. This is distinct from an IRR aut-num object. |
@@ -84,9 +86,9 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 - Public RDAP searches reject truncation and pagination rather than returning an incomplete inventory.
 - Registration collections reject unexpected record types. No response-provided links are followed.
 - IP addresses are normalized, including ARIN's decimal, zero-padded IPv4 format. Optional server fields remain null. Ordered text follows numeric line indices.
-- API keys are used only for authenticated registration reads. Public RDAP and Whois-RWS requests do not carry them.
+- Registration reads use API-key headers. Approved account downloads use the documented API-key query parameter on their separate origin. Public RDAP and Whois-RWS requests do not carry credentials.
 - Customer and ticket content, attachments, and organization tax IDs are sensitive in Terraform's UI. Sensitive values are still stored in state.
-- Attachments remain in memory and are returned as base64, with filename, content type, byte count, and SHA-256. No files are written; the 4 MiB response limit applies.
+- Ticket attachments remain in memory and are returned as base64, with filename, content type, byte count, and SHA-256; the 4 MiB response limit applies. Account downloads have a separate configurable limit (64 MiB default) and can stream metadata without storing content. Neither writes local files.
 - Collection-only RPKI APIs are used for individual ROA/ASPA selection. Reads never synthesize RPKI objects.
 
 ## Testing and API notes
@@ -104,5 +106,7 @@ All six Whois-RWS record types, twelve relationship operations, five search type
 The ASPA endpoint requires Content-Type: application/xml even on GET. The client supplies it for authenticated reads.
 
 ARIN's current "Get Ticket Payload List" header-auth example repeats the single-ticket summary URL. The implemented listing path uses the matrix-filter endpoint documented in the adjacent URL-auth example, with authentication moved to the header. No key is placed in the URL. Both filtered ticket-list endpoints were also checked live and returned valid empty collections for open QUESTION tickets.
+
+Bulk Whois and invalid-POC downloads require prior Bulk Whois approval. The current OT&E account has no approval and returns HTTP 403; these data sources have mock coverage but successful native retrieval remains unverified.
 
 The provider does not promise that every account can access every object. Authorization errors are reported without falling back to a different account or service.
