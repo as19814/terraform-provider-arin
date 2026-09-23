@@ -108,3 +108,32 @@ handles, request types and referrals are rejected. Terraform acceptance connects
 both request types to `arin_rpki_setup`, verifies decoded output, refreshes a changed
 handle, and checks clean plans before and after the change. No native enrollment
 request was submitted; ARIN acceptance remains unverified without sandbox setup.
+
+## CMS profile decoder and signature checks
+
+The private `decodeRPKICMS` layer checks the envelope described by
+[RFC 6492 section 3.1](https://www.rfc-editor.org/rfc/rfc6492.html#section-3.1).
+It requires version-3 SignedData/SignerInfo, one signer identified by the EE
+certificate's subject-key identifier, XML content type, certificates and CRLs,
+mandatory signed attributes, matching content digest and a valid RSA signature.
+It handles signing-time, binary-signing-time, or both with agreement. DER set
+ordering, duplicate/unknown fields and unsigned attributes are checked explicitly.
+Input is limited to 4 MiB, with at most 32 certificates and 32 CRLs. The initial
+algorithm implementation supports SHA-256 and RSA keys from 2048 to 8192 bits;
+this is not a claim of native interoperability or complete algorithm coverage.
+
+The return type is explicitly untrusted and private. It does not validate the
+certificate trust path, CRL signatures/freshness/revocation, signing-time replay,
+or XML sender/recipient semantics. No protocol client consumes its payload yet.
+Those checks are required before exposing authenticated content to Terraform.
+
+Tests include independently verified OpenSSL signature/content interoperability,
+signed malformed profiles, tampered content/signatures, both time encodings, and
+re-signed noncanonical attribute ordering. A fuzz target exercises bounded input.
+No live protocol request, identity enrollment or signing-key persistence occurred.
+
+The inspected [digitorus PKCS7 signing implementation](https://github.com/digitorus/pkcs7/blob/master/sign.go)
+uses issuer-and-serial signer identifiers. The provider's profile decoder uses
+Go standard-library ASN.1, X.509 and RSA primitives instead of introducing that
+library and rewriting its signer representation. It remains internal until the
+complete authentication layer is implemented and tested.
