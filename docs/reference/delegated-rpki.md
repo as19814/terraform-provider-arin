@@ -622,3 +622,25 @@ This implements the certificate profile, not an authenticated resource path.
 Issuer trust, inheritance resolution against that issuer, revocation, exact
 publication-location binding, persistent rollback checks and provider/native
 integration remain unfinished. No native delegated requests were sent.
+
+## Manifest checks against a supplied issuer
+
+A private combined check now reparses the supplied CA DER, verifies the manifest
+CMS and EE profile, and binds the EE signature, issuer name and AKI to that CA.
+It checks current certificate validity, inherited-family presence, matching
+CA repository/manifest SIA and EE signedObject locations, and every listed file.
+It selects the single listed CRL by hash, matches its URI to the EE CRLDP, and
+checks the CRL signature/profile/currentness and EE revocation status. Unlisted
+CRLs do not participate in selection. Manifest self-reference is rejected.
+
+Inputs are bounded to 4 MiB for CMS, 512,000 bytes for issuer DER, 4 MiB per
+listed object and 64 MiB for the listed file set. Returned CRL DER owns its data.
+Signed tests cover valid selection, tampered/missing files, wrong issuers and
+locations, revoked or noncurrent EEs, stale/wrong-issuer CRLs and missing inherited
+families. Different manifest and EE validity intervals are not rejected solely
+for differing, provided each is current.
+
+The result is checked against a supplied issuer, not an independently trusted
+anchor. The caller still needs to authenticate that issuer's full resource path,
+resolve its inherited resources and enforce persistent manifest rollback checks.
+This helper is not yet connected to issuance or Terraform operations.
