@@ -93,6 +93,46 @@ ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
   go test ./internal/provider -run '^TestLiveRDAPEntities$' -count=1 -v
 ```
 
+## Implemented reverse-domain lookup
+
+`arin_rdap_domain` requests `/registry/domain/NAME`. It accepts ASCII reverse DNS
+names under `in-addr.arpa` or `ip6.arpa`, normalizing case and the optional trailing
+dot for lookup. The original configured spelling remains in Terraform state.
+Forward domain referrals are outside this ARIN data source. A missing domain
+remains an error, unlike an empty entity search.
+
+Outputs include the domain handle, direct registrant handles, embedded network
+handle, status, events, nameservers and IPv4/IPv6 glue. Nameservers are sorted and
+normalized to lowercase without a trailing dot. Duplicate nameservers and invalid
+or wrong-family glue addresses are errors. The complete `rdap_json` retains nested
+network/entity objects, DNSSEC record metadata and extensions without following
+links or losing JSON number precision.
+
+Published DNSSEC fields follow the
+[RDAP domain representation](https://www.rfc-editor.org/rfc/rfc9083.html#section-5.3):
+`zone_signed`, `delegation_signed`, `max_sig_life`, `ds_records` and `key_records`.
+Absent flags and other optional scalars stay null. Missing collections are empty.
+The client validates numeric ranges and hexadecimal DS syntax but does not verify
+DNS signatures, look up live DNS records, or infer unsigned status from omissions.
+It rejects partial-response notices in nested entities, nameservers, networks and
+DNSSEC records as well as the domain envelope.
+
+Client and fake Terraform tests cover IPv4/IPv6 names, normalization, published
+true/false flags versus missing flags, DS/DNSKEY metadata, sorted nameservers,
+glue, refresh, missing records, malformed responses, mismatched identities and
+referral/partial-response rejection. Native `TestLiveRDAPDomain` passed on OT&E and
+production on 2026-09-23 with credentials unset. It discovers IPv4/IPv6 reverse
+zones from the selected organization's public network prefixes, tests both name
+spellings and clean plans, and reads the signed public zone
+`3.112.149.in-addr.arpa.` from ARIN's guide. Native DS records are verified;
+DNSKEY `keyData` currently has fixture evidence only; native coverage for that
+optional representation is not yet established.
+
+```sh
+ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
+  go test ./internal/provider -run '^TestLiveRDAPDomain$' -count=1 -v
+```
+
 ## Remaining endpoint audit
 
 | Family | Current coverage | Remaining work |
@@ -103,7 +143,7 @@ ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
 | ASN searches | `arin_asns` handles direct registrant inventory | Handle/name search and other entity reverse-search filters |
 | Entity lookup | `arin_rdap_entity` exposes contact fields and complete JSON; native organization/POC reads verified | Final endpoint audit |
 | Entity searches | `arin_rdap_entities` covers handle/name searches, exact/trailing-wildcard queries, no matches and partial-result rejection | Final endpoint audit |
-| Reverse domain lookup/search | Authenticated DNS data sources exist | Public RDAP domain lookup and hierarchy searches |
+| Reverse domain lookup/search | `arin_rdap_domain` passes native IPv4/IPv6 and signed-zone reads; authenticated DNS data sources also exist | Public hierarchy searches and final field audit |
 | Standalone nameserver lookup | Unsupported by ARIN RDAP | No data source for an unimplemented operation |
 
 The standalone nameserver endpoint was checked in OT&E on 2026-09-23:

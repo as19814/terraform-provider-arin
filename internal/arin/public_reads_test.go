@@ -29,6 +29,8 @@ func TestPublicReads(t *testing.T) {
 		switch r.URL.RequestURI() {
 		case "/registry/entities?handle=EXAMPLE-1":
 			fmt.Fprintf(w, `{"entitySearchResults":[%s]}`, entity)
+		case "/registry/domain/2.0.192.in-addr.arpa.":
+			fmt.Fprint(w, `{"objectClassName":"domain","ldhName":"2.0.192.in-addr.arpa."}`)
 		case "/registry/ip/192.0.2.1":
 			_, _ = w.Write(network)
 		case "/registry/autnum/64496":
@@ -48,7 +50,7 @@ func TestPublicReads(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, s := range PublicReads() {
-		params := map[string]string{"handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"}
+		params := map[string]string{"name": "2.0.192.in-addr.arpa.", "handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"}
 		if s.Name == "rdap_entities" {
 			params["search_by"] = "handle"
 			params["query"] = "EXAMPLE-1"
@@ -58,6 +60,10 @@ func TestPublicReads(t *testing.T) {
 			t.Fatal(err)
 		}
 		switch s.Name {
+		case "rdap_domain":
+			if result["name"] != "2.0.192.in-addr.arpa." {
+				t.Fatal("incorrect domain")
+			}
 		case "rdap_entities":
 			if len(result["entities"].([]any)) != 1 {
 				t.Fatal("missing entity search result")

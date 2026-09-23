@@ -16,7 +16,7 @@ func main() {
 	sort.Slice(specs, func(i, j int) bool { return specs[i].Name < specs[j].Name })
 	index := `# Data source coverage
 
-All non-report read endpoints documented in the collected Reg-RWS, IRR, and hosted RPKI guides have data sources. Public RDAP also supplies network and ASN discovery, ASN registration details, organization contact references, and public organization/POC entity details with complete jCard/RDAP JSON, and entity searches by handle or name.
+All non-report read endpoints documented in the collected Reg-RWS, IRR, and hosted RPKI guides have data sources. Public RDAP also supplies network and ASN discovery, ASN registration details, organization contact references, and public organization/POC entity details with complete jCard/RDAP JSON, entity searches by handle or name, and reverse-domain registrations including published DNSSEC data.
 
 Report-request endpoints are intentionally excluded: they create tickets even though ARIN exposes them as HTTP GET. These data sources perform no write operations; managed resources are documented separately. Historical Whois-RWS search variations, delegated RPKI protocol exchanges, and account report-generation workflows are not Terraform data sources in this provider.
 

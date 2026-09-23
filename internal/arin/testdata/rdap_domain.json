@@ -1,0 +1,18 @@
+{
+ "objectClassName":"domain",
+ "handle":"2.0.192.in-addr.arpa.",
+ "ldhName":"2.0.192.in-addr.arpa.",
+ "nameservers":[
+  {"objectClassName":"nameserver","ldhName":"NS2.EXAMPLE.NET."},
+  {"objectClassName":"nameserver","ldhName":"ns1.example.net","ipAddresses":{"v4":["192.0.2.2","192.0.2.1"],"v6":["2001:db8:0:0::1"]}}
+ ],
+ "secureDNS":{
+  "delegationSigned":true,"zoneSigned":false,"maxSigLife":604800,
+  "dsData":[{"keyTag":12345,"algorithm":13,"digestType":2,"digest":"abababababababababababababababababababababababababababababababab","events":[{"eventAction":"last changed","eventDate":"2026-01-01T00:00:00Z"}]}],
+  "keyData":[{"flags":257,"protocol":3,"algorithm":13,"publicKey":"AQIDBA=="}]
+ },
+ "entities":[{"objectClassName":"entity","handle":"EXAMPLE-1","roles":["registrant"],"entities":[{"handle":"POC-ARIN","roles":["technical"]}]}],
+ "network":{"objectClassName":"ip network","handle":"NET-192-0-2-0-1","startAddress":"192.0.2.0","endAddress":"192.0.2.255","ipVersion":"v4"},
+ "events":[{"eventAction":"last changed","eventDate":"2026-01-01T00:00:00Z"}],
+ "status":["active"],"x-extension":{"number":9007199254740993}
+}

@@ -17,6 +17,7 @@ var asnFields = []Field{
 
 func PublicReads() []ReadSpec {
 	return []ReadSpec{
+		{Name: "rdap_domain", Public: true, Description: "Read a public reverse-domain registration from ARIN RDAP, including nameservers, published DNSSEC data and complete JSON. No API key is sent. Forward domains, referrals and partial responses are not supported. This reads registration data, not live DNS or DNSSEC validation results.", Inputs: []Input{input("name", "rdap_domain", "2.0.192.in-addr.arpa.", "Reverse DNS domain in in-addr.arpa or ip6.arpa. Case and an optional trailing dot are normalized for lookup.")}, Fields: rdapDomainFields},
 		{Name: "rdap_entities", Public: true, Collection: true, Output: "entities", Description: "Search public RDAP entities by handle or name, including organizations, POCs and customer entities returned by ARIN. Supports one trailing wildcard. No API key is sent. Results use ARIN search semantics and are sorted by handle; partial results, duplicates and referrals are rejected. A structured RDAP no-match response produces an empty list.", Inputs: []Input{input("search_by", "name", "handle", "Search field: handle or name (mapped to RDAP fn)."), input("query", "rdap_search", "EXAMPLE-*", "Exact search term or a term ending in one wildcard (*). Name matching is performed by ARIN, including its name-component matching rules.")}, Fields: rdapEntityFields},
 		{Name: "rdap_entity", Public: true, Description: "Look up a public organization or POC entity by handle. No API key is sent. Returns contact fields and complete jCard/RDAP JSON, including embedded records and extensions. Public data may omit private registration fields. Partial results and referrals are rejected.", Inputs: []Input{input("handle", "handle", "EXAMPLE-1", "Organization or POC handle.")}, Fields: rdapEntityFields},
 		{Name: "rdap_network", Public: true, Description: "Look up the public ARIN network registration containing an IPv4/IPv6 address or canonical prefix. No API key is sent. Returns registration data, not proof of authority to modify the network. Referrals and partial results are rejected.", Inputs: []Input{input("query", "ip_network", "192.0.2.1", "Canonical IPv4/IPv6 address or network prefix without host bits.")}, Fields: rdapNetworkFields},
@@ -131,6 +132,9 @@ func (c *Client) rdapEntity(ctx context.Context, handle string) ([]rdapEntityRef
 func (c *Client) readPublic(ctx context.Context, spec ReadSpec, p map[string]string) (map[string]any, error) {
 	if c.rdapBaseURL == "" {
 		return nil, errors.New("rdap_base_url is required for public reads when base_url is a custom origin")
+	}
+	if spec.Name == "rdap_domain" {
+		return c.readRDAPDomain(ctx, p["name"])
 	}
 	if spec.Name == "rdap_entities" {
 		return c.searchRDAPEntities(ctx, p["search_by"], p["query"])
