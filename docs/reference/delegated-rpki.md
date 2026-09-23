@@ -532,3 +532,28 @@ Existing signed path and CRL tests also pass.
 Remaining work includes certificate extension/algorithm profile completion,
 authenticated manifest selection, allocation matching, issuance and Terraform
 integration, uncertain-outcome recovery and native delegated verification.
+
+## CA certificate extension and algorithm checks
+
+The resource-path verifier now checks RSA-2048/exponent 65537 and SHA-256/RSA
+PKCS#1 v1.5 algorithm identifiers, serial bounds, CA Basic Constraints without a
+path-length constraint, exact CA Key Usage, and the SHA-1-derived Subject Key
+Identifier. Authority Key Identifiers must use only the key identifier form.
+Unknown, duplicate and forbidden extensions fail, including CA Extended Key Usage.
+
+Mandatory SIA, resource and policy extensions are checked. The policy supports
+the optional single CPS URI qualifier allowed by RFC 7318. Non-self-signed
+certificates require AIA and CRLDP references with rsync object locations; the
+CRLDP must identify one complete issuer-wide distribution point. Self-signed
+certificates omit AIA and CRLDP. No referenced URI is fetched.
+
+Signed certificate tests cover wrong/missing identifiers, policies and locations,
+forbidden extensions, extra key usages, path-length constraints and alternate
+signature algorithms, through both the profile checker and path verifier. Tests
+also cover permitted and rejected policy qualifiers and issuer-reference forms.
+The path fixtures now contain the required certificate extensions.
+
+Authenticated manifest/CRL selection, requested-resource matching, updated-profile
+interoperability auditing, issuance integration and Terraform integration remain
+unfinished. These CA-only checks do not implement manifest EE validation or prove
+native ARIN interoperability.

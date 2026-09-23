@@ -3,6 +3,7 @@ package arin
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -31,6 +32,24 @@ func resourceCertificateFixture(t *testing.T) resourcePathFixture {
 			ext = resourceTestAS(t, resourceTestDER(t, []asn1.RawValue{resourceTestRaw(t, struct{ Min, Max int64 }{64500, 64510})}))
 		}
 		template := &x509.Certificate{SerialNumber: big.NewInt(int64(i + 1)), Subject: pkix.Name{CommonName: []string{"root", "middle", "leaf"}[i]}, NotBefore: cmsTrustNow().Add(-time.Hour), NotAfter: cmsTrustNow().Add(time.Hour), IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageCRLSign, ExtraExtensions: []pkix.Extension{ext}}
+		spkiDER, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var spki struct {
+			Algorithm pkix.AlgorithmIdentifier
+			Key       asn1.BitString
+		}
+		if _, err := asn1.Unmarshal(spkiDER, &spki); err != nil {
+			t.Fatal(err)
+		}
+		ski := sha1.Sum(spki.Key.Bytes)
+		template.SubjectKeyId = ski[:]
+		template.ExtraExtensions = append(template.ExtraExtensions, rpkiSIATestExtension(t), pkix.Extension{Id: asn1.ObjectIdentifier{2, 5, 29, 32}, Critical: true, Value: resourceTestDER(t, []struct{ ID asn1.ObjectIdentifier }{{asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 14, 2}}})})
+		if i > 0 {
+			template.IssuingCertificateURL = []string{"rsync://repo.example/module/issuer.cer"}
+			template.CRLDistributionPoints = []string{"rsync://repo.example/module/issuer.crl"}
+		}
 		parent, signer := template, key
 		if i > 0 {
 			parent, signer = f.certs[i-1], f.keys[i-1]

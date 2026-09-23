@@ -31,7 +31,7 @@ func verifyRPKICertificatePath(path []*x509.Certificate, anchor *x509.Certificat
 		if err != nil || !cert.IsCA || !cert.BasicConstraintsValid || cert.KeyUsage&(x509.KeyUsageCertSign|x509.KeyUsageCRLSign) != (x509.KeyUsageCertSign|x509.KeyUsageCRLSign) {
 			return nil, errRPKIUpDown
 		}
-		if err := validateRPKICertificateNamesAndTimes(cert); err != nil {
+		if err := validateRPKICAProfile(cert); err != nil {
 			return nil, err
 		}
 		// Decode before allowing PKIX verification to treat these critical extensions
