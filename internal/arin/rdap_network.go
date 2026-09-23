@@ -108,7 +108,9 @@ func (c *Client) readRDAPNetwork(ctx context.Context, query string) (map[string]
 	slices.SortFunc(n.Events, func(a, b struct {
 		Action string `json:"eventAction"`
 		Date   string `json:"eventDate"`
-	}) int { return strings.Compare(a.Action+"/"+a.Date, b.Action+"/"+b.Date) })
+	}) int {
+		return strings.Compare(a.Action+"/"+a.Date, b.Action+"/"+b.Date)
+	})
 	events := make([]any, 0, len(n.Events))
 	for _, event := range n.Events {
 		events = append(events, map[string]any{"action": event.Action, "date": event.Date})
