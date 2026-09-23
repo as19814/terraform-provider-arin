@@ -74,6 +74,9 @@ func rpkiConfigFields(config *RPKIPublicationReadConfig) map[string]*string {
 }
 
 func loadPrivateRPKIConfig(path string, fields map[string]*string) error {
+	return loadPrivateRPKIConfigFields(path, fields, nil)
+}
+func loadPrivateRPKIConfigFields(path string, fields map[string]*string, lists map[string]*[]string) error {
 	fail := func() error { return errRPKIIdentityConfig }
 	if !filepath.IsAbs(path) {
 		return fail()
@@ -105,13 +108,34 @@ func loadPrivateRPKIConfig(path string, fields map[string]*string) error {
 		}
 		name, ok := token.(string)
 		dest, known := fields[name]
-		if !ok || !known || seen[name] {
+		list, isList := lists[name]
+		if !ok || (!known && !isList) || seen[name] {
 			return fail()
 		}
 		seen[name] = true
 		token, err = d.Token()
 		if err != nil {
 			return fail()
+		}
+		if isList {
+			if token != json.Delim('[') {
+				return fail()
+			}
+			values := []string{}
+			for d.More() {
+				v, err := d.Token()
+				s, ok := v.(string)
+				if err != nil || !ok || s == "" || len(values) >= 31 {
+					return fail()
+				}
+				values = append(values, s)
+			}
+			end, err := d.Token()
+			if err != nil || end != json.Delim(']') || len(values) == 0 {
+				return fail()
+			}
+			*list = values
+			continue
 		}
 		value, ok := token.(string)
 		if !ok {
@@ -125,6 +149,11 @@ func loadPrivateRPKIConfig(path string, fields map[string]*string) error {
 	}
 	for name, value := range fields {
 		if name != "signing_intermediates_pem" && name != "peer_intermediates_pem" && *value == "" {
+			return fail()
+		}
+	}
+	for name := range lists {
+		if !seen[name] {
 			return fail()
 		}
 	}

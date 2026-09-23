@@ -154,3 +154,77 @@ func TestJournalRevocationModes(t *testing.T) {
 		})
 	}
 }
+
+func TestJournalIssuanceModes(t *testing.T) {
+	for _, mode := range []string{"observe", "commit", "load_error", "read_error", "missing_provisioning", "missing_validation", "publication", "expect", "read"} {
+		t.Run(mode, func(t *testing.T) {
+			calls := []string{}
+			actions := journalActions{
+				loadProvisioning: func(path string) (arin.RPKIProvisioningReadConfig, error) {
+					calls = append(calls, "provisioning")
+					return arin.RPKIProvisioningReadConfig{Child: "child"}, nil
+				},
+				loadValidation: func(path string) (arin.RPKICertificateValidation, error) {
+					calls = append(calls, "validation")
+					if mode == "load_error" {
+						return arin.RPKICertificateValidation{}, errors.New("bad validation")
+					}
+					return arin.RPKICertificateValidation{AnchorPEM: "anchor"}, nil
+				},
+				issuance: func(_ context.Context, c arin.RPKIProvisioningReadConfig, v arin.RPKICertificateValidation, digest, expected string) (*arin.RPKIIssuanceRecoveryReport, error) {
+					calls = append(calls, "issuance")
+					want := ""
+					if mode == "commit" {
+						want = "hash"
+					}
+					if c.Child != "child" || v.AnchorPEM != "anchor" || digest != "digest" || expected != want {
+						t.Fatal("issuance recovery arguments changed")
+					}
+					if mode == "read_error" {
+						return nil, errors.New("recovery failed")
+					}
+					return &arin.RPKIIssuanceRecoveryReport{Outcome: "matches_request", CertificateSHA256: "hash", Committed: expected != ""}, nil
+				},
+			}
+			args := []string{"-provisioning-config", "/private/provisioning.json", "-issuance-validation", "/private/validation.json", "-request-sha256", "digest"}
+			switch mode {
+			case "commit":
+				args = append(args, "-expect-certificate-sha256", "hash")
+			case "missing_provisioning":
+				args = args[2:]
+			case "missing_validation":
+				args = []string{"-provisioning-config", "/private/config.json", "-request-sha256", "digest", "-expect-certificate-sha256", "hash"}
+			case "publication":
+				args = append(args, "-publication-config", "/private/publication.json")
+			case "expect":
+				args = append(args, "-expect", "matches_after")
+			case "read":
+				args = append(args, "-recover-read-sha256", "digest")
+			}
+			var out, stderr bytes.Buffer
+			code := runJournal(args, &out, &stderr, actions)
+			switch mode {
+			case "observe", "commit":
+				want := `"committed": false`
+				if mode == "commit" {
+					want = `"committed": true`
+				}
+				if code != 0 || strings.Join(calls, ",") != "provisioning,validation,issuance" || !strings.Contains(out.String(), want) {
+					t.Fatalf("bad recovery mode: %s", stderr.String())
+				}
+			case "load_error", "read_error":
+				want := "provisioning,validation"
+				if mode == "read_error" {
+					want += ",issuance"
+				}
+				if code != 1 || strings.Join(calls, ",") != want || out.Len() != 0 {
+					t.Fatal("failed operation produced result")
+				}
+			default:
+				if code != 2 || len(calls) != 0 || out.Len() != 0 {
+					t.Fatal("invalid flags performed an action")
+				}
+			}
+		})
+	}
+}

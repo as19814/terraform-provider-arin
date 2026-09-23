@@ -386,8 +386,9 @@ Publication mutations have a separate [authenticated reconciliation mode](docs/r
 
 [`arin_rpki_certificate`](docs/resources/rpki_certificate.md) manages a delegated
 resource certificate from an existing CSR, with validated RRDP resource paths
-and key-scoped revocation. Import uses a private configuration manifest; full
-uncertainty recovery remains unfinished;
+and key-scoped revocation. Import uses a private configuration manifest.
+Issuance has an [explicit recovery CLI](docs/reference/delegated-rpki.md#issuance-recovery-cli),
+while complete revocation recovery remains unfinished;
 see [certificate lifecycle](docs/reference/delegated-rpki.md#managed-resource-certificate).
 
 [`arin_rpki_publication_bundle`](docs/resources/rpki_publication_bundle.md)

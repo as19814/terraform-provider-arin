@@ -244,6 +244,10 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 				if err != nil || observed.Outcome != "matches_request" || observed.Certificate == nil || observed.Certificate.CertificatePEM != certificateTestPEM("CERTIFICATE", f.certs[0].Raw) || observed.Plan.RequestSHA256 != digest || observed.RecoveryPeerID == peer || !observed.Sent.After(cmsTrustNow()) {
 					t.Fatalf("issuance observation: %v", err)
 				}
+				report, err := recoverRPKIIssuance(context.Background(), apiConfig, apiValidation, digest, "", probe.Exchange.Clock, validation.Client)
+				if err != nil || report.Committed || report.Outcome != "matches_request" || report.Class != "class" || report.Child != "child" || report.Parent != "parent" || report.RequestSHA256 != digest || report.CertificateSHA256 != fmt.Sprintf("%x", sha256.Sum256(f.certs[0].Raw)) {
+					t.Fatalf("API observation failed: %v", err)
+				}
 				missing, err := signRPKICMS([]byte(upDownTestReply("list_response", "")), remote, cmsTrustNow(), time.Time{})
 				if err != nil {
 					t.Fatal(err)
@@ -257,7 +261,7 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 				if err != nil || !bytes.Equal(before, after) {
 					t.Fatal("observation changed pending issuance")
 				}
-				if posts.Load() != 8 || gets.Load() != 4 {
+				if posts.Load() != 9 || gets.Load() != 4 {
 					t.Fatal("recovery resubmitted issuance or bypassed cache")
 				}
 				certificateHash := fmt.Sprintf("%x", sha256.Sum256(f.certs[0].Raw))
@@ -272,8 +276,8 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 				if err != nil || !bytes.Equal(before, unchanged) {
 					t.Fatal("rejected commit changed pending state")
 				}
-				observed, err = probe.reconcilePendingIssuance(context.Background(), digest, certificateHash, apiValidation, validation.Client)
-				if err != nil {
+				report, err = recoverRPKIIssuance(context.Background(), apiConfig, apiValidation, digest, certificateHash, probe.Exchange.Clock, validation.Client)
+				if err != nil || !report.Committed || report.CertificateSHA256 != certificateHash {
 					t.Fatal(err)
 				}
 				completed, err := openRPKIExchange(exchange.Directory, peer)
@@ -281,7 +285,7 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 					t.Fatal(err)
 				}
 				state, err := completed.State()
-				if err != nil || state.Pending != nil || state.ReconciledIssuance == nil || state.ReconciledIssuance.CertificateSHA256 != certificateHash || !state.LastSent.Equal(observed.Sent) || !state.LastReceived.Equal(observed.Received) {
+				if err != nil || state.Pending != nil || state.ReconciledIssuance == nil || state.ReconciledIssuance.CertificateSHA256 != certificateHash || !state.LastSent.Equal(report.Sent) || !state.LastReceived.Equal(report.Received) {
 					t.Fatal("issuance reconciliation not durable")
 				}
 				state.ReconciledIssuance.CertificateSHA256 = "changed"

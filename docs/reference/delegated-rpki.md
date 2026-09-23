@@ -1442,3 +1442,49 @@ malformed receipts and failed persistence preserving the original pending state.
 Older binaries that do not recognize the new `reconciled_issuance` field reject
 such journals rather than ignoring it. Public API/CLI integration, revocation
 completion and native delegated verification remain unfinished.
+
+### Issuance recovery CLI
+
+Use the private provisioning configuration described above with a second private
+JSON file containing resource trust settings. The validation file accepts exactly
+these four string fields plus an ordered notification URL array:
+
+```json
+{
+  "resource_anchor_pem": "PEM resource trust anchor",
+  "issuer_chain_pem": "PEM immediate issuer through anchor",
+  "rrdp_cache_directory": "/absolute/private/rrdp",
+  "manifest_history_directory": "/absolute/private/manifests",
+  "rrdp_notifications": ["https://repository.example/notification.xml"]
+}
+```
+
+Use actual PEM strings encoded with a JSON serializer. Both files must be private
+regular files with absolute paths. The validation file accepts at most 31 HTTPS
+notification URLs, rejects duplicate/unknown keys and requires a URL per issuer
+when validating. No CSR or requested resource subsets are accepted here: those
+come from the retained, authenticated pending issuance request.
+
+Observe first:
+
+```sh
+go run ./tools/rpki-journal \
+  -provisioning-config /absolute/private/provisioning.json \
+  -issuance-validation /absolute/private/validation.json \
+  -request-sha256 EXACT_PENDING_ISSUANCE_SHA256
+```
+
+A `matches_request` report includes `certificate_sha256`. To reconcile that exact
+certificate, repeat with `-expect-certificate-sha256 OBSERVED_CERTIFICATE_SHA256`.
+The CLI performs a new signed inventory read and resource-path validation before
+committing. A missing key, changed certificate hash or failed validation leaves
+the original operation pending. Observation reports `committed: false`; a
+successful explicit commit reports `committed: true`. Neither operation issues
+or revokes certificates. Reports include handles, class, key and journal metadata,
+not signing key bytes or BPKI configuration.
+
+After commit, run Terraform refresh/plan or validated certificate import if a
+failed create left no resource state. The CLI does not edit Terraform state.
+Errors identify the probe journal when possible; only pending inventory probes
+can be explicitly abandoned through read recovery. Revocation completion and
+native delegated sandbox verification remain unfinished.
