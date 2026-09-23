@@ -2,4 +2,5 @@
 data "arin_whois_org" "example" {
   handle       = "EXAMPLE-1"
   show_details = false
+  show_pocs    = false
 }

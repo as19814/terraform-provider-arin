@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"mime"
 	"net/netip"
 	"net/url"
@@ -295,6 +296,9 @@ func (s ReadSpec) Validate(params map[string]string) error {
 			return fmt.Errorf("%s is not a valid %s", input.Name, input.Kind)
 		}
 	}
+	if s.Name == "whois_cidr_networks" && params["relation"] != "less" && params["relation"] != "more" {
+		return errors.New("relation must be less or more")
+	}
 	if s.Name == "rdap_networks" || s.Name == "rdap_asns" {
 		if err := validateRDAPResourceSearch(params["search_by"], params["query"], params["role"]); err != nil {
 			return err
@@ -328,6 +332,16 @@ func (s ReadSpec) Validate(params map[string]string) error {
 // ReadRegistration performs documented read operations. It cannot create
 // reports, update records, follow response links, or fetch arbitrary URLs.
 func (c *Client) ReadRegistration(ctx context.Context, spec ReadSpec, params map[string]string) (map[string]any, error) {
+	// Apply declared defaults without mutating caller-owned input maps.
+	params = maps.Clone(params)
+	if params == nil {
+		params = map[string]string{}
+	}
+	for _, in := range spec.Inputs {
+		if _, present := params[in.Name]; !present && in.Default != "" {
+			params[in.Name] = in.Default
+		}
+	}
 	if err := spec.Validate(params); err != nil {
 		return nil, err
 	}

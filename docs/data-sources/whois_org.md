@@ -17,6 +17,7 @@ Read a public org registration through Whois-RWS, including typed fields and com
 data "arin_whois_org" "example" {
   handle       = "EXAMPLE-1"
   show_details = false
+  show_pocs    = false
 }
 ```
 
@@ -30,6 +31,7 @@ data "arin_whois_org" "example" {
 ### Optional
 
 - `show_details` (Boolean) Ask ARIN to expand related information inline. Complete XML preserves extra records; any nested truncation is rejected. Defaults to `false`.
+- `show_pocs` (Boolean) Include organization POC references inline without expanding its network and ASN inventories. Complete XML retains them. show_details also expands the other relationships. Defaults to `false`.
 
 ### Read-Only
 

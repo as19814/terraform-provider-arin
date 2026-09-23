@@ -185,6 +185,9 @@ func outputFields(spec arin.ReadSpec) []arin.Field {
 		if strings.HasPrefix(spec.Name, "whois_") {
 			description = "Related records ordered deterministically. Distinct POC role links are preserved. Reference responses omit detail-only fields; show_details requests full records. Confirmed no matches produce an empty list."
 		}
+		if spec.Name == "whois_cidr_networks" {
+			description = "Matching networks ordered deterministically. References omit detail-only fields; show_details requests full records. Results may include the queried or a containing multi-block registration. Confirmed no matches produce an empty list; truncation is an error."
+		}
 		if len(spec.Inputs) > 0 && spec.Inputs[0].Kind == "whois_filters" {
 			description = "Matching records ordered deterministically. Reference responses omit detail-only fields; show_details requests full records. Recognized no-results responses produce an empty list. Truncation is an error."
 		}

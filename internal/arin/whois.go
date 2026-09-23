@@ -23,7 +23,7 @@ var whoisAddressFields = []Field{
 }
 
 func WhoisReads() []ReadSpec {
-	return append(append(WhoisRecordReads(), WhoisRelationshipReads()...), WhoisSearchReads()...)
+	return append(append(append(WhoisRecordReads(), WhoisRelationshipReads()...), WhoisSearchReads()...), WhoisNetworkReads()...)
 }
 
 func WhoisRecordReads() []ReadSpec {
@@ -51,7 +51,11 @@ func whoisSpec(name, root string, fields []Field) ReadSpec {
 	case "delegation":
 		in = input("name", "rdap_domain", "2.0.192.in-addr.arpa.", "Reverse DNS delegation name. Case and an optional trailing dot are normalized.")
 	}
-	return ReadSpec{Name: "whois_" + name, Root: root, Public: true, Description: "Read a public " + name + " registration through Whois-RWS, including typed fields and complete XML. No API key is sent. Missing records, partial responses and referrals remain errors. Public data may omit private registration fields.", Inputs: []Input{in, optional(input("show_details", "bool", "false", "Ask ARIN to expand related information inline. Complete XML preserves extra records; any nested truncation is rejected."), "false")}, Fields: joinFields(fields, whoisCommonFields)}
+	spec := ReadSpec{Name: "whois_" + name, Root: root, Public: true, Description: "Read a public " + name + " registration through Whois-RWS, including typed fields and complete XML. No API key is sent. Missing records, partial responses and referrals remain errors. Public data may omit private registration fields.", Inputs: []Input{in, optional(input("show_details", "bool", "false", "Ask ARIN to expand related information inline. Complete XML preserves extra records; any nested truncation is rejected."), "false")}, Fields: joinFields(fields, whoisCommonFields)}
+	if name == "org" {
+		spec.Inputs = append(spec.Inputs, optional(input("show_pocs", "bool", "false", "Include organization POC references inline without expanding its network and ASN inventories. Complete XML retains them. show_details also expands the other relationships."), "false"))
+	}
+	return spec
 }
 
 // Normalize only recognized Whois namespaces in a private tree for the existing
@@ -100,6 +104,9 @@ func (c *Client) readWhois(ctx context.Context, spec ReadSpec, p map[string]stri
 	if c.whoisBaseURL == "" {
 		return nil, errors.New("whois_base_url is required for Whois reads with a custom base_url")
 	}
+	if spec.Name == "whois_ip" || spec.Name == "whois_cidr" || spec.Name == "whois_cidr_networks" {
+		return c.readWhoisNetwork(ctx, spec, p)
+	}
 	if info, ok := whoisSearch(spec.Name); ok {
 		return c.readWhoisSearch(ctx, spec, info, p)
 	}
@@ -121,8 +128,15 @@ func (c *Client) readWhois(ctx context.Context, spec ReadSpec, p map[string]stri
 		identity = strings.TrimSuffix(identity, ".")
 	}
 	path := "/rest/" + endpoint + "/" + url.PathEscape(identity)
+	query := url.Values{}
 	if p["show_details"] == "true" {
-		path += "?showDetails=true"
+		query.Set("showDetails", "true")
+	}
+	if endpoint == "org" && p["show_pocs"] == "true" {
+		query.Set("showPocs", "true")
+	}
+	if len(query) > 0 {
+		path += "?" + query.Encode()
 	}
 	body, err := c.get(ctx, c.whoisBaseURL, path, "application/xml", false)
 	if err != nil {

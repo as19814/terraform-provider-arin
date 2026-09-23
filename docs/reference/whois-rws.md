@@ -157,17 +157,53 @@ ARIN_LIVE_TESTS=1 TF_ACC=1 go test ./internal/provider \
   -run '^TestLiveWhois' -v -count=1 -timeout 5m
 ```
 
-## Initial IP/CIDR observations
+## IP and CIDR queries
 
-Read-only OT&E probes on 2026-09-23 returned full `net` objects for
-`/rest/ip/23.189.120.1`, `/rest/ip/2602:f805::1` and
-`/rest/cidr/23.189.120.0/24`. CIDR `/less` and `/more` returned complete `nets`
-collections for both the IPv4 /24 and `2602:f805::/32`. Appending `/less` or
-`/more` to the IPv4 IP-address path returned 404. These observations guide the
-pending implementation; no IP/CIDR Whois data source is claimed yet.
+| Data source | Endpoint | Result |
+| --- | --- | --- |
+| `arin_whois_ip` | `/rest/ip/ADDRESS` | Full containing network |
+| `arin_whois_cidr` | `/rest/cidr/ADDRESS/LENGTH` | Full registration for the allocation segment |
+| `arin_whois_cidr_networks` | `/rest/cidr/ADDRESS/LENGTH/less` or `/more` | List of enclosing or more-specific network references/full records |
+
+All three accept IPv4 and IPv6, `show_details` and `show_arin` (default true).
+IP/CIDR individual lookups retain missing-record errors. Hierarchies return empty
+lists for successful empty XML or recognized no-results HTTP 404 pages. Other
+failures, partial responses and referrals remain errors. Complete XML is retained.
+
+These operations have distinct semantics. OT&E `23.189.120.0/24` returns its
+registration, while an exact `/25` query returns 404. An address in
+`2602:f805::/36` can resolve to a child reassignment, while the allocation CIDR
+resolves to `NET6-2602-F805-1`. Both hierarchy directions can include the queried
+registration. More-specific results can also contain a larger multi-block
+registration matching an allocation segment. IP-address `/less` and `/more`
+paths returned 404; only CIDR hierarchy operations are exposed.
+
+The provider validates address families and range overlap/containment. Full
+records are checked against their actual blocks, including gaps between disjoint
+blocks. Input IPv6 spellings are preserved in state and normalized in request
+paths. Noncanonical CIDRs, mapped IPv6 and scoped addresses are rejected.
+
+Native `show_arin=false` hides ARIN's allocation for `260f:ffff::1`, changing the
+address lookup from `NET6-2600-1` to 404. A `/48/less` query for that space returns
+an empty network list with the flag false. This flag does not hide ordinary
+registrant records and does not redefine exact CIDR lookup as containment search.
+
+## Organization contact expansion
+
+`arin_whois_org.show_pocs = true` sends `showPocs=true` and retains POC references
+in complete XML without the network/ASN lists. If `show_details = true` is also
+set, those other relationships are included too. This option is deliberately
+limited to individual org lookups, where ARIN recognizes it. Typed related-contact
+queries remain available through `arin_whois_org_pocs`.
+
+`TestLiveWhoisNetworkQueries` passed on OT&E and production on 2026-09-23,
+including IPv4/IPv6 single lookups, both CIDR hierarchy directions in reference
+and full-detail modes, clean subsequent plans, ARIN-allocation filtering, exact
+CIDR misses, child-versus-parent identity, and both org expansion modes. No keys
+or writes were used. Fake Terraform tests and unit tests cover invalid inputs,
+wrong families/ranges, disjoint blocks, empty/error results and URL options.
 
 ## Remaining coverage
 
 - Resolve the guide's ambiguous delegation-search entry during the final audit.
-- IP address and CIDR lookup, including more/less-specific relations.
-- Remaining query options and final field/endpoint audit against native behavior.
+- Final field/endpoint audit against native behavior.
