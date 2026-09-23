@@ -53,6 +53,29 @@ attributes, related-resource containers and reference names/URLs. These remain
 available in complete `whois_xml`; typed relationship data sources expose their
 identities separately. No response URL is followed and no API key is sent.
 
+## Delegation DNSSEC display names
+
+Native field inspection on 2026-09-23 found `name` attributes on delegation
+`algorithm` and `digestType` elements. Both `arin_whois_delegation` and detailed
+`arin_whois_net_delegations` now expose these as `ds_records.algorithm_name` and
+`ds_records.digest_type_name`, alongside their numeric codes. The text comes from
+ARIN's response, rather than a local algorithm registry. Absent names remain null;
+foreign-namespace attributes cannot supply typed values. Complete XML is retained.
+
+Unit tests cover present, absent and foreign attributes. Mock Terraform lookup
+and relationship tests verify populated values and clean plans. Native read-only
+Terraform lookup tests passed on OT&E and production (11.50 seconds), checking
+every returned DS record's display names for `3.112.149.in-addr.arpa.` and clean
+subsequent plans. Native populated relationship display-name coverage remains
+unverified; the relationship uses the shared delegation decoder.
+
+A bounded native inspection also compared element and attribute paths for all
+six record types. The sampled core scalar fields are represented in the typed
+schemas; notices, reference URLs/names and related-resource containers remain
+available in complete XML. This sample does not establish that every possible
+optional field or undocumented endpoint has been exhausted. Delegation-search
+ambiguity and the final coverage reconciliation remain open.
+
 ## Relationships
 
 All twelve documented relationship operations have data sources:

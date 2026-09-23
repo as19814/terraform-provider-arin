@@ -224,3 +224,41 @@ func TestWhoisPOCMiddleName(t *testing.T) {
 		}
 	}
 }
+
+func TestWhoisDelegationDisplayNames(t *testing.T) {
+	for _, mode := range []string{"present", "absent", "foreign"} {
+		t.Run(mode, func(t *testing.T) {
+			body := whoisFixtures()["delegation"]
+			if mode == "present" {
+				body = strings.Replace(body, "<algorithm>", `<algorithm name="ECDSAP256SHA256">`, 1)
+				body = strings.Replace(body, "<digestType>", `<digestType name="SHA-256">`, 1)
+			} else if mode == "foreign" {
+				body = strings.Replace(body, "<algorithm>", `<algorithm xmlns:x="urn:other" x:name="wrong">`, 1)
+				body = strings.Replace(body, "<digestType>", `<digestType xmlns:x="urn:other" x:name="wrong">`, 1)
+			}
+			body = whoisFixture("delegation", body)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, body) }))
+			defer server.Close()
+			c, err := New(Config{WhoisBaseURL: server.URL})
+			if err != nil {
+				t.Fatal(err)
+			}
+			spec := WhoisRecordReads()[5]
+			out, err := c.ReadRegistration(context.Background(), spec, map[string]string{"name": "2.0.192.in-addr.arpa."})
+			if err != nil {
+				t.Fatal(err)
+			}
+			ds := out["ds_records"].([]any)[0].(map[string]any)
+			if mode == "present" {
+				if ds["algorithm_name"] != "ECDSAP256SHA256" || ds["digest_type_name"] != "SHA-256" {
+					t.Fatal("display names lost")
+				}
+			} else if ds["algorithm_name"] != nil || ds["digest_type_name"] != nil {
+				t.Fatal("invented or foreign display names")
+			}
+			if out["whois_xml"] != body {
+				t.Fatal("complete XML changed")
+			}
+		})
+	}
+}

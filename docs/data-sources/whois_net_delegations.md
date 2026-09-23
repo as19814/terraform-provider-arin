@@ -60,6 +60,8 @@ Read-Only:
 Read-Only:
 
 - `algorithm` (Number) algorithm returned by ARIN.
+- `algorithm_name` (String) algorithm name returned by ARIN.
 - `digest` (String) digest returned by ARIN.
 - `digest_type` (Number) digest type returned by ARIN.
+- `digest_type_name` (String) digest type name returned by ARIN.
 - `key_tag` (Number) key tag returned by ARIN.

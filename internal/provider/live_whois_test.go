@@ -100,6 +100,15 @@ func TestLiveWhoisLookups(t *testing.T) {
 						t.Fatal("native DNSSEC reference has no DS records")
 					}
 					checks = append(checks, resource.TestCheckResourceAttrSet(address, "ds_records.0.digest"))
+					for i, ds := range expected["ds_records"].([]any) {
+						for _, field := range []string{"algorithm_name", "digest_type_name"} {
+							value, ok := ds.(map[string]any)[field].(string)
+							if !ok || value == "" {
+								t.Fatal("native DNSSEC display name missing")
+							}
+							checks = append(checks, resource.TestCheckResourceAttr(address, fmt.Sprintf("ds_records.%d.%s", i, field), value))
+						}
+					}
 				}
 			}
 			resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("live-test")())}, Steps: []resource.TestStep{{Config: config, Check: resource.ComposeAggregateTestCheckFunc(checks...)}, {Config: config, PlanOnly: true}}})

@@ -47,6 +47,9 @@ func TestAccWhoisRelationships(t *testing.T) {
 			config += fmt.Sprintf("data %q %q {\n %s=%q\n show_details=%t\n}\n", "arin_"+spec.Name, label, spec.Inputs[0].Name, spec.Inputs[0].Example, detail)
 			address := "data.arin_" + spec.Name + "." + label
 			checks = append(checks, resource.TestCheckResourceAttr(address, spec.Output+".#", "1"), resource.TestMatchResourceAttr(address, "whois_xml", regexp.MustCompile(`revision="initial"`)))
+			if spec.Output == "delegations" && detail {
+				checks = append(checks, resource.TestCheckResourceAttr(address, "delegations.0.ds_records.0.algorithm_name", "ECDSAP256SHA256"), resource.TestCheckResourceAttr(address, "delegations.0.ds_records.0.digest_type_name", "SHA-256"))
+			}
 			if spec.Output == "pocs" && detail {
 				checks = append(checks, whoisPOCMetadataChecks(address, "pocs.0.")...)
 			}
