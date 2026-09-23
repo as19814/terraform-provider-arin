@@ -63,9 +63,10 @@ again before declaring full coverage.
   in the generic payload table. The direct-allocation metadata test submits
   unchanged values and verifies the complete record remains identical.
 - Delegation writes require the immutable name and TTL namespace on DS TTL
-  elements. Nameserver TTL omission resets inheritance; existing DS TTL omission
-  preserves the old value. New DS records may inherit TTL. All client operations
-  pass IPv4/IPv6 sandbox tests with exact restoration of prior configuration.
+  elements. Single-nameserver POST resets omitted TTL to inheritance; full PUT
+  preserves omitted TTLs on existing nameservers and DS records. New records
+  may inherit TTL. Client and Terraform lifecycles pass IPv4/IPv6 sandbox tests
+  with exact restoration of prior configuration.
 - OT&E keys may differ from production because snapshots refresh monthly.
 
 ## Verification commands
@@ -73,6 +74,6 @@ again before declaring full coverage.
 - `make check`: vet, race tests, fake-server acceptance tests and binary build.
 - `make generate`: reproducible provider documentation and examples.
 - `ARIN_TEST_ORG_HANDLE=... make testlive`: explicitly read-only live tests.
-- `ARIN_TEST_ORG_HANDLE=... make testote`: opt-in OT&E mutations on disposable objects.
+- `ARIN_TEST_ORG_HANDLE=... make testote`: opt-in OT&E mutations on disposable objects; DNS tests snapshot and restore.
 
 Credentials, live account responses, state and saved plans must not be committed.
