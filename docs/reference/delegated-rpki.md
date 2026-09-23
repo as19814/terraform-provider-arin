@@ -809,3 +809,24 @@ and duplicate-object rejection through the shared decoder.
 Persistent repository storage, notification polling, delta-chain orchestration
 with snapshot fallback and issuance resolver wiring remain unfinished. These
 transport maps still require RPKI manifest/path validation before use.
+
+## RRDP refresh coordination
+
+The private refresh coordinator now chooses between cached data, a complete
+ordered delta chain and a snapshot. New sessions require a snapshot; missing
+chains or rejected deltas trigger snapshot fallback. A failed refresh retains
+the previous repository, even after an earlier delta in the chain succeeded.
+Serial rollback and conflicting snapshot references at an unchanged serial fail.
+
+Conditional 304 responses and unchanged metadata avoid object downloads. A
+one-minute polling interval and five-minute aggregate refresh timeout bound
+requests. Retrieval attempts return an updated LastAttempt even on failure so
+the eventual persistent cache can retain the polling limit. Returned object
+maps own their buffers.
+
+TLS tests cover initial retrieval, delta preference, missing-chain selection,
+fallback, failed fallback, session changes, conditional responses, unchanged and
+conflicting serials, rollback, polling and retention of prior data. Persistent
+storage and concurrent-process coordination are still needed; callers must not
+discard attempt metadata on retrieval failure. Issuance resolver wiring and
+native repository verification also remain unfinished.
