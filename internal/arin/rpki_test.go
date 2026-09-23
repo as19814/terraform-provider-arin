@@ -176,3 +176,61 @@ func TestRPKIAdditionReturnsVerifiedInventoryMetadata(t *testing.T) {
 		t.Fatalf("generated metadata not refreshed: %v", err)
 	}
 }
+
+func TestRPKIDeletionReceipts(t *testing.T) {
+	for _, tc := range []struct {
+		name, roas, aspas string
+		reject            bool
+	}{
+		{"matching", `<roaHandle>oldroa</roaHandle>`, `<customerAsId>64496</customerAsId>`, false},
+		{"omitted", "", "", false},
+		{"foreign_roa", `<roaHandle>unrelated</roaHandle>`, `<customerAsId>64496</customerAsId>`, true},
+		{"duplicate_roa", `<roaHandle>oldroa</roaHandle><roaHandle>oldroa</roaHandle>`, `<customerAsId>64496</customerAsId>`, true},
+		{"foreign_aspa", `<roaHandle>oldroa</roaHandle>`, `<customerAsId>64497</customerAsId>`, true},
+		{"duplicate_aspa", `<roaHandle>oldroa</roaHandle>`, `<customerAsId>64496</customerAsId><customerAsId>64496</customerAsId>`, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			posts, gets := 0, 0
+			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "POST" {
+					posts++
+					fmt.Fprintf(w, `<rpkiTransaction xmlns="%s"><roaSpecDelete>%s</roaSpecDelete><aspaDelete>%s</aspaDelete></rpkiTransaction>`, rpkiNamespace, tc.roas, tc.aspas)
+					return
+				}
+				gets++
+				fmt.Fprintf(w, `<collection xmlns="%s"/>`, registrationNamespace)
+			}))
+			defer s.Close()
+			c, _ := New(Config{APIKey: "test-key", BaseURL: s.URL})
+			result, err := c.ApplyRPKITransaction(context.Background(), "EXAMPLE-1", RPKITransaction{DeleteROAs: []ROADelete{{Handle: "oldroa"}}, DeleteASPAs: []int64{64496}})
+			if (err != nil) != tc.reject || result == nil || posts != 1 {
+				t.Fatalf("unexpected deletion receipt handling: %v", err)
+			}
+			if !tc.reject && gets != 2 {
+				t.Fatal("deletions were accepted without verifying both inventories")
+			}
+			if tc.reject && gets != 0 {
+				t.Fatal("invalid receipt was treated as inventory-confirmable")
+			}
+		})
+	}
+}
+
+func TestRPKIUnexpectedDeletionKeepsAdditionReceipt(t *testing.T) {
+	posts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Error("invalid receipt reached inventory reconciliation")
+			w.WriteHeader(500)
+			return
+		}
+		posts++
+		fmt.Fprint(w, `<rpkiTransaction xmlns="http://www.arin.net/regrws/rpki/v1"><roaSpecAdd>`+testROA+`</roaSpecAdd><aspaDelete><customerAsId>64496</customerAsId></aspaDelete></rpkiTransaction>`)
+	}))
+	defer server.Close()
+	c, _ := New(Config{APIKey: "test-key", BaseURL: server.URL})
+	result, err := c.ApplyRPKITransaction(context.Background(), "EXAMPLE-1", RPKITransaction{AddROAs: testRPKITransaction().AddROAs})
+	if err == nil || result == nil || len(result.ROAs) != 1 || result.ROAs[0].Handle != "roa1" || len(result.DeletedASPAs) != 1 || posts != 1 {
+		t.Fatal("unexpected deletion accepted or useful recovery identities lost")
+	}
+}

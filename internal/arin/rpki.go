@@ -577,6 +577,28 @@ func ASPAEqual(a, b ASPA) bool {
 	return slices.Equal(first, second)
 }
 func (c *Client) verifyRPKITransaction(ctx context.Context, org string, t RPKITransaction, result *RPKITransactionResult) error {
+	// A server receipt must never claim changes outside the submitted transaction.
+	// Omitted deletion echoes are reconciled against inventories below.
+	roaDeletes := map[string]bool{}
+	for _, deletion := range t.DeleteROAs {
+		roaDeletes[deletion.Handle] = true
+	}
+	for _, handle := range result.DeletedROAs {
+		if !roaDeletes[handle] {
+			return errors.New("ARIN returned an unexpected or duplicate ROA deletion")
+		}
+		delete(roaDeletes, handle)
+	}
+	aspaDeletes := map[int64]bool{}
+	for _, customer := range t.DeleteASPAs {
+		aspaDeletes[customer] = true
+	}
+	for _, customer := range result.DeletedASPAs {
+		if !aspaDeletes[customer] {
+			return errors.New("ARIN returned an unexpected or duplicate ASPA deletion")
+		}
+		delete(aspaDeletes, customer)
+	}
 	if len(t.AddROAs)+len(t.DeleteROAs) > 0 {
 		current, err := c.ListROAs(ctx, org)
 		if err != nil {

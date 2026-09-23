@@ -166,13 +166,41 @@ inventories and route absence before removing the snapshot. Do not replace unrel
 objects or submit a second creation merely because the first response was lost.
 All test origins are pinned to OT&E; normal CI uses fake servers only.
 
+## Endpoint and payload audit
+
+The current official hosted RPKI guide was rechecked on 2026-09-23. Its three
+HTTP endpoints map to the provider as follows:
+
+| Endpoint | Implemented coverage |
+| --- | --- |
+| `GET /rest/roa/ORG` | `arin_roas`, collection-filtered `arin_roa`, managed ROA refresh and transaction verification |
+| `GET /rest/aspa/ORG` | `arin_aspas`, collection-filtered `arin_aspa`, managed ASPA refresh and transaction verification |
+| `POST /rest/rpki/ORG` | Shared ROA/ASPA additions/deletions, standalone CRUD/replacement, and combined client lifecycle |
+
+ROA requests cover name, origin ASN, auto-link policy, prefixes and optional
+maximum lengths. Reads retain generated handles, validity and renewal metadata,
+per-prefix link status and the documented flat/wrapped resource shapes. Address
+range and IP-family metadata are validated against each CIDR. ASPAs cover customer
+ASN and the complete provider set. Deletion supports ROA handles with their
+`autoLink` policy and ASPA customer identities. Both standalone objects import
+from the organization collections; the guide defines no separate single-object
+GET endpoint. Automatic renewal and validity dates are server metadata.
+
+Deletion receipts are now checked against the submitted identities. Unexpected
+or repeated ROA/ASPA deletion identities reject the response while retaining
+parsed additions for recovery. Omitted deletion echoes still require fresh
+inventory confirmation; a receipt alone never proves a requested deletion.
+Mock tests cover matching, omitted, duplicated and unrelated receipt identities.
+The combined OT&E client lifecycle passed again with these checks, restoring
+both complete inventories and confirming disposable IRR route absence.
+
 ## Remaining work
 
-The final endpoint audit and broader combined-transaction resource requirements
-remain in the [implementation inventory](implementation-status.md). The shared transaction
-client already supports combined operations, while the ASPA resource manages a
-single customer identity. Any need for a declarative multi-object transaction
-resource must be reconciled during that audit.
+Implement the managed atomic group described in [RPKI bundle requirements](rpki-bundle.md).
+The existing standalone resources do not expose the API's atomic guarantee
+across multiple ROAs and ASPAs. This is a concrete Terraform capability gap, even
+though the shared transaction client supports it and passes OT&E. Coordinated
+ownership of ROA-linked IRR routes also remains in the implementation inventory.
 
 Reference: [ARIN RPKI RESTful API guide](https://www.arin.net/resources/manage/rpki/rpki-restful/)
 and its [collected copy](arin-api/rpki/api.md).
