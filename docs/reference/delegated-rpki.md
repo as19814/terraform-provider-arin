@@ -728,3 +728,22 @@ automatic resubmission and leave manifest history unchanged.
 Repository retrieval, uncertain-outcome recovery, anchor rotation, native
 interoperability and Terraform integration remain unfinished. The protocol-only
 private Issue helper does not perform these resource-path/allocation checks.
+
+## RRDP snapshot decoding
+
+The private RRDP snapshot parser verifies the expected SHA-256 digest, session
+UUID and serial, then streams XML objects into a URI-keyed map. It checks the
+RRDP namespace/version, snapshot-only operations, required attributes, ASCII
+input, rsync object URIs and strict Base64. Duplicate URIs, nested payloads,
+DTDs, multiple roots, extra text and malformed input fail.
+
+Limits are 128 MiB of snapshot XML, 10,000 objects, 4 MiB per decoded object and
+64 MiB of decoded object data. Serial values use a positive decimal form bounded
+to 128 digits. Tests cover empty snapshots, US-ASCII declarations, whitespace,
+identity/hash mismatches, malformed XML/Base64 and object/count boundaries.
+
+These are transport checks from [RFC 8182](https://www.rfc-editor.org/rfc/rfc8182.html),
+not RPKI authentication. Notification fetching/parsing, delta/cache processing,
+persistent RRDP session tracking and resolver integration remain unfinished.
+The existing manifest/resource-path checks are still required before accepting
+any retrieved object. No native RRDP repository was fetched in this increment.
