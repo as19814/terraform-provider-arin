@@ -1,7 +1,8 @@
 # Delegated RPKI and publication audit
 
 These protocol families remain in scope. Local setup-document inspection is
-implemented; signed provisioning and publication operations remain unimplemented. An API key alone is
+implemented, along with private signed publication and revocation clients tested
+against fake servers. Terraform protocol integration remains incomplete. An API key alone is
 not sufficient to exercise them. No enrollment, deployment switch, CA creation
 or certificate/publication mutation was performed during this audit.
 
@@ -294,3 +295,24 @@ rejection, atomic rollback of a staged multi-operation request, durable completi
 and a malformed reply after mutation that blocks a second POST. These prove client
 behavior against the fake server, not native ARIN atomicity or real RPKI object
 acceptance. Provider resources, explicit recovery and native testing remain.
+
+## Delegated certificate revocation client
+
+The private RFC 6492 client now sends signed revocation requests with the child
+and parent handles, resource class and URL-safe SHA-1 key identifier. Peer journal
+scope is derived from both handles. Replies must match sender, recipient, message
+version/type, resource class and key. Both padded and unpadded canonical URL-safe
+key encodings are accepted. XML token whitespace is normalized for labels.
+
+Validated request-not-performed statuses complete an exchange and expose only the
+numeric code, excluding server descriptions. Already-processing (1101), scheduled
+(1104), unknown statuses, malformed replies and mismatched targets retain pending
+state. This intentionally requires explicit reconciliation rather than retrying
+an outcome that may still be in progress. Optional descriptions are checked for
+XML language attributes, ordering and the required English description.
+
+Signed fake-server tests verify request contents, successful replies, confirmed
+rejection, wrong-key replies, scheduled outcomes, journal completion and retry
+prevention. Parser tests cover identity, namespace, type, class, key and error
+validation. No native certificate has been revoked. Up-down list/issue clients,
+Terraform lifecycle integration and explicit uncertain-outcome recovery remain.
