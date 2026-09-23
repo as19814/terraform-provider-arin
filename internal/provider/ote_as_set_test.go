@@ -89,10 +89,12 @@ func TestOTEASSetLifecycle(t *testing.T) {
 		description := []string{"Disposable Terraform OT&E lifecycle test"}
 		remarks := []string{"Created by an opt-in provider test"}
 		members := []string{"AS64496"}
+		byRef := []string{"MNT-" + org}
 		if updated {
 			description = append(description, "Updated description")
 			remarks = []string{"Updated test remark"}
 			members = []string{"AS64497"}
+			byRef = []string{"ANY"}
 		}
 		encode := func(v any) string {
 			b, err := json.Marshal(v)
@@ -111,9 +113,10 @@ resource "arin_irr_as_set" "test" {
  description = %s
  remarks = %s
  members = %s
-}`, name, org, encode(description), encode(remarks), encode(members))
+ members_by_ref = %s
+}`, name, org, encode(description), encode(remarks), encode(members), encode(byRef))
 	}
-	cleared := strings.Replace(config(true), `["Updated test remark"]`, `[]`, 1)
+	cleared := strings.NewReplacer(`["Updated test remark"]`, `[]`, `["ANY"]`, `[]`).Replace(config(true))
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("ote-test")())},
 		CheckDestroy: func(_ *terraform.State) error {
@@ -125,13 +128,14 @@ resource "arin_irr_as_set" "test" {
 			return nil
 		},
 		Steps: []resource.TestStep{
-			{Config: config(false), Check: resource.TestCheckResourceAttr("arin_irr_as_set.test", "id", name)},
+			{Config: config(false), Check: resource.ComposeAggregateTestCheckFunc(checkIRRResponseMetadata("arin_irr_as_set.test"), resource.TestCheckResourceAttr("arin_irr_as_set.test", "id", name))},
 			{Config: config(true), Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckTypeSetElemAttr("arin_irr_as_set.test", "members.*", "AS64497"),
+				resource.TestCheckTypeSetElemAttr("arin_irr_as_set.test", "members_by_ref.*", "ANY"),
 				resource.TestCheckResourceAttr("arin_irr_as_set.test", "remarks.#", "1"),
 				resource.TestCheckResourceAttrSet("arin_irr_as_set.test", "poc_links.#"),
 			)},
-			{Config: cleared, Check: resource.TestCheckResourceAttr("arin_irr_as_set.test", "remarks.#", "0")},
+			{Config: cleared, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_irr_as_set.test", "remarks.#", "0"), resource.TestCheckResourceAttr("arin_irr_as_set.test", "members_by_ref.#", "0"))},
 			// The acceptance harness imports into a separate state and compares every field.
 			{ResourceName: "arin_irr_as_set.test", ImportState: true, ImportStateVerify: true},
 			{Config: cleared, PlanOnly: true, ExpectNonEmptyPlan: false},

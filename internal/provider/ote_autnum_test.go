@@ -150,7 +150,7 @@ func TestOTEAutnumLifecycle(t *testing.T) {
 			return nil
 		},
 		Steps: []resource.TestStep{
-			{Config: config(0), Check: resource.TestCheckResourceAttr("arin_irr_aut_num.test", "id", name)},
+			{Config: config(0), Check: resource.ComposeAggregateTestCheckFunc(checkIRRResponseMetadata("arin_irr_aut_num.test"), resource.TestCheckResourceAttr("arin_irr_aut_num.test", "id", name))},
 			{Config: config(1), Check: resource.TestCheckResourceAttr("arin_irr_aut_num.test", "import_policy.0", "from AS64497 accept ANY")},
 			{Config: config(2), Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_irr_aut_num.test", "member_of.#", "0"), resource.TestCheckResourceAttr("arin_irr_aut_num.test", "mp_default_policy.#", "0"))},
 			{ResourceName: "arin_irr_aut_num.test", ImportState: true, ImportStateVerify: true},

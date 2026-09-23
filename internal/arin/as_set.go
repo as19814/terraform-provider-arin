@@ -20,7 +20,7 @@ type ASSet struct {
 	POCs                                        []IRRPOC
 	CreationDate, LastModifiedDate              string
 }
-type IRRPOC struct{ Handle, Function string }
+type IRRPOC struct{ Handle, Function, Description string }
 type irrLine struct {
 	Number int    `xml:"number,attr"`
 	Text   string `xml:",chardata"`
@@ -148,7 +148,7 @@ func decodeASSet(body []byte, name string) (*ASSet, error) {
 		if h == "" || (f != "AD" && f != "T" && f != "R") {
 			return nil, errors.New("ARIN returned an unsupported IRR POC link")
 		}
-		s.POCs = append(s.POCs, IRRPOC{h, f})
+		s.POCs = append(s.POCs, IRRPOC{Handle: h, Function: f, Description: netString(p, "description")})
 	}
 	return s, nil
 }

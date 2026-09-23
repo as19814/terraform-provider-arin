@@ -68,7 +68,7 @@ func (f *fakeRouteAPI) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		f.writes[r.Method]++
-		s := strings.ReplaceAll(string(b), "</route>", fmt.Sprintf(`<netHandle>NET-EXAMPLE-1</netHandle><pocLinks><pocLinkRef handle="TECH-1" function="T"/></pocLinks><creationDate>2026-01-01</creationDate><lastModifiedDate>2026-01-%02d</lastModifiedDate></route>`, f.writes["POST"]+f.writes["PUT"]))
+		s := strings.ReplaceAll(string(b), "</route>", fmt.Sprintf(`<netHandle>NET-EXAMPLE-1</netHandle><pocLinks><pocLinkRef handle="TECH-1" function="T" description="Tech"/></pocLinks><creationDate>2026-01-01</creationDate><lastModifiedDate>2026-01-%02d</lastModifiedDate></route>`, f.writes["POST"]+f.writes["PUT"]))
 		f.objects[id] = s
 		fmt.Fprint(w, s)
 	case "DELETE":
@@ -125,7 +125,7 @@ func TestAccIRRRouteLifecycle(t *testing.T) {
 					return nil
 				},
 				Steps: []resource.TestStep{
-					{Config: initial, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_irr_route.test", "id", id), resource.TestCheckResourceAttr("arin_irr_route.test", "net_handle", "NET-EXAMPLE-1"), resource.TestCheckResourceAttr("arin_irr_route.test", "poc_links.#", "1"))},
+					{Config: initial, Check: resource.ComposeAggregateTestCheckFunc(checkIRRResponseMetadata("arin_irr_route.test"), resource.TestCheckResourceAttr("arin_irr_route.test", "id", id), resource.TestCheckResourceAttr("arin_irr_route.test", "net_handle", "NET-EXAMPLE-1"), resource.TestCheckResourceAttr("arin_irr_route.test", "poc_links.#", "1"))},
 					{ResourceName: "arin_irr_route.test", ImportState: true, ImportStateVerify: true},
 					{PreConfig: func() {
 						f.mu.Lock()

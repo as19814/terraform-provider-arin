@@ -12,7 +12,7 @@ import (
 )
 
 func testRouteSet() RouteSet {
-	return RouteSet{Name: "RS-EXAMPLE", OrgHandle: "EXAMPLE-1", Description: []string{"Peers & <routing>", "Second line"}, Remarks: []string{"A remark"}, Members: []string{"192.0.2.0/24", "RS-PEERS"}, MembersByRef: []string{"MNT-EXAMPLE-1"}, POCs: []IRRPOC{{"ADMIN-1", "AD"}, {"TECH-1", "T"}}}
+	return RouteSet{Name: "RS-EXAMPLE", OrgHandle: "EXAMPLE-1", Description: []string{"Peers & <routing>", "Second line"}, Remarks: []string{"A remark"}, Members: []string{"192.0.2.0/24", "RS-PEERS"}, MembersByRef: []string{"MNT-EXAMPLE-1"}, POCs: []IRRPOC{{Handle: "ADMIN-1", Function: "AD"}, {Handle: "TECH-1", Function: "T"}}}
 }
 func TestRouteSetPayload(t *testing.T) {
 	b, err := testRouteSet().marshal()

@@ -138,7 +138,7 @@ func decodeAutnum(body []byte, name string) (*Autnum, error) {
 		if h == "" || (f != "AD" && f != "T" && f != "R") {
 			return nil, errors.New("ARIN returned an unsupported IRR POC link")
 		}
-		s.POCs = append(s.POCs, IRRPOC{h, f})
+		s.POCs = append(s.POCs, IRRPOC{Handle: h, Function: f, Description: netString(p, "description")})
 	}
 	return s, nil
 }

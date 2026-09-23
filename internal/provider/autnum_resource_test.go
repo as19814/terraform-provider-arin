@@ -70,7 +70,7 @@ func (f *fakeAutnumAPI) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		f.writes[r.Method]++
-		s := strings.ReplaceAll(string(b), "</autnum>", fmt.Sprintf("<pocLinks><pocLinkRef handle=\"ADMIN-1\" function=\"AD\"/><pocLinkRef handle=\"TECH-1\" function=\"T\"/></pocLinks><creationDate>2026-01-01T00:00:00Z</creationDate><lastModifiedDate>2026-01-%02dT00:00:00Z</lastModifiedDate></autnum>", f.writes["POST"]+f.writes["PUT"]))
+		s := strings.ReplaceAll(string(b), "</autnum>", fmt.Sprintf("<pocLinks><pocLinkRef handle=\"ADMIN-1\" function=\"AD\" description=\"Admin\"/><pocLinkRef handle=\"TECH-1\" function=\"T\" description=\"Tech\"/></pocLinks><creationDate>2026-01-01T00:00:00Z</creationDate><lastModifiedDate>2026-01-%02dT00:00:00Z</lastModifiedDate></autnum>", f.writes["POST"]+f.writes["PUT"]))
 		f.objects[p.Name] = s
 		fmt.Fprint(w, s)
 	case "DELETE":
@@ -131,7 +131,7 @@ func TestAccAutnumResourceLifecycle(t *testing.T) {
 			return nil
 		},
 		Steps: []resource.TestStep{
-			{Config: base, Check: resource.ComposeAggregateTestCheckFunc(
+			{Config: base, Check: resource.ComposeAggregateTestCheckFunc(checkIRRResponseMetadata("arin_irr_aut_num.test"),
 				resource.TestCheckResourceAttr("arin_irr_aut_num.test", "id", "AS64496"),
 				resource.TestCheckResourceAttr("arin_irr_aut_num.test", "member_of.#", "2"),
 				resource.TestCheckResourceAttr("arin_irr_aut_num.test", "poc_links.#", "2"),

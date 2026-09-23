@@ -36,7 +36,7 @@ func TestIRRRouteIdentity(t *testing.T) {
 	}
 }
 func TestIRRRoutePayload(t *testing.T) {
-	r := IRRRoute{Prefix: "2001:db8::/48", OriginAS: "AS64496", OrgHandle: "EXAMPLE-1", Description: []string{"<example> & peers"}, POCs: []IRRPOC{{"TECH-1", "T"}}, AutoLinkedROAHandle: "must-not-send"}
+	r := IRRRoute{Prefix: "2001:db8::/48", OriginAS: "AS64496", OrgHandle: "EXAMPLE-1", Description: []string{"<example> & peers"}, POCs: []IRRPOC{{Handle: "TECH-1", Function: "T"}}, AutoLinkedROAHandle: "must-not-send"}
 	b, err := r.marshal()
 	if err != nil {
 		t.Fatal(err)

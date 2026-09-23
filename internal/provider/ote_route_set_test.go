@@ -132,7 +132,7 @@ resource "arin_irr_route_set" "test" {
 			return nil
 		},
 		Steps: []resource.TestStep{
-			{Config: config(false), Check: resource.TestCheckResourceAttr("arin_irr_route_set.test", "id", name)},
+			{Config: config(false), Check: resource.ComposeAggregateTestCheckFunc(checkIRRResponseMetadata("arin_irr_route_set.test"), resource.TestCheckResourceAttr("arin_irr_route_set.test", "id", name))},
 			{Config: strings.Replace(config(true), `198.51.100.0/24`, `198.51.100.0/24^+`, 1), Check: resource.TestCheckTypeSetElemAttr("arin_irr_route_set.test", "members.*", "198.51.100.0/24^+")},
 			{Config: config(true), Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckTypeSetElemAttr("arin_irr_route_set.test", "members.*", "198.51.100.0/24"),

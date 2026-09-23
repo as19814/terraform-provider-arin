@@ -153,7 +153,7 @@ func decodeIRRRoute(body []byte, id string) (*IRRRoute, error) {
 		if h == "" || f == "" {
 			return nil, errors.New("ARIN returned an incomplete route POC link")
 		}
-		r.POCs = append(r.POCs, IRRPOC{h, f})
+		r.POCs = append(r.POCs, IRRPOC{Handle: h, Function: f, Description: netString(p, "description")})
 	}
 	return r, nil
 }

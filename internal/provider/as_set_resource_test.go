@@ -70,7 +70,7 @@ func (f *fakeASSetAPI) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		f.writes[r.Method]++
-		s := strings.ReplaceAll(string(b), "</asSet>", fmt.Sprintf("<pocLinks><pocLinkRef handle=\"ADMIN-1\" function=\"AD\"/><pocLinkRef handle=\"TECH-1\" function=\"T\"/></pocLinks><creationDate>2026-01-01T00:00:00Z</creationDate><lastModifiedDate>2026-01-%02dT00:00:00Z</lastModifiedDate></asSet>", f.writes["POST"]+f.writes["PUT"]))
+		s := strings.ReplaceAll(string(b), "</asSet>", fmt.Sprintf("<pocLinks><pocLinkRef handle=\"ADMIN-1\" function=\"AD\" description=\"Admin\"/><pocLinkRef handle=\"TECH-1\" function=\"T\" description=\"Tech\"/></pocLinks><creationDate>2026-01-01T00:00:00Z</creationDate><lastModifiedDate>2026-01-%02dT00:00:00Z</lastModifiedDate></asSet>", f.writes["POST"]+f.writes["PUT"]))
 		f.objects[p.Name] = s
 		fmt.Fprint(w, s)
 	case "DELETE":
@@ -125,7 +125,7 @@ func TestAccASSetResourceLifecycle(t *testing.T) {
 			return nil
 		},
 		Steps: []resource.TestStep{
-			{Config: base, Check: resource.ComposeAggregateTestCheckFunc(
+			{Config: base, Check: resource.ComposeAggregateTestCheckFunc(checkIRRResponseMetadata("arin_irr_as_set.test"),
 				resource.TestCheckResourceAttr("arin_irr_as_set.test", "id", "AS-EXAMPLE"),
 				resource.TestCheckResourceAttr("arin_irr_as_set.test", "members.#", "2"),
 				resource.TestCheckResourceAttr("arin_irr_as_set.test", "poc_links.#", "2"),
@@ -175,4 +175,11 @@ func TestAccASSetResourceInvalid(t *testing.T) {
 	if len(f.writes) != 0 {
 		t.Fatal("invalid config caused writes")
 	}
+}
+
+func checkIRRResponseMetadata(address string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc(
+		resource.TestCheckResourceAttr(address, "source", "ARIN"),
+		resource.TestCheckResourceAttrSet(address, "poc_links.0.description"),
+	)
 }

@@ -12,7 +12,7 @@ import (
 )
 
 func testASSet() ASSet {
-	return ASSet{Name: "AS-EXAMPLE", OrgHandle: "EXAMPLE-1", Description: []string{"Peers & <routing>", "Second line"}, Remarks: []string{"A remark"}, Members: []string{"AS64496", "AS-PEERS"}, MembersByRef: []string{"MNT-EXAMPLE-1"}, POCs: []IRRPOC{{"ADMIN-1", "AD"}, {"TECH-1", "T"}}}
+	return ASSet{Name: "AS-EXAMPLE", OrgHandle: "EXAMPLE-1", Description: []string{"Peers & <routing>", "Second line"}, Remarks: []string{"A remark"}, Members: []string{"AS64496", "AS-PEERS"}, MembersByRef: []string{"MNT-EXAMPLE-1"}, POCs: []IRRPOC{{Handle: "ADMIN-1", Function: "AD"}, {Handle: "TECH-1", Function: "T"}}}
 }
 func TestASSetPayload(t *testing.T) {
 	b, err := testASSet().marshal()

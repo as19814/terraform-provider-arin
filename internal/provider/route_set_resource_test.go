@@ -70,7 +70,7 @@ func (f *fakeRouteSetAPI) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		f.writes[r.Method]++
-		s := strings.ReplaceAll(string(b), "</routeSet>", fmt.Sprintf("<pocLinks><pocLinkRef handle=\"ADMIN-1\" function=\"AD\"/><pocLinkRef handle=\"TECH-1\" function=\"T\"/></pocLinks><creationDate>2026-01-01T00:00:00Z</creationDate><lastModifiedDate>2026-01-%02dT00:00:00Z</lastModifiedDate></routeSet>", f.writes["POST"]+f.writes["PUT"]))
+		s := strings.ReplaceAll(string(b), "</routeSet>", fmt.Sprintf("<pocLinks><pocLinkRef handle=\"ADMIN-1\" function=\"AD\" description=\"Admin\"/><pocLinkRef handle=\"TECH-1\" function=\"T\" description=\"Tech\"/></pocLinks><creationDate>2026-01-01T00:00:00Z</creationDate><lastModifiedDate>2026-01-%02dT00:00:00Z</lastModifiedDate></routeSet>", f.writes["POST"]+f.writes["PUT"]))
 		f.objects[p.Name] = s
 		fmt.Fprint(w, s)
 	case "DELETE":
@@ -126,7 +126,7 @@ func TestAccRouteSetResourceLifecycle(t *testing.T) {
 			return nil
 		},
 		Steps: []resource.TestStep{
-			{Config: base, Check: resource.ComposeAggregateTestCheckFunc(
+			{Config: base, Check: resource.ComposeAggregateTestCheckFunc(checkIRRResponseMetadata("arin_irr_route_set.test"),
 				resource.TestCheckResourceAttr("arin_irr_route_set.test", "id", "RS-EXAMPLE"),
 				resource.TestCheckResourceAttr("arin_irr_route_set.test", "members.#", "2"),
 				resource.TestCheckResourceAttr("arin_irr_route_set.test", "mp_members.#", "1"),

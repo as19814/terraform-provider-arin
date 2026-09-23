@@ -183,7 +183,7 @@ resource "arin_irr_route" "test" {
 					return nil
 				},
 				Steps: []resource.TestStep{
-					{Config: config("Disposable Terraform OT&E route", `["Disposable test remark"]`, fmt.Sprintf("[%q,%q]", names[0], names[1])), Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_irr_route.test", "id", id), resource.TestCheckResourceAttr("arin_irr_route.test", "member_of.#", "2"))},
+					{Config: config("Disposable Terraform OT&E route", `["Disposable test remark"]`, fmt.Sprintf("[%q,%q]", names[0], names[1])), Check: resource.ComposeAggregateTestCheckFunc(checkIRRResponseMetadata("arin_irr_route.test"), resource.TestCheckResourceAttr("arin_irr_route.test", "id", id), resource.TestCheckResourceAttr("arin_irr_route.test", "member_of.#", "2"))},
 					{Config: updated, Check: resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("arin_irr_route.test", "description.0", "Updated disposable Terraform OT&E route"), resource.TestCheckResourceAttr("arin_irr_route.test", "remarks.#", "0"), resource.TestCheckTypeSetElemAttr("arin_irr_route.test", "member_of.*", names[1]))},
 					{ResourceName: "arin_irr_route.test", ImportState: true, ImportStateVerify: true},
 					{Config: updated, PlanOnly: true, ExpectNonEmptyPlan: false},
