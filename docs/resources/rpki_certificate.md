@@ -44,7 +44,7 @@ resource "arin_rpki_certificate" "example" {
 
 - `child_handle` (String) Assigned child handle from the parent response.
 - `class_name` (String) Assigned resource class. Changing it replaces the resource.
-- `csr_pem` (String) Signed CA certificate request using an existing resource key. Changing it replaces the resource; private resource key bytes are never sent to the provider.
+- `csr_pem` (String) Signed CA certificate request using an existing resource key. A change to the public key replaces the resource; a new CSR for the same key updates it in place. Private resource key bytes are never sent to the provider.
 - `endpoint` (String) Provisioning service URL from a trusted parent response. Requires HTTPS except HTTP on loopback for tests.
 - `issuer_chain_pem` (String) Ordered PEM resource issuer chain, immediate issuer through the configured anchor.
 - `journal_directory` (String) Absolute path to an existing private directory for durable signing-time and pending-request journals. Must persist between runs. Failed exchanges can require recovery before further reads.

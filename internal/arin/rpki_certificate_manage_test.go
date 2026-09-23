@@ -2,8 +2,10 @@ package arin
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
 	"os"
@@ -45,5 +47,34 @@ func TestRPKICertificateManagePreflight(t *testing.T) {
 	}
 	if err := RevokeRPKICertificate(ctx, config, "class", "AAAAAAAAAAAAAAAAAAAAAAAAAAA"); !errors.Is(err, context.Canceled) {
 		t.Fatal("revocation ignored cancellation")
+	}
+}
+
+func TestRPKICertificateRequestKey(t *testing.T) {
+	local, _ := cmsSigningFixture(t)
+	var previous string
+	for _, name := range []string{"first", "renewed"} {
+		der, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{Subject: pkix.Name{CommonName: name}, ExtraExtensions: rpkiCSRTestExtensions(t)}, local.Signer)
+		if err != nil {
+			t.Fatal(err)
+		}
+		value := certificateTestPEM("CERTIFICATE REQUEST", der)
+		got, err := RPKICertificateRequestKey(value)
+		if err != nil || got == "" {
+			t.Fatalf("valid CSR: %v", err)
+		}
+		if previous != "" && got != previous {
+			t.Fatal("CSR changed resource key identity")
+		}
+		previous = got
+		for _, bad := range []string{value + value, certificateTestPEM("PRIVATE KEY", der), "invalid"} {
+			if _, err := RPKICertificateRequestKey(bad); err == nil {
+				t.Fatal("invalid CSR accepted")
+			}
+		}
+		der[len(der)-1] ^= 1
+		if _, err := RPKICertificateRequestKey(certificateTestPEM("CERTIFICATE REQUEST", der)); err == nil {
+			t.Fatal("invalid CSR signature accepted")
+		}
 	}
 }

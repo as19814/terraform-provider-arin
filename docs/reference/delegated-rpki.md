@@ -1331,8 +1331,11 @@ validates the current manifest-backed resource path before updating state.
 Missing keys/classes remove the resource from state; malformed responses and
 failed resource validation return diagnostics instead of implying absence.
 
-Endpoint, handles, class and CSR changes require replacement. A CSR replacement
-must use a fresh resource key because destroy retires the old key. Resource
+Endpoint, handles, class and CSR public-key changes require replacement. A new
+CSR for the same key updates in place, preserving the key. Planning validates
+the CSR signature/profile locally and compares key identifiers before choosing
+replacement. A changed CSR must be known when planning an existing resource; an
+unknown CSR blocks the plan rather than guessing whether to revoke the key. Resource
 subset updates request a certificate for the existing key. No automatic renewal
 schedule is implemented: a Terraform refresh observes parent-issued changes but
 does not create certificates. Destroy affects all certificates for that key in
@@ -1386,3 +1389,11 @@ agreement and clean plans. A missing-target import fails without additional
 issuance or revocation. Private-file and JSON parser tests cover permissions,
 symlinks, duplicates, missing fields, nulls, aliases and optional-value semantics.
 Native delegated import verification still requires sandbox enrollment.
+
+Certificate planning now distinguishes CSR content from key identity. Terraform
+acceptance tests use signed CA CSRs and verify that a new CSR for the same key
+updates without revocation, a different key replaces and revokes the old key,
+and malformed CSR input fails planning without issuing or revoking. These tests
+also retain import/state agreement and clean-plan coverage. The public-key
+comparison does not replace the signed-response and resource-path checks during
+issuance and refresh.

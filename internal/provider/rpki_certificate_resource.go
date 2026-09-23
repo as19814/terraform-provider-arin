@@ -9,6 +9,7 @@ import (
 	"github.com/as19814/terraform-provider-arin/internal/arin"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -73,9 +74,9 @@ func (r *rpkiCertificateResource) Schema(_ context.Context, _ resource.SchemaReq
 		}
 		attrs[name] = v
 	}
-	for name, desc := range map[string]string{"class_name": "Assigned resource class. Changing it replaces the resource.", "csr_pem": "Signed CA certificate request using an existing resource key. Changing it replaces the resource; private resource key bytes are never sent to the provider.", "resource_anchor_pem": "Explicit resource trust anchor, separate from the BPKI transport anchors.", "issuer_chain_pem": "Ordered PEM resource issuer chain, immediate issuer through the configured anchor.", "rrdp_cache_directory": "Existing absolute private directory for persistent RRDP cache.", "manifest_history_directory": "Existing absolute private directory for durable manifest history."} {
+	for name, desc := range map[string]string{"class_name": "Assigned resource class. Changing it replaces the resource.", "csr_pem": "Signed CA certificate request using an existing resource key. A change to the public key replaces the resource; a new CSR for the same key updates it in place. Private resource key bytes are never sent to the provider.", "resource_anchor_pem": "Explicit resource trust anchor, separate from the BPKI transport anchors.", "issuer_chain_pem": "Ordered PEM resource issuer chain, immediate issuer through the configured anchor.", "rrdp_cache_directory": "Existing absolute private directory for persistent RRDP cache.", "manifest_history_directory": "Existing absolute private directory for durable manifest history."} {
 		v := schema.StringAttribute{Required: true, MarkdownDescription: desc}
-		if name == "class_name" || name == "csr_pem" {
+		if name == "class_name" {
 			v.PlanModifiers = replace
 		}
 		attrs[name] = v
@@ -183,5 +184,47 @@ func (r *rpkiCertificateResource) Delete(ctx context.Context, req resource.Delet
 	}
 	if err := r.revoke(ctx, m.config(), m.Class.ValueString(), m.SKI.ValueString()); err != nil {
 		resp.Diagnostics.AddError("Could not revoke resource certificate", err.Error())
+	}
+}
+
+func (r *rpkiCertificateResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+	var planned types.String
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("csr_pem"), &planned)...)
+	if resp.Diagnostics.HasError() || planned.IsNull() {
+		return
+	}
+	if planned.IsUnknown() {
+		if !req.State.Raw.IsNull() {
+			resp.Diagnostics.AddAttributeError(path.Root("csr_pem"), "Unknown resource certificate request", "The CSR must be known when planning a change to an existing certificate so the provider can distinguish an in-place update from key revocation and replacement.")
+		}
+		return
+	}
+	key, err := arin.RPKICertificateRequestKey(planned.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(path.Root("csr_pem"), "Invalid resource certificate request", err.Error())
+		return
+	}
+	if req.State.Raw.IsNull() {
+		return
+	}
+	var previous types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("csr_pem"), &previous)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if previous.IsUnknown() || previous.IsNull() {
+		resp.Diagnostics.AddError("Missing resource certificate request", "The prior CSR is required to determine whether a key replacement is needed.")
+		return
+	}
+	old, err := arin.RPKICertificateRequestKey(previous.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid prior resource certificate request", err.Error())
+		return
+	}
+	if key != old {
+		resp.RequiresReplace.Append(path.Root("csr_pem"))
 	}
 }

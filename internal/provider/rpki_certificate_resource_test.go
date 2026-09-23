@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"errors"
 	"fmt"
 	"regexp"
@@ -27,6 +29,23 @@ func (p certificateTestProvider) Resources(context.Context) []func() frameworkre
 }
 
 func TestAccRPKICertificate(t *testing.T) {
+	first, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstCSR, renewedCSR, secondCSR := certificateCSRFixture(t, first, "first"), certificateCSRFixture(t, first, "renewed"), certificateCSRFixture(t, second, "second")
+	firstKey, err := arin.RPKICertificateRequestKey(firstCSR)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondKey, err := arin.RPKICertificateRequestKey(secondCSR)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var mu sync.Mutex
 	objects := map[string]*arin.RPKIIssuedCertificate{}
 	issued, revoked := 0, 0
@@ -44,9 +63,13 @@ func TestAccRPKICertificate(t *testing.T) {
 			if err := check(c, input, v); err != nil {
 				return nil, err
 			}
+			key, err := arin.RPKICertificateRequestKey(input.CSRPEM)
+			if err != nil {
+				return nil, err
+			}
 			issued++
-			cert := &arin.RPKIIssuedCertificate{Class: input.Class, SKI: input.CSRPEM, CertificatePEM: fmt.Sprintf("certificate-%d", issued), IssuerPEM: "issuer", CertificateURLs: "rsync://repo.example/module/child.cer", NotAfter: "2027-01-01T00:00:00Z"}
-			objects[input.CSRPEM] = cert
+			cert := &arin.RPKIIssuedCertificate{Class: input.Class, SKI: key, CertificatePEM: fmt.Sprintf("certificate-%d", issued), IssuerPEM: "issuer", CertificateURLs: "rsync://repo.example/module/child.cer", NotAfter: "2027-01-01T00:00:00Z"}
+			objects[key] = cert
 			return cert, nil
 		},
 		read: func(_ context.Context, c arin.RPKIProvisioningReadConfig, input arin.RPKICertificateRequest, v arin.RPKICertificateValidation) (*arin.RPKIIssuedCertificate, error) {
@@ -58,7 +81,11 @@ func TestAccRPKICertificate(t *testing.T) {
 			if failRead {
 				return nil, errors.New("validation unavailable")
 			}
-			return objects[input.CSRPEM], nil
+			key, err := arin.RPKICertificateRequestKey(input.CSRPEM)
+			if err != nil {
+				return nil, err
+			}
+			return objects[key], nil
 		},
 		revoke: func(_ context.Context, c arin.RPKIProvisioningReadConfig, class, ski string) error {
 			mu.Lock()
@@ -97,21 +124,31 @@ func TestAccRPKICertificate(t *testing.T) {
 	resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: factories, CheckDestroy: func(_ *terraform.State) error {
 		mu.Lock()
 		defer mu.Unlock()
-		if len(objects) != 0 || issued != 3 || revoked != 2 {
+		if len(objects) != 0 || issued != 4 || revoked != 2 {
 			return fmt.Errorf("unexpected lifecycle: %d issued, %d revoked", issued, revoked)
 		}
 		return nil
 	}, Steps: []resource.TestStep{
-		{Config: config("key-one", "64500"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("arin_rpki_certificate.test", "ski", "key-one"), resource.TestCheckResourceAttr("arin_rpki_certificate.test", "certificate_pem", "certificate-1"))},
-		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, "key-one", "64500"), ImportStateVerify: true},
-		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, "missing", "64500"), ExpectError: regexp.MustCompile("Certificate import target missing")},
-		{Config: config("key-one", "64500"), PlanOnly: true},
-		{Config: config("key-one", "64500"), PlanOnly: true, PreConfig: func() { mu.Lock(); failRead = true; mu.Unlock() }, ExpectError: regexp.MustCompile("validation unavailable")},
-		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, "key-one", "64500"), ExpectError: regexp.MustCompile("validation unavailable")},
-		{Config: config("key-one", "64500"), PlanOnly: true, PreConfig: func() { mu.Lock(); failRead = false; mu.Unlock() }},
-		{Config: config("key-one", "64500-64501"), Check: resource.TestCheckResourceAttr("arin_rpki_certificate.test", "certificate_pem", "certificate-2")},
-		{Config: config("key-two", "64500"), Check: resource.TestCheckResourceAttr("arin_rpki_certificate.test", "ski", "key-two")},
-		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, "key-two", "64500"), ImportStateVerify: true},
-		{Config: config("key-two", "64500"), PlanOnly: true},
+		{Config: config(firstCSR, "64500"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("arin_rpki_certificate.test", "ski", firstKey), resource.TestCheckResourceAttr("arin_rpki_certificate.test", "certificate_pem", "certificate-1"))},
+		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, firstCSR, "64500"), ImportStateVerify: true},
+		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, secondCSR, "64500"), ExpectError: regexp.MustCompile("Certificate import target missing")},
+		{Config: config(firstCSR, "64500"), PlanOnly: true},
+		{Config: config("invalid", "64500"), PlanOnly: true, ExpectError: regexp.MustCompile("Invalid resource certificate request")},
+		{Config: config(firstCSR, "64500"), PlanOnly: true, PreConfig: func() { mu.Lock(); failRead = true; mu.Unlock() }, ExpectError: regexp.MustCompile("validation unavailable")},
+		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, firstCSR, "64500"), ExpectError: regexp.MustCompile("validation unavailable")},
+		{Config: config(firstCSR, "64500"), PlanOnly: true, PreConfig: func() { mu.Lock(); failRead = false; mu.Unlock() }},
+		{Config: config(firstCSR, "64500-64501"), Check: resource.TestCheckResourceAttr("arin_rpki_certificate.test", "certificate_pem", "certificate-2")},
+		{Config: config(renewedCSR, "64500-64501"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("arin_rpki_certificate.test", "ski", firstKey), resource.TestCheckResourceAttr("arin_rpki_certificate.test", "certificate_pem", "certificate-3"), func(_ *terraform.State) error {
+			mu.Lock()
+			defer mu.Unlock()
+			if revoked != 0 {
+				return errors.New("same-key CSR update revoked the key")
+			}
+			return nil
+		})},
+		{Config: config(renewedCSR, "64500-64501"), PlanOnly: true},
+		{Config: config(secondCSR, "64500"), Check: resource.TestCheckResourceAttr("arin_rpki_certificate.test", "ski", secondKey)},
+		{ResourceName: "arin_rpki_certificate.test", ImportState: true, ImportStateId: writeCertificateImport(t, secondCSR, "64500"), ImportStateVerify: true},
+		{Config: config(secondCSR, "64500"), PlanOnly: true},
 	}})
 }

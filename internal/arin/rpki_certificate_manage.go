@@ -126,3 +126,17 @@ func rpkiPublicKeyIdentifier(der []byte) (string, error) {
 	hash := sha1.Sum(spki.Key.Bytes)
 	return base64.RawURLEncoding.EncodeToString(hash[:]), nil
 }
+
+// RPKICertificateRequestKey validates a CA CSR and identifies its resource key.
+// It does not load BPKI credentials or perform network operations.
+func RPKICertificateRequestKey(value string) (string, error) {
+	blocks, err := rpkiPEMBlocks(value, "CERTIFICATE REQUEST", 1)
+	if err != nil || len(blocks) != 1 {
+		return "", errRPKIUpDown
+	}
+	csr, err := parseRPKICACSR(blocks[0])
+	if err != nil {
+		return "", err
+	}
+	return rpkiPublicKeyIdentifier(csr.RawSubjectPublicKeyInfo)
+}
