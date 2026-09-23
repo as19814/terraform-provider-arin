@@ -17,7 +17,13 @@ type rpkiIssueRequest struct {
 	RequestedASN, RequestedIPv4, RequestedIPv6 *string
 }
 
+// Issue performs protocol validation only. Provider resources must use the
+// resource-path entry point once allocation matching is integrated.
 func (c rpkiUpDownClient) Issue(ctx context.Context, input rpkiIssueRequest) (*rpkiResourceClass, error) {
+	return c.issue(ctx, input, nil)
+}
+
+func (c rpkiUpDownClient) issue(ctx context.Context, input rpkiIssueRequest, validate func(*rpkiResourceClass, time.Time) error) (*rpkiResourceClass, error) {
 	child, parent := upDownToken(c.Child), upDownToken(c.Parent)
 	if !upDownLabel(child) || !upDownLabel(parent) || c.Exchange.MediaType != "application/rpki-updown" {
 		return nil, errRPKIUpDown
@@ -37,7 +43,11 @@ func (c rpkiUpDownClient) Issue(ctx context.Context, input rpkiIssueRequest) (*r
 	var rejected *rpkiUpDownError
 	_, err = exchange.exchange(ctx, "updown-issue", request, func(query, reply []byte) error {
 		var err error
-		result, rejected, err = validateUpDownIssue(query, reply, child, parent, clock())
+		now := clock()
+		result, rejected, err = validateUpDownIssue(query, reply, child, parent, now)
+		if err == nil && rejected == nil && validate != nil {
+			err = validate(result, now)
+		}
 		return err
 	})
 	if err != nil {

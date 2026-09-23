@@ -684,3 +684,26 @@ The directory must persist across runs. Removing it discards local history;
 changing the configured anchor creates a separate history scope. Anchor rotation,
 crash recovery, repository retrieval and issuance/Terraform integration remain
 unfinished. This storage does not add native delegated sandbox evidence.
+
+## Issuance resource-path gate
+
+The private IssueWithResourcePath entry point now preflights the configured
+resource anchor and private history directory, then retrieves publication
+snapshots through a caller-supplied resolver after a protocol-valid issuance
+reply. The returned certificate and immediate issuer must match the exact DER
+at the start of the supplied path, and the selected certificate publication URI
+must be present in the signed reply. Manifest-backed path validation and durable
+history recording must succeed before the exchange journal is completed.
+
+Resolver inputs own their buffers. Retrieval errors, mismatched paths, missing
+publications and validation failures leave the issue exchange pending, so a
+second call cannot automatically submit the mutation again. Signed fake-server
+tests cover successful acceptance, failure retention, retry prevention, invalid
+configuration before dispatch and resolver-buffer isolation. Validation uses a
+fresh clock reading after snapshot retrieval.
+
+This gate does not yet compare resolved resources to the requested allocation.
+The existing private Issue method remains protocol-only. Provider integration
+must use the complete validation flow after allocation matching is implemented.
+The repository resolver, pending-operation recovery and native delegated
+verification are also still unfinished.
