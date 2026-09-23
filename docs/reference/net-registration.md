@@ -106,7 +106,7 @@ routing information.
 
 - Exercise a genuinely asynchronous OT&E ticket, including failure/rejection.
 - Audit any additional range edge cases beyond the verified minimal CIDR covers.
-- Verify message/attachment submission in OT&E; the remove endpoint passes IPv4/IPv6 sandbox tests without correspondence, and message payloads have mock lifecycle coverage.
+- Native removal with a message and attachment passes IPv4/IPv6 OT&E client tests; resource lifecycle coverage uses mocks. Live asynchronous ticket evidence remains outstanding.
 
 
 ## Multi-block registration
@@ -198,10 +198,25 @@ rejects message and message-reference elements before dispatch. Cleanup removes
 the receipt only after all tracked NETs and customers are confirmed absent.
 `make testote` includes this no-correspondence lifecycle.
 
-Live message/attachment submission remains unverified. No correspondence has
-been sent by this test. The user has now explicitly approved exactly two OT&E
-removal messages, one per IP family, with subject "Terraform provider OT&E removal
-test", text "Removing a disposable sandbox network for provider verification.",
-and attachment evidence.txt containing "Disposable OT&E test evidence." A durable
-one-time fixture must prevent later test runs from resending that correspondence;
-this approval does not cover unrelated messages or production writes.
+On 2026-09-23, `TestOTENetRemoveMessageLifecycle` passed for both IPv4 and
+IPv6 (5.30 seconds). It sent exactly the two explicitly approved OT&E removal
+messages, each with subject "Terraform provider OT&E removal test", text
+"Removing a disposable sandbox network for provider verification.", category
+`NONE`, and attachment evidence.txt containing "Disposable OT&E test evidence."
+Both returned completed NET records without tickets. Fresh GETs confirmed the
+NETs and their disposable customers were absent. This verifies client submission
+with correspondence; Terraform removal-policy lifecycle coverage remains mocked.
+It does not verify attachment retrieval or asynchronous ticket processing.
+
+The opt-in fixture requires `ARIN_OTE_MESSAGE_TESTS=1` in addition to the existing
+OT&E write-test settings and is deliberately excluded from `make testote`.
+Its transport validates the exact approved payload and durably records the
+attempt before dispatch. Lost responses and existing attempts block resubmission.
+Completed mode-0600 receipts named
+`ote-net-remove-approved-20260923-<org-hash>-<family>.json` are retained in the user
+cache. The completed fixture now also refuses writes when receipts are missing,
+including on another machine. Do not remove these receipts. A second native run passed
+in 0.57 seconds, confirming absence with read-only GETs and skipping both sends.
+This authorization is consumed and does not cover further messages or production
+writes. Guard unit tests cover changed, missing and duplicate messages, lost
+responses, and attempted replay.

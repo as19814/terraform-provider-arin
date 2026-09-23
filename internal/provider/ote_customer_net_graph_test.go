@@ -29,15 +29,18 @@ import (
 )
 
 type customerNetReceipt struct {
-	Org, Parent, Prefix, Name, Pending string
-	Customers, Nets                    []string
+	Org, Parent, Prefix, Name, Pending           string
+	Customers, Nets                              []string
+	MessageAttempted, MessageConfirmed, Complete bool
+	RemovalTicket                                string
 }
 type customerNetOTETransport struct {
-	mu                sync.Mutex
-	path              string
-	receipt           customerNetReceipt
-	transport         http.RoundTripper
-	allowEmptyRemoval bool
+	mu                  sync.Mutex
+	path                string
+	receipt             customerNetReceipt
+	transport           http.RoundTripper
+	allowEmptyRemoval   bool
+	allowRemovalMessage bool
 }
 
 func (g *customerNetOTETransport) save() error {
@@ -95,6 +98,9 @@ func (g *customerNetOTETransport) RoundTrip(req *http.Request) (*http.Response, 
 	if !createCustomer && !createNet && !removeNet && !((req.Method == "PUT" || req.Method == "DELETE") && (knownCustomer || knownNet)) {
 		return nil, errors.New("refusing mutation outside disposable customer/NET graph")
 	}
+	if removeNet && g.allowRemovalMessage && g.receipt.MessageAttempted {
+		return nil, errors.New("approved removal message was already attempted; refusing replay")
+	}
 	if removeNet && req.Body == nil {
 		return nil, errors.New("NET removal probe requires a NET payload")
 	}
@@ -119,8 +125,13 @@ func (g *customerNetOTETransport) RoundTrip(req *http.Request) (*http.Response, 
 			if xml.Unmarshal(body, &net) != nil || net.Name != g.receipt.Name || net.Parent != g.receipt.Parent || !slices.Contains(g.receipt.Customers, net.Customer) || len(net.Blocks) != 1 {
 				return nil, errors.New("unexpected disposable NET identity")
 			}
-			if removeNet && (net.Handle != removeHandle || net.Messages != nil || net.MessageReferences != nil) {
+			if removeNet && (net.Handle != removeHandle || (!g.allowRemovalMessage && net.Messages != nil) || net.MessageReferences != nil) {
 				return nil, errors.New("NET removal probe forbids messages and requires the saved NET identity")
+			}
+			if removeNet && g.allowRemovalMessage {
+				if err := validateApprovedRemovalMessage(body); err != nil {
+					return nil, err
+				}
 			}
 			start, e1 := netip.ParseAddr(net.Blocks[0].StartAddress)
 			end, e2 := netip.ParseAddr(net.Blocks[0].EndAddress)
@@ -128,6 +139,9 @@ func (g *customerNetOTETransport) RoundTrip(req *http.Request) (*http.Response, 
 				return nil, errors.New("refusing NET mutation outside reserved test range")
 			}
 		}
+	}
+	if removeNet && g.allowRemovalMessage {
+		g.receipt.MessageAttempted = true
 	}
 	g.receipt.Pending = req.Method + " " + path
 	if err := g.save(); err != nil {
@@ -175,7 +189,15 @@ func (g *customerNetOTETransport) RoundTrip(req *http.Request) (*http.Response, 
 		var envelope struct {
 			XMLName xml.Name
 			Net     graphNetXML `xml:"net"`
-			Ticket  *struct{}   `xml:"ticket"`
+			Ticket  *struct {
+				Number string `xml:"ticketNo"`
+			} `xml:"ticket"`
+		}
+		if xml.Unmarshal(body, &envelope) == nil && envelope.Ticket != nil {
+			g.receipt.RemovalTicket = envelope.Ticket.Number
+			if err := g.save(); err != nil {
+				return nil, err
+			}
 		}
 		if xml.Unmarshal(body, &envelope) != nil || envelope.XMLName.Local != "ticketedRequest" || envelope.XMLName.Space != "http://www.arin.net/regrws/core/v1" || envelope.Ticket != nil || envelope.Net.Handle != removeHandle || envelope.Net.Name != g.receipt.Name {
 			return nil, errors.New("NET removal outcome retained for manual reconciliation")
@@ -205,9 +227,9 @@ func (p *customerNetOTEProvider) Configure(_ context.Context, _ frameworkprovide
 	resp.DataSourceData = p.client
 }
 
-func TestOTECustomerNetGraphLifecycle(t *testing.T) { testOTECustomerNetGraph(t, false) }
-func TestOTENetRemoveLifecycle(t *testing.T)        { testOTECustomerNetGraph(t, true) }
-func testOTECustomerNetGraph(t *testing.T, removeOnly bool) {
+func TestOTECustomerNetGraphLifecycle(t *testing.T) { testOTECustomerNetGraph(t, false, false) }
+func TestOTENetRemoveLifecycle(t *testing.T)        { testOTECustomerNetGraph(t, true, false) }
+func testOTECustomerNetGraph(t *testing.T, removeOnly, withMessage bool) {
 	if os.Getenv("ARIN_OTE_WRITE_TESTS") != "1" || os.Getenv("TF_ACC") != "1" {
 		t.Skip("requires explicit OT&E write opt-in")
 	}
@@ -230,9 +252,38 @@ func testOTECustomerNetGraph(t *testing.T, removeOnly bool) {
 			if removeOnly {
 				receiptPrefix = "ote-net-remove"
 			}
+			if withMessage {
+				receiptPrefix = "ote-net-remove-approved-20260923"
+			}
 			path := filepath.Join(cache, "terraform-provider-arin", fmt.Sprintf("%s-%x-%s.json", receiptPrefix, hash[:8], family))
 			if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 				t.Fatal(err)
+			}
+			if withMessage {
+				if raw, err := os.ReadFile(path); err == nil {
+					var saved customerNetReceipt
+					if json.Unmarshal(raw, &saved) != nil || saved.Org != org || !saved.Complete || saved.Pending != "" || !saved.MessageAttempted || !saved.MessageConfirmed {
+						t.Fatal("existing approved-message receipt requires reconciliation; no new writes allowed")
+					}
+					ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+					defer cancel()
+					for _, h := range saved.Nets {
+						if _, err := discovery.GetRegisteredNet(ctx, h); !arin.IsNotFound(err) {
+							t.Fatalf("previous NET cleanup no longer confirmed: %v", err)
+						}
+					}
+					for _, h := range saved.Customers {
+						if _, err := discovery.GetCustomer(ctx, h); !arin.IsNotFound(err) {
+							t.Fatalf("previous customer cleanup no longer confirmed: %v", err)
+						}
+					}
+					t.Skip("approved message already completed; cleanup reverified without another write")
+				} else if !os.IsNotExist(err) {
+					t.Fatal(err)
+				}
+				// Both authorized sends completed on 2026-09-23. A missing
+				// receipt, including on another machine, is not new approval.
+				t.Fatal("one-time message approval consumed; missing receipt cannot authorize another send")
 			}
 			if _, err := os.Stat(path); err == nil {
 				t.Fatalf("existing graph receipt must be reconciled first: %s", path)
@@ -244,7 +295,7 @@ func testOTECustomerNetGraph(t *testing.T, removeOnly bool) {
 			if _, err := rand.Read(random[:]); err != nil {
 				t.Fatal(err)
 			}
-			g := &customerNetOTETransport{path: path, receipt: customerNetReceipt{Org: org, Parent: parent, Prefix: prefix, Name: fmt.Sprintf("TERRAFORM-GRAPH-%X", random[:])}, transport: http.DefaultTransport, allowEmptyRemoval: removeOnly}
+			g := &customerNetOTETransport{path: path, receipt: customerNetReceipt{Org: org, Parent: parent, Prefix: prefix, Name: fmt.Sprintf("TERRAFORM-GRAPH-%X", random[:])}, transport: http.DefaultTransport, allowEmptyRemoval: removeOnly, allowRemovalMessage: withMessage}
 			f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 			if err != nil {
 				t.Fatal(err)
@@ -300,6 +351,13 @@ func testOTECustomerNetGraph(t *testing.T, removeOnly bool) {
 						return
 					}
 				}
+				if withMessage {
+					g.receipt.Complete = g.receipt.MessageAttempted && g.receipt.MessageConfirmed
+					if err := g.save(); err != nil {
+						t.Error(err)
+					}
+					return
+				}
 				if err := os.Remove(path); err != nil {
 					t.Error(err)
 				}
@@ -320,7 +378,11 @@ func testOTECustomerNetGraph(t *testing.T, removeOnly bool) {
 				}
 				handle := created.Net.Handle
 				t.Logf("disposable %s remove probe: customer %s, NET %s", family, customer.Handle, handle)
-				result, err := client.RemoveNetAssignment(ctx, handle, nil)
+				var messages []arin.RegistrationMessage
+				if withMessage {
+					messages = []arin.RegistrationMessage{approvedRemovalMessage()}
+				}
+				result, err := client.RemoveNetAssignment(ctx, handle, messages)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -330,8 +392,15 @@ func testOTECustomerNetGraph(t *testing.T, removeOnly bool) {
 				if _, err := client.GetRegisteredNet(ctx, handle); !arin.IsNotFound(err) {
 					t.Fatalf("NET removal unconfirmed: %v", err)
 				}
+				if withMessage {
+					g.receipt.MessageConfirmed = true
+					if err := g.save(); err != nil {
+						t.Fatal(err)
+					}
+					t.Log("approved removal message accepted and NET deletion confirmed")
+				}
 				// The registered cleanup verifies absence again, deletes the
-				// disposable customer, and only then removes the durable receipt.
+				// disposable customer, then retains approved-message receipts.
 				return
 			}
 			p := &customerNetOTEProvider{ARINProvider: &ARINProvider{version: "ote-test"}, client: client}
