@@ -166,5 +166,28 @@ Tests cover direct and intermediate chains, configured intermediates, missing
 intermediate CRLs, revoked EEs/intermediates, wrong roots, expired anchors and EEs,
 key usage, resource extensions, bad CRL signatures, freshness, conflicting CRLs,
 unsupported scope/entry semantics, signing-time ordering and future skew. All are
-synthetic tests; no native delegated RPKI exchange has occurred. Signed-message
-creation, HTTP protocol clients and their stateful recovery remain outstanding.
+synthetic tests; no native delegated RPKI exchange has occurred. HTTP protocol clients and their stateful recovery remain outstanding; local
+signed-message creation is implemented below.
+
+## Local CMS request signing
+
+The private `signRPKICMS` helper now signs bounded XML with an existing EE
+certificate and `crypto.Signer`. It checks that the key matches the certificate
+and validates the local trust path, CRLs and caller-supplied signing time before
+invoking the signer. The EE and optional intermediate certificates plus CRLs are
+included in DER-sorted sets. Output uses SHA-256/RSA, a subject-key identifier,
+XML content type, content digest and whole-second UTC signing time.
+
+The helper verifies the returned signature and then checks the complete generated
+envelope with the receiving verifier. Signer failures yield generic errors without
+returning partial output or exposing signer error details. Tests cover distinct
+CA and EE keys, intermediate chains, invalid configurations rejected before the
+signer is called, clock rollback, malformed XML, and faulty signers. OpenSSL
+independently verifies generated content, signature, chain and embedded CRL using
+the synthetic anchor and a fixed validation time.
+
+No private key is generated or persisted by the implementation. Tests generate
+synthetic keys in memory and write only public certificates and CMS envelopes to
+temporary files. The helper is not yet connected to a provider configuration or
+HTTP client. Outgoing timestamp persistence, serialized exchanges, message
+correlation, recovery and native ARIN protocol evidence remain outstanding.

@@ -28,22 +28,31 @@ var errRPKICMSTrust = errors.New("RPKI CMS trust, revocation or signing-time val
 // caller must still validate XML identity/response semantics and durably commit
 // the returned signing time before subsequent exchanges with the same peer.
 func verifyRPKICMS(der []byte, trust rpkiCMSTrust) (*verifiedRPKICMS, error) {
-	if trust.Anchor == nil || trust.Now.IsZero() || len(trust.Intermediates) > 32 {
-		return nil, errRPKICMSTrust
-	}
-	anchor, err := x509.ParseCertificate(trust.Anchor.Raw)
-	if err != nil || !anchor.IsCA || !anchor.BasicConstraintsValid {
-		return nil, errRPKICMSTrust
-	}
 	envelope, err := decodeRPKICMS(der)
 	if err != nil {
 		return nil, err
 	}
+	if err := validateRPKICMSTrust(envelope, trust); err != nil {
+		return nil, err
+	}
+	return &verifiedRPKICMS{Content: bytes.Clone(envelope.Content), SigningTime: envelope.SigningTime}, nil
+}
+
+// validateRPKICMSTrust is also used before local signing. It does not verify a
+// CMS signature and must not be used alone to authenticate received content.
+func validateRPKICMSTrust(envelope *untrustedRPKICMS, trust rpkiCMSTrust) error {
+	if trust.Anchor == nil || trust.Now.IsZero() || len(trust.Intermediates) > 32 {
+		return errRPKICMSTrust
+	}
+	anchor, err := x509.ParseCertificate(trust.Anchor.Raw)
+	if err != nil || !anchor.IsCA || !anchor.BasicConstraintsValid {
+		return errRPKICMSTrust
+	}
 	if envelope.SigningTime.Before(trust.LastSigningTime) || envelope.SigningTime.After(trust.Now.Add(5*time.Minute)) {
-		return nil, errRPKICMSTrust
+		return errRPKICMSTrust
 	}
 	if envelope.Signer.KeyUsage != 0 && envelope.Signer.KeyUsage&x509.KeyUsageDigitalSignature == 0 {
-		return nil, errRPKICMSTrust
+		return errRPKICMSTrust
 	}
 	roots := x509.NewCertPool()
 	roots.AddCert(anchor)
@@ -55,17 +64,17 @@ func verifyRPKICMS(der []byte, trust rpkiCMSTrust) (*verifiedRPKICMS, error) {
 	}
 	for _, cert := range trust.Intermediates {
 		if cert == nil {
-			return nil, errRPKICMSTrust
+			return errRPKICMSTrust
 		}
 		parsed, err := x509.ParseCertificate(cert.Raw)
 		if err != nil || !parsed.IsCA {
-			return nil, errRPKICMSTrust
+			return errRPKICMSTrust
 		}
 		intermediates.AddCert(parsed)
 	}
 	chains, err := envelope.Signer.Verify(x509.VerifyOptions{Roots: roots, Intermediates: intermediates, CurrentTime: trust.Now, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageAny}})
 	if err != nil {
-		return nil, errRPKICMSTrust
+		return errRPKICMSTrust
 	}
 	for _, chain := range chains {
 		if len(chain) < 2 || !bytes.Equal(chain[len(chain)-1].Raw, anchor.Raw) {
@@ -83,10 +92,10 @@ func verifyRPKICMS(der []byte, trust rpkiCMSTrust) (*verifiedRPKICMS, error) {
 			}
 		}
 		if valid {
-			return &verifiedRPKICMS{Content: bytes.Clone(envelope.Content), SigningTime: envelope.SigningTime}, nil
+			return nil
 		}
 	}
-	return nil, errRPKICMSTrust
+	return errRPKICMSTrust
 }
 
 func cmsCertificateUnrevoked(cert, issuer *x509.Certificate, crls []*x509.RevocationList, now time.Time) bool {
