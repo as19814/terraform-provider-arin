@@ -18,31 +18,35 @@ import (
 )
 
 const (
-	ProductionURL     = "https://reg.arin.net"
-	OTEURL            = "https://reg.ote.arin.net"
-	RDAPProductionURL = "https://rdap.arin.net"
-	RDAPOTEURL        = "https://rdap.ote.arin.net"
-	DefaultTimeout    = 30 * time.Second
-	maxResponseBytes  = 4 << 20
+	ProductionURL      = "https://reg.arin.net"
+	OTEURL             = "https://reg.ote.arin.net"
+	RDAPProductionURL  = "https://rdap.arin.net"
+	RDAPOTEURL         = "https://rdap.ote.arin.net"
+	WhoisProductionURL = "https://whois.arin.net"
+	WhoisOTEURL        = "https://whois.ote.arin.net"
+	DefaultTimeout     = 30 * time.Second
+	maxResponseBytes   = 4 << 20
 )
 
 // Config is immutable after New. HTTPClient allows callers to supply a transport.
 type Config struct {
-	APIKey      string
-	BaseURL     string
-	RDAPBaseURL string
-	Timeout     time.Duration
-	UserAgent   string
-	HTTPClient  *http.Client
+	APIKey       string
+	BaseURL      string
+	RDAPBaseURL  string
+	WhoisBaseURL string
+	Timeout      time.Duration
+	UserAgent    string
+	HTTPClient   *http.Client
 }
 
 // Client is safe for concurrent use. Credentials are never placed in request URLs.
 type Client struct {
-	baseURL     string
-	rdapBaseURL string
-	apiKey      string
-	userAgent   string
-	http        *http.Client
+	baseURL      string
+	rdapBaseURL  string
+	whoisBaseURL string
+	apiKey       string
+	userAgent    string
+	http         *http.Client
 }
 
 func ValidateBaseURL(raw string) error {
@@ -84,6 +88,19 @@ func New(cfg Config) (*Client, error) {
 			return nil, fmt.Errorf("invalid rdap_base_url: %w", err)
 		}
 	}
+	if cfg.WhoisBaseURL == "" {
+		switch strings.TrimRight(cfg.BaseURL, "/") {
+		case ProductionURL:
+			cfg.WhoisBaseURL = WhoisProductionURL
+		case OTEURL:
+			cfg.WhoisBaseURL = WhoisOTEURL
+		}
+	}
+	if cfg.WhoisBaseURL != "" {
+		if err := ValidateBaseURL(cfg.WhoisBaseURL); err != nil {
+			return nil, fmt.Errorf("invalid whois_base_url: %w", err)
+		}
+	}
 	if cfg.Timeout == 0 {
 		cfg.Timeout = DefaultTimeout
 	}
@@ -100,7 +117,7 @@ func New(cfg Config) (*Client, error) {
 	hc.Timeout = cfg.Timeout
 	// Never forward credentials or replay mutations through redirects.
 	hc.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
-	return &Client{baseURL: strings.TrimRight(cfg.BaseURL, "/"), rdapBaseURL: strings.TrimRight(cfg.RDAPBaseURL, "/"), apiKey: cfg.APIKey, userAgent: cfg.UserAgent, http: &hc}, nil
+	return &Client{baseURL: strings.TrimRight(cfg.BaseURL, "/"), rdapBaseURL: strings.TrimRight(cfg.RDAPBaseURL, "/"), whoisBaseURL: strings.TrimRight(cfg.WhoisBaseURL, "/"), apiKey: cfg.APIKey, userAgent: cfg.UserAgent, http: &hc}, nil
 }
 
 // APIError exposes status and sanitized ARIN error fields without retaining a raw body.

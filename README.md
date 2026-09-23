@@ -2,11 +2,11 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 43 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Nineteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs and ASPAs, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes, and advanced RPSL objects, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 49 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Nineteen managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs and ASPAs, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes, and advanced RPSL objects, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
-For authenticated registration, IRR, RPKI, and ticket reads, set `ARIN_API_KEY` in your shell. The provider sends it as an authorization header, and your account must have authority over the requested records. Public network/ASN discovery and contact references use RDAP without sending an API key and work without credentials.
+For authenticated registration, IRR, RPKI, and ticket reads, set `ARIN_API_KEY` in your shell. The provider sends it as an authorization header, and your account must have authority over the requested records. Public network/ASN discovery and contact references use RDAP without sending an API key and work without credentials. Public Whois-RWS record lookups also require no API key.
 
 ```hcl
 terraform {
@@ -35,7 +35,7 @@ output "networks" {
 }
 ```
 
-`base_url` defaults to `ARIN_BASE_URL`, then production. Set it to `https://reg.ote.arin.net` for OT&E. Explicit provider attributes take precedence over environment variables. The RDAP origin automatically follows production or OT&E; override it with `rdap_base_url` or `ARIN_RDAP_BASE_URL`. Custom registration origins require an explicit RDAP origin for network discovery. See the [provider schema](docs/index.md), [organization data source](docs/data-sources/org.md), and [network listing](docs/data-sources/networks.md).
+`base_url` defaults to `ARIN_BASE_URL`, then production. Set it to `https://reg.ote.arin.net` for OT&E. Explicit provider attributes take precedence over environment variables. The RDAP origin automatically follows production or OT&E; override it with `rdap_base_url` or `ARIN_RDAP_BASE_URL`. Custom registration origins require an explicit RDAP origin for network discovery. Whois-RWS uses `whois_base_url` or `ARIN_WHOIS_BASE_URL`, otherwise the Whois origin matching production or OT&E; custom registration origins require an explicit Whois origin for Whois reads. See the [provider schema](docs/index.md), [organization data source](docs/data-sources/org.md), and [network listing](docs/data-sources/networks.md).
 
 `arin_networks` returns a map keyed by network handle, with names, address families, registration types, address ranges, and CIDRs. It includes allocations and assignments directly registered to the organization, including overlapping parent and more-specific registrations. Contact-only associations and networks reassigned to other organizations are excluded. A public registration does not establish API-key authority. Searches that report truncation or pagination fail rather than returning a partial inventory.
 
@@ -294,3 +294,5 @@ CI runs on the YYJ self-hosted runners (`runs-on: [self-hosted, yyj]`) inside an
 [`arin_rdap_network_hierarchy`](docs/data-sources/rdap_network_hierarchy.md) searches IPv4/IPv6 ancestors and children using `top`, `up`, `down`, and `bottom`. Address and prefix queries are supported, with optional active filtering for `top` and `up`. Results preserve enclosing networks alongside children when ARIN returns both.
 
 [`arin_rdap_help`](docs/data-sources/rdap_help.md) reads server capabilities and reverse-search properties. [`arin_rdap_domains_by_nameserver`](docs/data-sources/rdap_domains_by_nameserver.md) finds reverse-domain registrations using an exact nameserver hostname. Network and ASN lookups and inventories expose complete `rdap_json` alongside typed fields.
+
+Public Whois-RWS lookups are available as `arin_whois_org`, `arin_whois_customer`, `arin_whois_poc`, `arin_whois_asn`, `arin_whois_net`, and `arin_whois_delegation`. They expose typed fields and complete `whois_xml`, with optional inline details and no credentials. See the [Whois-RWS coverage notes](docs/reference/whois-rws.md).

@@ -1,0 +1,1 @@
+<delegation xmlns="https://www.arin.net/whoisrws/rdns/v1"><name>2.0.192.in-addr.arpa.</name><nameservers><nameserver>NS1.EXAMPLE.NET</nameserver></nameservers><delegationKeys><delegationKey><keyTag>12345</keyTag><algorithm>13</algorithm><digestType>2</digestType><digest>abcd</digest></delegationKey></delegationKeys></delegation>

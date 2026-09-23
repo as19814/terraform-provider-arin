@@ -89,3 +89,39 @@ func TestConfigureRDAPOrigin(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigureWhoisOrigin(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		origin    types.String
+		env       string
+		wantError bool
+	}{
+		{"default", types.StringNull(), "", false},
+		{"environment", types.StringNull(), "https://whois.ote.arin.net", false},
+		{"explicit overrides environment", types.StringValue("https://whois.arin.net"), "invalid", false},
+		{"invalid environment", types.StringNull(), "http://example.net", true},
+		{"unknown", types.StringUnknown(), "", true},
+		{"empty", types.StringValue(""), "", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("ARIN_API_KEY", "")
+			t.Setenv("ARIN_BASE_URL", "")
+			t.Setenv("ARIN_WHOIS_BASE_URL", tc.env)
+			ctx := context.Background()
+			p := New("test")()
+			var schemaResp provider.SchemaResponse
+			p.Schema(ctx, provider.SchemaRequest{}, &schemaResp)
+			state := tfsdk.State{Schema: schemaResp.Schema}
+			diags := state.Set(ctx, providerModel{APIKey: types.StringNull(), BaseURL: types.StringNull(), WhoisBaseURL: tc.origin, TimeoutSeconds: types.Int64Null()})
+			if diags.HasError() {
+				t.Fatal(diags)
+			}
+			var resp provider.ConfigureResponse
+			p.Configure(ctx, provider.ConfigureRequest{Config: tfsdk.Config{Schema: schemaResp.Schema, Raw: state.Raw}}, &resp)
+			if resp.Diagnostics.HasError() != tc.wantError {
+				t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+			}
+		})
+	}
+}

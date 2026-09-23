@@ -17,7 +17,7 @@ var asnFields = []Field{
 }
 
 func PublicReads() []ReadSpec {
-	return []ReadSpec{
+	return append(WhoisReads(), []ReadSpec{
 		rdapHelpSpec, rdapDomainsByNameserverSpec,
 		{Name: "rdap_network_hierarchy", Public: true, Collection: true, Output: "networks", Description: "Search public IPv4/IPv6 network hierarchy: top (least-specific covering network), up (strict parent), down (immediate children), or bottom (most-specific networks, including enclosing registrations where needed). All relations return a list sorted by handle; confirmed no matches return an empty list. No API key is sent. Partial results and referrals are rejected.", Inputs: []Input{input("query", "ip_network", "192.0.2.0/24", "Canonical IPv4/IPv6 address or network prefix without host bits."), input("relation", "name", "up", "Hierarchy relation: top, up, down or bottom."), optional(input("active_only", "bool", "false", "Apply ARIN status=active filtering. Supported only for top and up; ARIN determines which records are active."), "false")}, Fields: rdapNetworkFields},
 		rdapResourceSearchSpec("rdap_networks", "networks", rdapNetworkFields),
@@ -30,7 +30,7 @@ func PublicReads() []ReadSpec {
 		{Name: "asn", Public: true, Description: "Read an ASN registration through public ARIN RDAP. No API key is sent. This is distinct from an IRR aut-num object.", Inputs: []Input{input("asn", "asn", "19814", "Autonomous system number.")}, Fields: asnFields},
 		{Name: "asns", Public: true, Collection: true, Output: "asns", Description: "List ASN registrations where an organization is the direct registrant using public RDAP. No API key is needed. Incomplete results are rejected.", Inputs: []Input{orgInput}, Fields: asnFields},
 		{Name: "org_pocs", Public: true, Collection: true, Output: "pocs", Description: "List public contact handles and roles linked directly to an ARIN organization. Use arin_poc to read contact details through Reg-RWS. No API key is needed.", Inputs: []Input{orgInput}, Fields: []Field{required(text("handle", "")), stringsField("roles", "")}},
-	}
+	}...)
 }
 
 type rdapEntityRef struct {
@@ -161,6 +161,9 @@ func (c *Client) rdapEntity(ctx context.Context, handle string) ([]rdapEntityRef
 	return entity.Entities, nil
 }
 func (c *Client) readPublic(ctx context.Context, spec ReadSpec, p map[string]string) (map[string]any, error) {
+	if strings.HasPrefix(spec.Name, "whois_") {
+		return c.readWhois(ctx, spec, p)
+	}
 	if c.rdapBaseURL == "" {
 		return nil, errors.New("rdap_base_url is required for public reads when base_url is a custom origin")
 	}

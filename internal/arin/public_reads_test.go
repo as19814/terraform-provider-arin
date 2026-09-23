@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -60,6 +61,9 @@ func TestPublicReads(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, s := range PublicReads() {
+		if strings.HasPrefix(s.Name, "whois_") {
+			continue
+		}
 		params := map[string]string{"nameserver": "ns1.arin.net", "role": "any", "relation": "up", "active_only": "false", "name": "2.0.192.in-addr.arpa.", "handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"}
 		if s.Name == "rdap_entities" {
 			params["search_by"] = "handle"
@@ -129,6 +133,9 @@ func TestPublicIncompleteAndMismatchedRecords(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, tc.body) }))
 		c, _ := New(Config{RDAPBaseURL: server.URL})
 		for _, s := range PublicReads() {
+			if strings.HasPrefix(s.Name, "whois_") {
+				continue
+			}
 			if s.Name == tc.name {
 				if _, err := c.ReadRegistration(context.Background(), s, map[string]string{"handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496"}); err == nil {
 					t.Errorf("%s accepted incomplete or mismatched response", s.Name)

@@ -1,0 +1,1 @@
+<net xmlns="https://www.arin.net/whoisrws/core/v1"><handle>NET-192-0-2-0-1</handle><name>EXAMPLE-NET</name><startAddress>192.000.002.000</startAddress><endAddress>192.0.2.255</endAddress><version>4</version><netBlocks><netBlock><startAddress>192.0.2.0</startAddress><endAddress>192.0.2.255</endAddress><cidrLength>24</cidrLength><type>DA</type></netBlock></netBlocks></net>

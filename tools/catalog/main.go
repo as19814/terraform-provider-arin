@@ -16,9 +16,9 @@ func main() {
 	sort.Slice(specs, func(i, j int) bool { return specs[i].Name < specs[j].Name })
 	index := `# Data source coverage
 
-All non-report read endpoints documented in the collected Reg-RWS, IRR, and hosted RPKI guides have data sources. Public RDAP also supplies network and ASN discovery, ASN registration details, organization contact references, and public organization/POC entity details with complete jCard/RDAP JSON, entity searches by handle or name, reverse-domain registrations including published DNSSEC data, domain hierarchy searches, network/ASN searches by registration or associated entity fields, IPv4/IPv6 network hierarchy searches, exact nameserver-to-domain searches, and service help metadata. Network, ASN, entity and domain registrations retain complete RDAP JSON alongside typed fields.
+All non-report read endpoints documented in the collected Reg-RWS, IRR, and hosted RPKI guides have data sources. Public RDAP also supplies network and ASN discovery, ASN registration details, organization contact references, and public organization/POC entity details with complete jCard/RDAP JSON, entity searches by handle or name, reverse-domain registrations including published DNSSEC data, domain hierarchy searches, network/ASN searches by registration or associated entity fields, IPv4/IPv6 network hierarchy searches, exact nameserver-to-domain searches, and service help metadata. Network, ASN, entity and domain registrations retain complete RDAP JSON alongside typed fields. Public Whois-RWS supplies all six individual record types with typed fields and complete XML.
 
-Report-request endpoints are intentionally excluded: they create tickets even though ARIN exposes them as HTTP GET. These data sources perform no write operations; managed resources are documented separately. Historical Whois-RWS search variations, delegated RPKI protocol exchanges, and account report-generation workflows are not Terraform data sources in this provider.
+Report-request endpoints are intentionally excluded: they create tickets even though ARIN exposes them as HTTP GET. These data sources perform no write operations; managed resources are documented separately. Whois-RWS relationship lists and search variations, delegated RPKI protocol exchanges, and account report-generation workflows are not Terraform data sources in this provider.
 
 ## Catalog
 
@@ -50,6 +50,9 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 		api := "Reg-RWS"
 		if spec.Public {
 			api = "Public RDAP"
+			if strings.HasPrefix(spec.Name, "whois_") {
+				api = "Public Whois-RWS"
+			}
 		} else if strings.HasPrefix(spec.Name, "irr_") || spec.Name == "net_routes" {
 			api = "IRR"
 		} else if strings.HasPrefix(spec.Name, "roa") || strings.HasPrefix(spec.Name, "aspa") {
@@ -64,7 +67,7 @@ Report-request endpoints are intentionally excluded: they create tickets even th
 - Public RDAP searches reject truncation and pagination rather than returning an incomplete inventory.
 - Registration collections reject unexpected record types. No response-provided links are followed.
 - IP addresses are normalized, including ARIN's decimal, zero-padded IPv4 format. Optional server fields remain null. Ordered text follows numeric line indices.
-- API keys are used only for authenticated registration reads. Public RDAP requests do not carry them.
+- API keys are used only for authenticated registration reads. Public RDAP and Whois-RWS requests do not carry them.
 - Customer and ticket content, attachments, and organization tax IDs are sensitive in Terraform's UI. Sensitive values are still stored in state.
 - Attachments remain in memory and are returned as base64, with filename, content type, byte count, and SHA-256. No files are written; the 4 MiB response limit applies.
 - Collection-only RPKI APIs are used for individual ROA/ASPA selection. Reads never synthesize RPKI objects.
@@ -78,6 +81,8 @@ The opt-in live suite follows existing records from the selected organization. N
 Advanced RPSL reads passed native Terraform tests for all five object types using disposable sandbox fixtures, alongside managed-resource lifecycles. Fake-server coverage also checks refresh and mismatched identities; see [RPSL evidence](irr-rpsl.md).
 
 Public network lookups by IPv4/IPv6 address and prefix passed native Terraform tests on OT&E and production, without credentials. They validate the entire query range and CIDR coverage, reject partial results, and do not follow referrals; see [RDAP audit](rdap.md).
+
+All six Whois-RWS record types passed native Terraform reads and clean plans on OT&E and production, including IPv4/IPv6 networks and delegations, signed delegation DS data and inline org details. See [Whois-RWS evidence](whois-rws.md).
 
 The ASPA endpoint requires Content-Type: application/xml even on GET. The client supplies it for authenticated reads.
 
