@@ -1,6 +1,7 @@
 package arin
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -9,8 +10,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -46,6 +49,28 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 			listResponse.Store(listSigned)
 			endpoint := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				posts.Add(1)
+				if listing.Load() {
+					raw, err := io.ReadAll(r.Body)
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					signed, err := verifyRPKICMS(raw, rpkiCMSTrust{Anchor: local.Anchor, Now: cmsTrustNow().Add(2 * time.Second)})
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					root, err := parseXML(signed.Content)
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					attrs, err := upDownAttrs(root, "message", "version", "sender", "recipient", "type")
+					if err != nil || attrs["type"] != "list" || len(root.Children) != 0 {
+						t.Error("read or recovery resubmitted issuance")
+						return
+					}
+				}
 				w.Header().Set("Content-Type", "application/rpki-updown")
 				if listing.Load() {
 					_, _ = w.Write(listResponse.Load().([]byte))
@@ -182,6 +207,61 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 					t.Fatal("failed verification completed, retried issuance, or committed history")
 				}
 			}
+			if valid {
+				// Seed an interrupted issuance after the normal read tests, then
+				// prove that recovery uses only a new signed inventory request.
+				if err := lease.Close(); err != nil {
+					t.Fatal(err)
+				}
+				pending, err := openRPKIExchange(exchange.Directory, peer)
+				if err != nil {
+					t.Fatal(err)
+				}
+				query, err := buildUpDownIssue("child", "parent", rpkiIssueRequest{Class: "class", CSRDER: csr})
+				if err != nil {
+					t.Fatal(err)
+				}
+				signed, err := signRPKICMS(query, local, cmsTrustNow(), time.Time{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				digest := fmt.Sprintf("%x", sha256.Sum256(signed))
+				if err := pending.BeginSigned(digest, "updown-issue", cmsTrustNow(), signed); err != nil {
+					t.Fatal(err)
+				}
+				path := pending.path
+				if err := pending.Close(); err != nil {
+					t.Fatal(err)
+				}
+				before, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				probe := client
+				probe.Exchange.Clock = func() time.Time { return cmsTrustNow().Add(2 * time.Second) }
+				listResponse.Store(listSigned)
+				observed, err := probe.observePendingIssuance(context.Background(), digest, apiValidation, validation.Client)
+				if err != nil || observed.Outcome != "matches_request" || observed.Certificate == nil || observed.Certificate.CertificatePEM != certificateTestPEM("CERTIFICATE", f.certs[0].Raw) || observed.Plan.RequestSHA256 != digest || observed.RecoveryPeerID == peer || !observed.Sent.After(cmsTrustNow()) {
+					t.Fatalf("issuance observation: %v", err)
+				}
+				missing, err := signRPKICMS([]byte(upDownTestReply("list_response", "")), remote, cmsTrustNow(), time.Time{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				listResponse.Store(missing)
+				observed, err = probe.observePendingIssuance(context.Background(), digest, apiValidation, validation.Client)
+				if err != nil || observed.Outcome != "key_absent" || observed.Certificate != nil {
+					t.Fatalf("absent issuance observation: %v", err)
+				}
+				after, err := os.ReadFile(path)
+				if err != nil || !bytes.Equal(before, after) {
+					t.Fatal("observation changed pending issuance")
+				}
+				if posts.Load() != 8 || gets.Load() != 4 {
+					t.Fatal("recovery resubmitted issuance or bypassed cache")
+				}
+			}
+
 		})
 	}
 }

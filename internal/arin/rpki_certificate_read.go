@@ -17,6 +17,20 @@ func readRPKICertificate(ctx context.Context, config RPKIProvisioningReadConfig,
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	exchange, err := config.BPKI.exchange()
+	if err != nil {
+		return nil, err
+	}
+	exchange.MediaType, exchange.Clock = "application/rpki-updown", clock
+	return (rpkiUpDownClient{Exchange: exchange, Child: config.Child, Parent: config.Parent}).readCertificate(ctx, input, validation, repository)
+}
+
+func (client rpkiUpDownClient) readCertificate(ctx context.Context, input RPKICertificateRequest, validation RPKICertificateValidation, repository rrdpHTTPClient) (*RPKIIssuedCertificate, error) {
+	clock := client.Exchange.Clock
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	blocks, err := rpkiPEMBlocks(input.CSRPEM, "CERTIFICATE REQUEST", 1)
 	if err != nil || len(blocks) != 1 {
 		return nil, errRPKIUpDown
@@ -25,7 +39,7 @@ func readRPKICertificate(ctx context.Context, config RPKIProvisioningReadConfig,
 	if err != nil {
 		return nil, err
 	}
-	child, parent := upDownToken(config.Child), upDownToken(config.Parent)
+	child, parent := upDownToken(client.Child), upDownToken(client.Parent)
 	if !upDownLabel(child) || !upDownLabel(parent) {
 		return nil, errRPKIUpDown
 	}
@@ -42,12 +56,7 @@ func readRPKICertificate(ctx context.Context, config RPKIProvisioningReadConfig,
 	if err != nil || len(issuers) == 0 || len(issuers) != len(validation.Notifications) || !bytes.Equal(issuers[len(issuers)-1].Raw, anchors[0].Raw) {
 		return nil, errRPKIUpDown
 	}
-	exchange, err := config.BPKI.exchange()
-	if err != nil {
-		return nil, err
-	}
-	exchange.MediaType, exchange.Clock = "application/rpki-updown", clock
-	classes, err := (rpkiUpDownClient{Exchange: exchange, Child: child, Parent: parent}).List(ctx)
+	classes, err := client.List(ctx)
 	if err != nil {
 		return nil, err
 	}

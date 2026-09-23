@@ -1397,3 +1397,24 @@ and malformed CSR input fails planning without issuing or revoking. These tests
 also retain import/state agreement and clean-plan coverage. The public-key
 comparison does not replace the signed-response and resource-path checks during
 issuance and refresh.
+
+### Interrupted issuance observation
+
+The private issuance recovery planner now authenticates the saved request
+against its journal peer, BPKI anchor, digest and recorded signing time. It
+extracts the exact CSR, class, child/parent handles and requested resource subsets;
+absent and explicitly empty subsets remain distinct. It rejects malformed XML,
+unsupported attributes, invalid resource ranges and invalid CSR signatures.
+
+The recovery reader holds the original journal lease while issuing a signed
+inventory request through a separate digest-scoped journal. It validates a match
+against the saved CSR, echoed resources and current RRDP manifest-backed resource
+path. It returns `matches_request` with the validated certificate, or `key_absent`
+when the key/class is missing. Neither result clears or resends the mutation;
+absence is not evidence that a scheduled request will never complete.
+
+Signed tests cover saved-request identity/time/operation mismatches and missing
+evidence. End-to-end signed inventory/TLS RRDP tests verify matching and absent
+outcomes, cache reuse and byte-identical original pending journal state. Normal
+certificate refresh shares the same validation path. Durable issuance recovery
+commit, CLI integration and native verification remain unfinished.
