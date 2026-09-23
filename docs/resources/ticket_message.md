@@ -31,7 +31,7 @@ resource "arin_ticket_message" "example" {
 
 ### Required
 
-- `ticket_number` (String) Existing non-closed ticket receiving the message.
+- `ticket_number` (String) Ticket receiving the message. Creation requires a non-closed ticket; import can read an existing message on a closed ticket.
 
 ### Optional
 

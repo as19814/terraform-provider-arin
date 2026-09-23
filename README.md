@@ -239,7 +239,7 @@ metadata resource when Terraform also manages the owning ROA or bundle.
 
 [`arin_ticket_status`](docs/resources/ticket_status.md) closes an existing resolved ticket, imports by ticket number, and avoids rewriting already closed tickets. Destroy leaves the server ticket intact. Open tickets cannot be closed through this operation. The optional `update_method = "payload"` uses a fresh full-ticket payload and preserves all fields except status; the default uses the status-only endpoint.
 
-[`arin_ticket_message`](docs/resources/ticket_message.md) appends correspondence and attachments to an existing ticket. Changes submit a new message; refresh and destroy never alter server correspondence. Import uses `TICKET/MESSAGE`. Uncertain responses block retries until reconciliation and import. Terraform lifecycle and recovery pass mocks; native correspondence remains unverified.
+[`arin_ticket_message`](docs/resources/ticket_message.md) appends correspondence and attachments to an existing ticket. Changes submit a new message; refresh and destroy never alter server correspondence. Import uses `TICKET/MESSAGE`. Uncertain responses block retries until reconciliation and import. Terraform lifecycle and recovery pass mocks. Import, attachment state, refresh and state-only destroy pass read-only OT&E tests against an existing report message; native submission remains unverified.
 
 [`arin_bulk_whois`](docs/data-sources/bulk_whois.md) and [`arin_invalid_pocs`](docs/data-sources/invalid_pocs.md) download existing approved artifacts. Set `include_content = false` to retain only size, filename and digest metadata. Bulk Whois access approval is required; the current sandbox account has no approval, so successful native downloads remain unverified.
 

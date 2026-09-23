@@ -55,7 +55,7 @@ func (r *ticketMessageResource) Schema(_ context.Context, _ resource.SchemaReque
 	}
 	resp.Schema = schema.Schema{MarkdownDescription: "Append one message to an existing ARIN ticket and retain its receipt. Changing content or replacing this resource sends another message. Refresh never resubmits, including after expiry. Destroy only forgets the receipt; ARIN exposes no message update or delete operation. Uncertain submissions block refresh and destroy until manually reconciled and imported. Message content and attachments are stored in Terraform state.", Attributes: map[string]schema.Attribute{
 		"id":                 schema.StringAttribute{Computed: true, MarkdownDescription: "TICKET/MESSAGE, or a temporary recovery identity."},
-		"ticket_number":      schema.StringAttribute{Required: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}, MarkdownDescription: "Existing non-closed ticket receiving the message."},
+		"ticket_number":      schema.StringAttribute{Required: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}, MarkdownDescription: "Ticket receiving the message. Creation requires a non-closed ticket; import can read an existing message on a closed ticket."},
 		"message_id":         schema.StringAttribute{Computed: true, MarkdownDescription: "Generated message ID within the ticket."},
 		"subject":            optional("", "Message subject. Changes send a new message.", true),
 		"category":           optional("NONE", "NONE or JUSTIFICATION. Changes send a new message.", false),

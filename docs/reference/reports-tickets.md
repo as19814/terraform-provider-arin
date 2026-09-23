@@ -281,13 +281,50 @@ These checks establish the associations report's attachment path. Successful
 WhoWas reports remain dependent on account access and are not inferred from this
 result.
 
+## Native message receipt import
+
+`TestOTETicketMessageImportLifecycle` reuses the saved associations-report ticket
+and imports an existing message containing an attachment. It neither generates a
+report nor submits correspondence. Its transport allows only GETs under that
+one saved sandbox ticket, paces requests and rejects mutations, other origins,
+other tickets and report endpoints before dispatch.
+
+The native Terraform test passed on 2026-09-23 (13.33 seconds). It imported the
+receipt, compared the subject, category, ordered text, generated IDs/dates and
+exact attachment bytes, then verified refresh and clean subsequent plans.
+Terraform destroy removed only local management. Independent final reads showed
+that the server message and ticket metadata were unchanged. The ticket was
+already CLOSED, establishing that existing closed-ticket messages can be imported
+even though creation requires a non-closed ticket.
+
+Mock Terraform coverage follows the same import-first flow with literal `${...}`
+and `%{...}` text and Unicode to verify configuration escaping without template
+evaluation. Transport guard tests reject POSTs, report-generation GETs, production,
+unrelated tickets, query authentication and path traversal before dispatch.
+Account content stays in temporary test state and is neither printed nor committed.
+
+This test is included in `make testote`; it requires an existing associations
+report receipt and uses the standard sandbox key and organization variables.
+It can also be selected alone:
+
+```sh
+ARIN_OTE_WRITE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=FT-684 \
+  go test ./internal/provider -run '^TestOTETicketMessageImportLifecycle$' -v -count=1
+```
+
+A fresh read of all three saved successful report receipts on 2026-09-23 found
+them CLOSED. They cannot provide a RESOLVED-to-CLOSED transition fixture.
+The completed NET-removal receipts contain no ticket reference, so they cannot
+supply a ticket-message import fixture. None of these checks resubmitted a request.
+
 ## Remaining work
 
-Native successful WhoWas generation requires account access. Associations report attachment access and the ticket read endpoint/payload audit
-are verified through the existing receipt. Message submission and its Terraform receipt lifecycle pass mocks; native
-correspondence evidence remains. Full-ticket modification is implemented and passes mocks; a successful native
-RESOLVED-to-CLOSED write remains unverified. Successful native closure from RESOLVED also
-remains to be verified. See the
+Native successful WhoWas generation requires account access. The ticket read
+endpoint/payload audit and existing-message import, attachment state, refresh
+and state-only destroy are verified. New message submission and uncertain-write
+recovery still have mock coverage only. Full-ticket modification passes mocks;
+a successful native RESOLVED-to-CLOSED write remains unverified because the saved
+disposable report tickets closed automatically. See the
 [coverage inventory](implementation-status.md).
 
 References: [ARIN Reg-RWS methods](https://www.arin.net/resources/manage/regrws/methods/)
