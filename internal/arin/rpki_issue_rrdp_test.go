@@ -29,6 +29,8 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 	for _, mode := range []string{"valid", "unavailable", "tampered", "wrong_issuer", "wrong_anchor", "insecure_url", "allocation_mismatch"} {
 		t.Run(mode, func(t *testing.T) {
 			var posts, gets atomic.Int32
+			var listing atomic.Bool
+			var listResponse atomic.Value
 			reply := upDownTestReply("issue_response", fmt.Sprintf(`<class class_name="class" cert_url="rsync://repo.example/module/issuer.cer" resource_set_as="64500-64510" resource_set_ipv4="" resource_set_ipv6="" resource_set_notafter="%s"><certificate cert_url="%s">%s</certificate><issuer>%s</issuer></class>`, cmsTrustNow().Add(time.Hour).Format("2006-01-02T15:04:05Z"), pubs[0].ChildURI, base64.StdEncoding.EncodeToString(f.certs[0].Raw), base64.StdEncoding.EncodeToString(f.certs[1].Raw)))
 			if mode == "allocation_mismatch" {
 				reply = strings.Replace(reply, `resource_set_as="64500-64510"`, `resource_set_as="64500-64509"`, 1)
@@ -37,10 +39,19 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			listSigned, err := signRPKICMS([]byte(strings.Replace(reply, `type="issue_response"`, `type="list_response"`, 1)), remote, cmsTrustNow(), time.Time{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			listResponse.Store(listSigned)
 			endpoint := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				posts.Add(1)
 				w.Header().Set("Content-Type", "application/rpki-updown")
-				_, _ = w.Write(signed)
+				if listing.Load() {
+					_, _ = w.Write(listResponse.Load().([]byte))
+				} else {
+					_, _ = w.Write(signed)
+				}
 			}))
 			defer endpoint.Close()
 			snapshots := make([][]byte, len(pubs))
@@ -110,6 +121,35 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 					t.Fatalf("mode=%s result=%v err=%v", mode, result, err)
 				}
 			}
+			if valid {
+				listing.Store(true)
+				got, err := readRPKICertificate(context.Background(), apiConfig, RPKICertificateRequest{Class: "class", CSRPEM: certificateTestPEM("CERTIFICATE REQUEST", csr)}, apiValidation, cmsTrustNow, validation.Client)
+				if err != nil || got == nil || got.CertificatePEM != certificateTestPEM("CERTIFICATE", f.certs[0].Raw) {
+					t.Fatalf("validated refresh failed: %v", err)
+				}
+				for _, mode := range []string{"absent", "duplicate", "wrong_request"} {
+					body := strings.Replace(reply, `type="issue_response"`, `type="list_response"`, 1)
+					switch mode {
+					case "absent":
+						body = upDownTestReply("list_response", "")
+					case "duplicate":
+						start, end := strings.Index(body, "<certificate "), strings.Index(body, "</certificate>")+len("</certificate>")
+						body = body[:end] + body[start:end] + body[end:]
+					case "wrong_request":
+						body = strings.Replace(body, "<certificate ", `<certificate req_resource_set_as="" `, 1)
+					}
+					signed, err := signRPKICMS([]byte(body), remote, cmsTrustNow(), time.Time{})
+					if err != nil {
+						t.Fatal(err)
+					}
+					listResponse.Store(signed)
+					got, err := readRPKICertificate(context.Background(), apiConfig, RPKICertificateRequest{Class: "class", CSRPEM: certificateTestPEM("CERTIFICATE REQUEST", csr)}, apiValidation, cmsTrustNow, validation.Client)
+					if got != nil || (err == nil) != (mode == "absent") {
+						t.Fatalf("read %s: got=%v err=%v", mode, got != nil, err)
+					}
+				}
+
+			}
 			scope, _ := json.Marshal([]string{"child", "parent"})
 			exchange.PeerScope = string(scope)
 			peer, err := exchange.peerID()
@@ -130,7 +170,7 @@ func TestRPKIIssueWithRRDP(t *testing.T) {
 				t.Fatal(err)
 			}
 			if valid {
-				if posts.Load() != 2 || gets.Load() != 4 || state.Pending != nil || len(histories) != 1 {
+				if posts.Load() != 6 || gets.Load() != 4 || state.Pending != nil || len(histories) != 1 {
 					t.Fatal("validated issuance did not complete with cache reuse and history")
 				}
 			} else if mode == "wrong_anchor" || mode == "insecure_url" {

@@ -384,6 +384,11 @@ without clearing the mutation. See [read recovery](docs/reference/delegated-rpki
 Publication mutations have a separate [authenticated reconciliation mode](docs/reference/delegated-rpki.md#publication-recovery-cli). The command cannot bypass process locks.
 
 
+[`arin_rpki_certificate`](docs/resources/rpki_certificate.md) manages a delegated
+resource certificate from an existing CSR, with validated RRDP resource paths
+and key-scoped revocation. Import and full uncertainty recovery remain unfinished;
+see [certificate lifecycle](docs/reference/delegated-rpki.md#managed-resource-certificate).
+
 [`arin_rpki_publication_bundle`](docs/resources/rpki_publication_bundle.md)
 manages caller-supplied signed objects and manifests in atomic publication
 batches. It uses inventory hashes for replacement and withdrawal, restores drift,

@@ -136,6 +136,16 @@ func validateUpDownIssue(query, reply []byte, child, parent string, now time.Tim
 	if err != nil || class.Name != wanted["class_name"] || len(class.Certificates) != 1 {
 		return nil, nil, errRPKIUpDown
 	}
+	if err := validateUpDownIssuedClass(csr, wanted, &class, now); err != nil {
+		return nil, nil, err
+	}
+	return &class, nil, nil
+}
+
+func validateUpDownIssuedClass(csr *x509.CertificateRequest, wanted map[string]string, class *rpkiResourceClass, now time.Time) error {
+	if class == nil || class.Name != wanted["class_name"] || len(class.Certificates) != 1 {
+		return errRPKIUpDown
+	}
 	issued := class.Certificates[0]
 	for _, r := range []struct {
 		name string
@@ -143,37 +153,37 @@ func validateUpDownIssue(query, reply []byte, child, parent string, now time.Tim
 	}{{"req_resource_set_as", issued.RequestedASN}, {"req_resource_set_ipv4", issued.RequestedIPv4}, {"req_resource_set_ipv6", issued.RequestedIPv6}} {
 		value, present := wanted[r.name]
 		if present != (r.got != nil) || (present && value != *r.got) {
-			return nil, nil, errRPKIUpDown
+			return errRPKIUpDown
 		}
 	}
 	cert, err := x509.ParseCertificate(issued.DER)
 	if err != nil {
-		return nil, nil, errRPKIUpDown
+		return errRPKIUpDown
 	}
 	requestedSIA, err := rpkiCASIA(csr.Extensions)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 	issuedSIA, err := rpkiCASIA(cert.Extensions)
 	if err != nil || !bytes.Equal(requestedSIA, issuedSIA) {
-		return nil, nil, errRPKIUpDown
+		return errRPKIUpDown
 	}
 	issuer, err := x509.ParseCertificate(class.IssuerDER)
 	if err != nil {
-		return nil, nil, errRPKIUpDown
+		return errRPKIUpDown
 	}
 	if !bytes.Equal(cert.RawSubjectPublicKeyInfo, csr.RawSubjectPublicKeyInfo) || !bytes.Equal(cert.RawIssuer, issuer.RawSubject) || cert.CheckSignatureFrom(issuer) != nil {
-		return nil, nil, errRPKIUpDown
+		return errRPKIUpDown
 	}
 	if len(cert.AuthorityKeyId) > 0 && !bytes.Equal(cert.AuthorityKeyId, issuer.SubjectKeyId) {
-		return nil, nil, errRPKIUpDown
+		return errRPKIUpDown
 	}
 	for _, c := range []*x509.Certificate{cert, issuer} {
 		if now.Before(c.NotBefore) || now.After(c.NotAfter) {
-			return nil, nil, errRPKIUpDown
+			return errRPKIUpDown
 		}
 	}
 	// CMS authenticates the parent's assertion; these checks do not establish
 	// the issuer's RPKI path or validate RFC 3779 resource containment.
-	return &class, nil, nil
+	return nil
 }

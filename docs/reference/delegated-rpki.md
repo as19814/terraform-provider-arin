@@ -1320,3 +1320,28 @@ rejection, wrong keys and scheduled processing through that API. Cancellation
 and malformed-input checks run before loading signing keys. These are synthetic
 fixtures, not native delegated interoperability evidence. Terraform certificate
 schema, lifecycle/import and complete uncertainty recovery remain unfinished.
+
+### Managed resource certificate
+
+`arin_rpki_certificate` now connects Terraform create/update to the validated
+issuance API and destroy to key-scoped revocation. Refresh locates the CSR key
+within the configured class in a signed inventory, rejects duplicate matching
+certificates, checks echoed request subsets and publication locations, and
+validates the current manifest-backed resource path before updating state.
+Missing keys/classes remove the resource from state; malformed responses and
+failed resource validation return diagnostics instead of implying absence.
+
+Endpoint, handles, class and CSR changes require replacement. A CSR replacement
+must use a fresh resource key because destroy retires the old key. Resource
+subset updates request a certificate for the existing key. No automatic renewal
+schedule is implemented: a Terraform refresh observes parent-issued changes but
+does not create certificates. Destroy affects all certificates for that key in
+that class, so ownership must not overlap. Signing key files and persistent local
+journals/cache/history must remain available during refresh and destroy.
+
+Terraform acceptance tests with injected clients cover create, clean plans,
+resource-subset updates, key replacement and destroy. Signed client tests cover
+validated refresh through the same RRDP cache/history used by issuance. Import,
+complete uncertain-operation recovery, automatic chain discovery and native
+sandbox verification remain unfinished. The absence of delegated enrollment
+prevents native lifecycle testing at present.
