@@ -145,7 +145,10 @@ func (l *rpkiExchangeLease) State() (rpkiExchangeState, error) {
 func (l *rpkiExchangeLease) Begin(digest, operation string, signingTime time.Time) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.closed || l.poisoned || l.state.Pending != nil || !exchangeDigest.MatchString(digest) || !exchangeOperation.MatchString(operation) || signingTime.IsZero() || !validExchangeTime(signingTime) || signingTime.Before(l.state.LastSent) || (l.state.RecoveredRead != nil && !signingTime.After(l.state.RecoveredRead.SigningTime)) {
+	return l.beginLocked(digest, operation, signingTime)
+}
+func (l *rpkiExchangeLease) beginLocked(digest, operation string, signingTime time.Time) error {
+	if !l.canBeginLocked(digest, operation, signingTime) {
 		return errRPKIExchangeState
 	}
 	l.state.LastSent = signingTime.UTC()
@@ -222,4 +225,8 @@ func syncRPKIExchangeDirectory(dir string) error {
 		return syncErr
 	}
 	return closeErr
+}
+
+func (l *rpkiExchangeLease) canBeginLocked(digest, operation string, signingTime time.Time) bool {
+	return !(l.closed || l.poisoned || l.state.Pending != nil || !exchangeDigest.MatchString(digest) || !exchangeOperation.MatchString(operation) || signingTime.IsZero() || !validExchangeTime(signingTime) || signingTime.Before(l.state.LastSent) || (l.state.RecoveredRead != nil && !signingTime.After(l.state.RecoveredRead.SigningTime)))
 }

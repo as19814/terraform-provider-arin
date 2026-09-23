@@ -1062,3 +1062,29 @@ The broad race-enabled Terraform acceptance run reached its five-minute timeout
 in TestAccWhoisErrors without an earlier assertion failure. That test and all
 remaining Whois tests passed separately in 12.945 seconds. The preceding import
 commit ca6645a also completed self-hosted CI successfully.
+
+## Durable signed request evidence
+
+Before dispatching a protocol request, the HTTP exchange now saves the exact CMS
+bytes to `rpki-exchange-<peer>.json.request.der`, then records the pending request
+hash in the journal. File and directory synchronization precede HTTP dispatch.
+Each peer retains one private request file, limited to 4 MiB. Completed evidence
+is replaced by the next request only when no operation is pending, so retention
+does not grow with every exchange. CMS evidence contains signed protocol payloads
+and public certificates/CRLs, never the private signing key.
+
+The internal pending-request reader takes the existing peer lease, checks file
+permissions, type, size and the journal's exact SHA-256 digest, and returns only
+the matching bytes. Missing or altered evidence fails closed and never clears a
+pending mutation. Old pending journals without an evidence file remain blocked;
+the provider cannot reconstruct their signed requests from a digest.
+
+Tests verify that dispatch follows durable evidence, reopen retains the exact
+CMS request, pending evidence cannot be overwritten, completed requests permit a
+bounded replacement, caller buffers cannot change persisted bytes, and malformed
+or inaccessible files are rejected. A signed publication test verifies retained
+request evidence after an uncertain response.
+
+This supplies evidence for future reconciliation. It does not yet reconcile
+uncertain mutations or permit their replay, and crash-lock recovery remains
+unfinished. The evidence is local to the configured persistent journal directory.

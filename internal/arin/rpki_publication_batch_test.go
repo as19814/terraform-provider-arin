@@ -268,4 +268,13 @@ func TestRPKIPublicationBatchLifecycle(t *testing.T) {
 	if err != nil || state.Pending == nil {
 		t.Fatal("uncertain mutation not retained")
 	}
+	evidence, err := lease.PendingRequest()
+	if err != nil {
+		t.Fatal("uncertain mutation lost signed request evidence")
+	}
+	verified, err := verifyRPKICMS(evidence, rpkiCMSTrust{Anchor: local.Anchor, Now: cmsTrustNow()})
+	if err != nil || !strings.Contains(string(verified.Content), uri) {
+		t.Fatal("uncertain mutation evidence is not the submitted batch")
+	}
+
 }

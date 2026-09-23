@@ -118,7 +118,7 @@ func (c rpkiHTTPExchange) exchange(ctx context.Context, operation string, reques
 		return nil, err
 	}
 	digest := fmt.Sprintf("%x", sha256.Sum256(signed))
-	if err := lease.Begin(digest, operation, now.UTC().Truncate(time.Second)); err != nil {
+	if err := lease.BeginSigned(digest, operation, now.UTC().Truncate(time.Second), signed); err != nil {
 		return nil, err
 	}
 	client := &http.Client{Transport: c.Transport, Timeout: timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}

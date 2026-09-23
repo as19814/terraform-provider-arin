@@ -58,6 +58,11 @@ func TestRPKIHTTPExchange(t *testing.T) {
 					t.Error("dispatch preceded durable journal")
 					return
 				}
+				evidence, err := os.ReadFile(filepath.Join(dir, "rpki-exchange-"+peer+".json.request.der"))
+				if err != nil || !bytes.Equal(evidence, body) {
+					t.Error("dispatch preceded durable exact request evidence")
+					return
+				}
 				signed, err := signRPKICMS(responseXML, remote, cmsTrustNow(), time.Time{})
 				if err != nil {
 					t.Error(err)
