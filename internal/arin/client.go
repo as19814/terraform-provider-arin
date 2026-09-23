@@ -249,14 +249,23 @@ func (c *Client) doRequest(ctx context.Context, method, origin, path, accept str
 			var rdapError struct {
 				ErrorCode   *int               `json:"errorCode"`
 				Domains     *[]json.RawMessage `json:"domainSearchResults"`
+				Networks    *[]json.RawMessage `json:"ipSearchResults"`
+				ASNs        *[]json.RawMessage `json:"autnumSearchResults"`
+				Entities    *[]json.RawMessage `json:"entitySearchResults"`
 				Title       string             `json:"title"`
 				Description []string           `json:"description"`
 			}
 			if json.Unmarshal(body, &rdapError) == nil {
 				apiErr.Message = c.redact(strings.Join(append([]string{rdapError.Title}, rdapError.Description...), " "))
 				notFoundCode := rdapError.ErrorCode != nil && *rdapError.ErrorCode == http.StatusNotFound
-				apiErr.rdapNotFound = resp.StatusCode == http.StatusNotFound && notFoundCode && (rdapError.Domains == nil || len(*rdapError.Domains) == 0) && checkRDAPCompleteness(body) == nil
-				apiErr.rdapEmptyDomains = resp.StatusCode == http.StatusNotFound && (rdapError.ErrorCode == nil || notFoundCode) && rdapError.Domains != nil && len(*rdapError.Domains) == 0 && checkRDAPCompleteness(body) == nil
+				emptyResults := true
+				for _, records := range []*[]json.RawMessage{rdapError.Domains, rdapError.Networks, rdapError.ASNs, rdapError.Entities} {
+					if records != nil && len(*records) > 0 {
+						emptyResults = false
+					}
+				}
+				apiErr.rdapNotFound = resp.StatusCode == http.StatusNotFound && notFoundCode && emptyResults && checkRDAPCompleteness(body) == nil
+				apiErr.rdapEmptyDomains = resp.StatusCode == http.StatusNotFound && emptyResults && (rdapError.ErrorCode == nil || notFoundCode) && rdapError.Domains != nil && len(*rdapError.Domains) == 0 && checkRDAPCompleteness(body) == nil
 			}
 		}
 		return nil, apiErr

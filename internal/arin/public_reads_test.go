@@ -33,6 +33,10 @@ func TestPublicReads(t *testing.T) {
 			fmt.Fprint(w, `{"objectClassName":"domain","ldhName":"192.in-addr.arpa."}`)
 		case "/registry/domain/2.0.192.in-addr.arpa.":
 			fmt.Fprint(w, `{"objectClassName":"domain","ldhName":"2.0.192.in-addr.arpa."}`)
+		case "/registry/ips?handle=NET-192-0-2-0-1":
+			fmt.Fprintf(w, `{"ipSearchResults":[%s]}`, network)
+		case "/registry/autnums?handle=AS64496":
+			fmt.Fprintf(w, `{"autnumSearchResults":[%s]}`, asn)
 		case "/registry/ip/192.0.2.1":
 			_, _ = w.Write(network)
 		case "/registry/autnum/64496":
@@ -52,16 +56,28 @@ func TestPublicReads(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, s := range PublicReads() {
-		params := map[string]string{"relation": "up", "active_only": "false", "name": "2.0.192.in-addr.arpa.", "handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"}
+		params := map[string]string{"role": "any", "relation": "up", "active_only": "false", "name": "2.0.192.in-addr.arpa.", "handle": "EXAMPLE-1", "org_handle": "EXAMPLE-1", "asn": "64496", "query": "192.0.2.1"}
 		if s.Name == "rdap_entities" {
 			params["search_by"] = "handle"
 			params["query"] = "EXAMPLE-1"
+		}
+		if s.Name == "rdap_networks" {
+			params["search_by"] = "handle"
+			params["query"] = "NET-192-0-2-0-1"
+		}
+		if s.Name == "rdap_asns" {
+			params["search_by"] = "handle"
+			params["query"] = "AS64496"
 		}
 		result, err := c.ReadRegistration(context.Background(), s, params)
 		if err != nil {
 			t.Fatal(err)
 		}
 		switch s.Name {
+		case "rdap_networks", "rdap_asns":
+			if len(result[s.Output].([]any)) != 1 {
+				t.Fatal("missing resource search result")
+			}
 		case "rdap_domains":
 			if len(result["domains"].([]any)) != 1 {
 				t.Fatal("missing domain hierarchy result")

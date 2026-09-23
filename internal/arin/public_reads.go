@@ -17,6 +17,8 @@ var asnFields = []Field{
 
 func PublicReads() []ReadSpec {
 	return []ReadSpec{
+		rdapResourceSearchSpec("rdap_networks", "networks", rdapNetworkFields),
+		rdapResourceSearchSpec("rdap_asns", "asns", asnFields),
 		{Name: "rdap_domains", Public: true, Collection: true, Output: "domains", Description: "Search public reverse-domain hierarchy: top (least-specific covering domain), up (parent), down (immediate children), or bottom (most-specific domains, including an enclosing domain when needed). Returns a list for all relations, including an empty list for confirmed no matches. No API key is sent; incomplete results and referrals are rejected.", Inputs: []Input{input("name", "rdap_domain", "2.0.192.in-addr.arpa.", "Reverse DNS domain to search relative to; case and an optional trailing dot are normalized."), input("relation", "name", "up", "Hierarchy relation: top, up, down or bottom."), optional(input("active_only", "bool", "false", "Apply ARIN status=active filtering. Supported only for top and up; ARIN determines which records are active."), "false")}, Fields: rdapDomainFields},
 		{Name: "rdap_domain", Public: true, Description: "Read a public reverse-domain registration from ARIN RDAP, including nameservers, published DNSSEC data and complete JSON. No API key is sent. Forward domains, referrals and partial responses are not supported. This reads registration data, not live DNS or DNSSEC validation results.", Inputs: []Input{input("name", "rdap_domain", "2.0.192.in-addr.arpa.", "Reverse DNS domain in in-addr.arpa or ip6.arpa. Case and an optional trailing dot are normalized for lookup.")}, Fields: rdapDomainFields},
 		{Name: "rdap_entities", Public: true, Collection: true, Output: "entities", Description: "Search public RDAP entities by handle or name, including organizations, POCs and customer entities returned by ARIN. Supports one trailing wildcard. No API key is sent. Results use ARIN search semantics and are sorted by handle; partial results, duplicates and referrals are rejected. A structured RDAP no-match response produces an empty list.", Inputs: []Input{input("search_by", "name", "handle", "Search field: handle or name (mapped to RDAP fn)."), input("query", "rdap_search", "EXAMPLE-*", "Exact search term or a term ending in one wildcard (*). Name matching is performed by ARIN, including its name-component matching rules.")}, Fields: rdapEntityFields},
@@ -70,7 +72,13 @@ func (n rdapASN) record() (map[string]any, error) {
 	}
 	var orgs []string
 	for _, entity := range n.Entities {
+		if incompleteNotices(entity.Notices) || incompleteNotices(entity.Remarks) {
+			return nil, errors.New("ARIN returned a truncated ASN entity")
+		}
 		if slices.Contains(entity.Roles, "registrant") {
+			if entity.Handle == "" {
+				return nil, errors.New("ARIN returned an ASN registrant without a handle")
+			}
 			orgs = append(orgs, entity.Handle)
 		}
 	}
@@ -133,6 +141,9 @@ func (c *Client) rdapEntity(ctx context.Context, handle string) ([]rdapEntityRef
 func (c *Client) readPublic(ctx context.Context, spec ReadSpec, p map[string]string) (map[string]any, error) {
 	if c.rdapBaseURL == "" {
 		return nil, errors.New("rdap_base_url is required for public reads when base_url is a custom origin")
+	}
+	if spec.Name == "rdap_networks" || spec.Name == "rdap_asns" {
+		return c.searchRDAPResources(ctx, spec.Name, p["search_by"], p["query"], p["role"])
 	}
 	if spec.Name == "rdap_domains" {
 		return c.searchRDAPDomains(ctx, p["name"], p["relation"], p["active_only"] == "true")

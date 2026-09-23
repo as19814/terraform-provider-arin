@@ -24,7 +24,7 @@ check: vet test testacc build
 # Read-only live tests. Requires ARIN_API_KEY and ARIN_TEST_ORG_HANDLE.
 .PHONY: testlive
 testlive:
-	ARIN_LIVE_TESTS=1 TF_ACC=1 go test ./internal/provider -run '^TestLive' -v -count=1 -timeout 5m
+	ARIN_LIVE_TESTS=1 TF_ACC=1 go test ./internal/provider -run '^TestLive' -v -count=1 -timeout 10m
 
 # Explicit opt-in writes, pinned to OT&E. DNS, org and RPKI tests snapshot and restore.
 # Serialize packages because client and provider tests share sandbox objects.

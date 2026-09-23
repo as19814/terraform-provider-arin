@@ -38,7 +38,20 @@ func (c *Client) readRDAPNetwork(ctx context.Context, query string) (map[string]
 	if err != nil {
 		return nil, err
 	}
-	if err := checkRDAPCompleteness(body); err != nil {
+	record, err := decodeRDAPNetwork(body)
+	if err != nil {
+		return nil, err
+	}
+	start, _ := netip.ParseAddr(record["start_address"].(string))
+	end, _ := netip.ParseAddr(record["end_address"].(string))
+	if first.BitLen() != start.BitLen() || first.Compare(start) < 0 || last.Compare(end) > 0 {
+		return nil, errors.New("ARIN returned a network that does not contain the requested address or prefix")
+	}
+	return record, nil
+}
+
+func decodeRDAPNetwork(body []byte) (map[string]any, error) {
+	if err := validateEntityTree(body, 0); err != nil {
 		return nil, err
 	}
 	var n struct {
@@ -60,9 +73,7 @@ func (c *Client) readRDAPNetwork(ctx context.Context, query string) (map[string]
 	if n.ObjectClassName != "ip network" || n.Handle == "" || e1 != nil || e2 != nil || start.Is4In6() || end.Is4In6() || start.Zone() != "" || end.Zone() != "" || start.BitLen() != end.BitLen() || start.Compare(end) > 0 || (n.IPVersion != "v4" && n.IPVersion != "v6") || (n.IPVersion == "v4") != start.Is4() {
 		return nil, errors.New("ARIN returned an invalid network registration")
 	}
-	if first.BitLen() != start.BitLen() || first.Compare(start) < 0 || last.Compare(end) > 0 {
-		return nil, errors.New("ARIN returned a network that does not contain the requested address or prefix")
-	}
+
 	cidrs := []string{}
 	prefixes := []netip.Prefix{}
 	for _, block := range n.CIDRs {

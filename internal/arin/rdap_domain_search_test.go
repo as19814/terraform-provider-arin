@@ -67,6 +67,7 @@ func TestRDAPDomainSearchResponses(t *testing.T) {
 	}{
 		"empty":                 {"down", `{"domainSearchResults":[]}`, 200, true},
 		"no_parent":             {"up", `{"errorCode":404}`, 404, true},
+		"mixed_error":           {"down", `{"errorCode":404,"domainSearchResults":[],"ipSearchResults":[{}]}`, 404, false},
 		"empty_404":             {"bottom", `{"domainSearchResults":[]}`, 404, true},
 		"coded_empty_404":       {"down", `{"errorCode":404,"domainSearchResults":[]}`, 404, true},
 		"404_nonempty":          {"down", `{"errorCode":404,"domainSearchResults":[` + child + `]}`, 404, false},

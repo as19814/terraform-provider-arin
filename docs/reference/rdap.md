@@ -173,14 +173,66 @@ ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
   go test ./internal/provider -run '^TestLiveRDAPDomains$' -count=1 -v
 ```
 
+## Implemented network and ASN searches
+
+`arin_rdap_networks` and `arin_rdap_asns` expose these documented searches:
+
+| `search_by` | Network URL | ASN URL |
+| --- | --- | --- |
+| `handle` | `/registry/ips?handle=QUERY` | `/registry/autnums?handle=QUERY` |
+| `name` | `/registry/ips?name=QUERY` | `/registry/autnums?name=QUERY` |
+| `entity_handle` | `/registry/ips/reverse_search/entity?handle=QUERY` | `/registry/autnums/reverse_search/entity?handle=QUERY` |
+| `entity_name` | `/registry/ips/reverse_search/entity?fn=QUERY` | `/registry/autnums/reverse_search/entity?fn=QUERY` |
+| `entity_email` | `/registry/ips/reverse_search/entity?email=QUERY` | `/registry/autnums/reverse_search/entity?email=QUERY` |
+
+`query` accepts an exact term or one trailing wildcard. Query parameters are
+URL-encoded. The optional `role` accepts `any` (the default, omit the parameter),
+`abuse`, `noc` or `technical`. A specific role is valid only for entity searches
+and is sent as an additional query parameter. ARIN applies name, email and role
+matching; the provider does not infer ownership from a match.
+
+The `networks`/`asns` output contains all returned associations, sorted by handle.
+This differs from `arin_networks` and `arin_asns`, which select direct registrants.
+Use those existing inventories when direct registration is the intended scope.
+Neither a public association nor a registration record proves write authority.
+
+Each result exposes the established typed network/ASN fields plus `rdap_json`,
+which preserves the complete returned record and its extensions. Network address
+ranges, family and CIDR coverage are validated using the same decoder as direct
+IP lookup. ASN ranges and registrant references are checked too. Nested partial
+entity records, truncated/paginated envelopes, duplicate handles, mismatched
+handle searches, malformed collections and contradictory error responses fail.
+A structured RDAP 404 no-match response becomes an empty list; other HTTP errors
+remain errors. No API key is sent and no returned links are followed.
+
+Client tests cover every field/role combination, parameter encoding, associated
+records whose registrant differs from the queried contact, empty results, IPv6,
+ASN ranges and failure handling. Fake Terraform tests cover both data sources,
+all five search fields, role filters, deterministic order, typed/raw output,
+refresh, no matches and clean plans.
+
+`TestLiveRDAPResourceSearches` discovers owned IPv4/IPv6 networks, an ASN, the
+organization's public name, and a POC's public name/email. It tests exact/wildcard
+registration searches, organization/contact reverse searches, all role values,
+no matches and clean plans against OT&E and production. Broad contact-name
+queries that ARIN truncates are tested as expected Terraform errors. Requests
+are serialized, credentials are unset, and account payloads are not committed.
+Both origins passed on 2026-09-23. The complete live-test target now allows ten
+minutes to accommodate the expanded read-only coverage.
+
+```sh
+ARIN_LIVE_TESTS=1 TF_ACC=1 ARIN_TEST_ORG_HANDLE=YOUR-ORG \
+  go test ./internal/provider -run '^TestLiveRDAPResourceSearches$' -count=1 -v
+```
+
 ## Remaining endpoint audit
 
 | Family | Current coverage | Remaining work |
 | --- | --- | --- |
 | IP network lookup | `arin_rdap_network`, native IPv4/IPv6 evidence | Final field/endpoint audit |
-| IP network searches | `arin_networks` handles direct registrant inventory | Handle/name search, hierarchy relations, other entity reverse-search filters |
+| IP network searches | `arin_networks` direct registrant inventory; `arin_rdap_networks` handle/name and entity reverse searches with supported role filters | Hierarchy relations and final field/endpoint audit |
 | ASN lookup | `arin_asn` | Final field audit |
-| ASN searches | `arin_asns` handles direct registrant inventory | Handle/name search, other entity reverse-search filters, and capability audit for RFC 9910 ASN hierarchy searches |
+| ASN searches | `arin_asns` direct registrant inventory; `arin_rdap_asns` handle/name and entity reverse searches with supported role filters | Capability audit for RFC 9910 ASN hierarchy searches and final field/endpoint audit |
 | Entity lookup | `arin_rdap_entity` exposes contact fields and complete JSON; native organization/POC reads verified | Final endpoint audit |
 | Entity searches | `arin_rdap_entities` covers handle/name searches, exact/trailing-wildcard queries, no matches and partial-result rejection | Final endpoint audit |
 | Reverse domain lookup/search | `arin_rdap_domain` plus `arin_rdap_domains` for all four hierarchy relations and supported active filters | Final field/endpoint audit |
