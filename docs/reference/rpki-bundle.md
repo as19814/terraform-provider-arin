@@ -111,4 +111,5 @@ The lifecycle checks above now have Terraform mock and native evidence. Recovery
 faults are injected through the fake server; native tests do not intentionally
 interrupt live transactions. Coordinated ownership with separately managed IRR
 routes now has a metadata resource with native owning-ROA graph evidence.
-Independent full-route ownership for linked-route deletion remains open.
+Imported full-route ownership and independent linked-route deletion also have
+native IPv4/IPv6 evidence; see [linked-route coverage](irr-route-metadata.md).

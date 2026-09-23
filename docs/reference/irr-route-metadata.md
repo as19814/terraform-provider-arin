@@ -73,9 +73,9 @@ this metadata resource releases its state while leaving the route intact.
 
 Independent linked-route deletion is a separate supported API operation. The
 client exposes it explicitly, but it must not become the destruction behavior of
-a metadata-only Terraform resource. A full-route Terraform ownership mode still
-needs a contract for deliberate linked-route deletion and resulting ROA drift;
-`arin_irr_route` currently continues to reject linked objects.
+a metadata-only Terraform resource. `arin_irr_linked_route` now supplies explicit
+imported ownership of an existing linked route, including independent deletion.
+`arin_irr_route` continues to reject linked objects.
 
 References: [ARIN ROA Auto-Manager](https://www.arin.net/resources/manage/rpki/roas/#irr-auto-manager),
 [IRR RESTful API guide](https://www.arin.net/resources/manage/irr/irr-restful/).
@@ -106,6 +106,41 @@ handle and route-set names. The test then:
 The exclusive mode-0600 RPKI journal includes the baseline ROA/ASPA inventories,
 disposable route IDs and helper route-set names before any mutation. Cleanup
 compares both complete inventories and removes the journal only after restoration.
-The graph is included in the serial `make testote` suite. Full-route Terraform
-ownership for independent deletion of a linked route remains a separate task;
-these metadata resources deliberately do not own route existence.
+The graph is included in the serial `make testote` suite. Metadata resources do
+not own route existence; the imported full-route resource below does.
+
+## Independent linked-route ownership
+
+`arin_irr_linked_route` requires explicit import of an existing linked route by
+`CIDR,AS<number>`. Its `expected_roa_handle` must be nonempty and match the current
+link immediately before updates or deletion. Import populates the binding and
+separates user remarks from ARIN's generated annotation. It shares the metadata
+update/read implementation, but destroy calls the scoped linked-route DELETE
+client and verifies absence. Read errors and uncertain DELETE responses retain
+state; refresh reconciles accepted deletions without replay.
+
+The IRR API cannot create a ROA link. Accordingly, Create refuses implicit
+adoption and instructs the user to create through RPKI and import explicitly.
+Automatic identity replacement is rejected during planning. If the route is
+removed externally, restore its link through RPKI and import again. A changed or
+removed link blocks destructive writes until the ownership binding is reconciled.
+For a now-unlinked route, transfer ownership explicitly to `arin_irr_route`.
+
+Use metadata-only ownership when Terraform also maintains the owning ROA or
+bundle's `auto_link` policy. Independently deleting a linked route changes its
+ROA's per-prefix link state; a separate ROA resource configured to maintain that
+link may subsequently recreate it. The full-route resource does not mutate ROA
+authorizations or invent a policy to suppress that drift.
+
+Mock Terraform tests cover IPv4/IPv6 import, updates, remark clearing, clean plans,
+destroy, import-required creation and refused identity replacement. State tests
+cover changed/missing links, foreign organizations, read failures, rejected or
+unconfirmed deletion, lost DELETE responses and subsequent absence reconciliation.
+
+`TestOTEIRRLinkedRouteLifecycle` passed in 13.22 seconds. It creates a disposable
+ROA with linked IPv4/IPv6 routes outside Terraform, then imports, updates and
+destroys each route through `arin_irr_linked_route`. After each deletion it confirms
+route absence, the cleared per-prefix link flag, and the unchanged ROA handle and
+complete authorization. Exclusive journal cleanup then removes the disposable
+ROA, verifies route absence and restores both original inventories. The test is
+included in serial `make testote` coverage.

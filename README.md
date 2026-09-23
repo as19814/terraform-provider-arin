@@ -229,6 +229,12 @@ ROA or bundle handle. Removing metadata ownership leaves the route intact. See
 [resource documentation](docs/resources/irr_route_metadata.md) and
 [verification status](docs/reference/irr-route-metadata.md).
 
+[`arin_irr_linked_route`](docs/resources/irr_linked_route.md) explicitly owns an
+imported linked route, including independent deletion while preserving its ROA
+authorization. Import is required because IRR cannot create a ROA link. Use the
+metadata resource when Terraform also manages the owning ROA or bundle.
+
+
 [`arin_report_request`](docs/resources/report_request.md) submits an associations, reassignment or WhoWas report and retains its ticket receipt. Refresh and ticket expiry never resubmit it; destroy only forgets the receipt. WhoWas requires account access. See [report lifecycle and recovery](docs/reference/reports-tickets.md).
 
 [`arin_ticket_status`](docs/resources/ticket_status.md) closes an existing resolved ticket, imports by ticket number, and avoids rewriting already closed tickets. Destroy leaves the server ticket intact. Open tickets cannot be closed through this operation.

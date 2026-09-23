@@ -38,9 +38,19 @@ No production writes are used. The test does not claim that expanded set members
 has propagated to external IRR mirrors. Advanced RPSL has separate native coverage. The linked-route client now supports
 scoped metadata changes and independent deletion with IPv4/IPv6 OT&E evidence;
 the metadata resource and owning-ROA graph pass Terraform mocks and IPv4/IPv6
-OT&E with membership, replacement and restoration. Independent full-route
-ownership remains open. See [linked-route requirements](irr-route-metadata.md).
+OT&E with membership, replacement and restoration. Imported full-route
+ownership with independent linked-route deletion also passes IPv4/IPv6 OT&E. See [linked-route requirements](irr-route-metadata.md).
 
 References: [ARIN IRR API guide](https://www.arin.net/resources/manage/irr/irr-restful/),
 [RoutePayload schema](arin-api/schemas/extracted/RoutePayload.rnc),
 [routeSetRef schema](arin-api/schemas/extracted/utils/routeSetRef.rnc).
+
+## Remaining field audit
+
+The simple XML guide lists `pocLinks` and `netHandle` without marking them ignored,
+while the current simple route client treats both as server-generated metadata.
+Verify their write behavior on disposable routes before closing this family's
+field audit. The AS-set POC rejection evidence alone does not establish route or
+route6 behavior. The guide explicitly marks creation/modified dates and version
+as ignored and fixes source to ARIN. Description, remarks, route-set membership,
+identity and ROA-linked lifecycle have the native evidence described above.

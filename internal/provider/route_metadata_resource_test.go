@@ -22,6 +22,8 @@ import (
 )
 
 type metadataRouteFake struct {
+	allowDelete, ignoreDelete, deleteBeforeError                bool
+	deletes, deleteStatus                                       int
 	mu                                                          sync.Mutex
 	prefix, link, body                                          string
 	puts, otherWrites, readStatus, writeStatus, afterReadStatus int
@@ -59,6 +61,18 @@ func (f *metadataRouteFake) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Fprint(w, f.xml())
+		return
+	}
+	if r.Method == "DELETE" && f.allowDelete {
+		f.deletes++
+		if !f.ignoreDelete && (f.deleteStatus == 0 || f.deleteBeforeError) {
+			f.body = ""
+		}
+		if f.deleteStatus != 0 {
+			w.WriteHeader(f.deleteStatus)
+		} else {
+			w.WriteHeader(200)
+		}
 		return
 	}
 	if r.Method != "PUT" {
