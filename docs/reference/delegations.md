@@ -90,7 +90,25 @@ clearing and destroy. Error tests distinguish missing delegations from access,
 rate-limit and server failures. Terraform OT&E tests exercise the lifecycle in
 both address families, then restore and verify the original zone records.
 
-## Remaining work
+## Individual nameserver ownership
 
-- Individual-record resources, with explicit ownership boundaries. Full-zone
-  management must not overlap other writers of the same NS or DS records.
+`arin_delegation_nameserver` uses the per-nameserver POST and DELETE endpoints.
+Multiple such resources can share a zone when they own different nameservers.
+They must not overlap `arin_delegation` on that zone. Create refuses an existing
+nameserver until it is imported using `zone/nameserver`. Destroy removes only the
+managed nameserver and verifies absence; it preserves state on failed or
+unconfirmed removal, including deletion conflicts when DNSSEC requires a
+nameserver to remain. Omitted TTL resets inheritance through the POST endpoint.
+
+Mock tests cover simultaneous resources, drift, missing-record recreation,
+replacement, import, TTL changes/reset and preservation of unrelated NS/DS data.
+`TestOTEDelegationNameserverLifecycle` passes in both address families and
+compares the complete original delegation after Terraform destroy. It uses the
+same durable recovery snapshot as the full-delegation tests.
+
+The collected method guide has no individual DS mutation endpoint. DS records
+are managed by `arin_delegation` through the full replacement endpoint; no
+separate read-modify-write DS resource is needed for that API coverage. The
+client also supports bulk nameserver deletion, while the full-zone resource
+represents empty desired collections through PUT. A final live-documentation
+endpoint audit remains part of the overall coverage audit.

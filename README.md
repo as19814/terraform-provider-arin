@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Eight managed resources cover reverse DNS delegations, existing network metadata, downstream network registrations, customer records, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
+The provider includes 32 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Nine managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer records, simple IRR AS sets, route sets, aut-num routing policies, and IPv4/IPv6 routes, with creation, updates, deletion, and import. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -201,6 +201,8 @@ Pending and uncertain writes retain recovery state. See the
 before retrying a failed apply.
 
 [`arin_delegation`](docs/resources/delegation.md) manages all nameservers and DNSSEC DS records on an existing reverse zone. Import zones with existing records first. Destroy clears both collections. Omitted TTLs preserve existing values; newly added records inherit TTL. Do not manage the same records through multiple resources.
+
+[`arin_delegation_nameserver`](docs/resources/delegation_nameserver.md) manages one nameserver without changing sibling nameservers or DS records. Its optional TTL resets to inheritance when omitted. Use either full-delegation management or individual nameserver resources for a zone, never both.
 
 ## Next steps
 
