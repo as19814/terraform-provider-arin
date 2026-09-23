@@ -168,3 +168,16 @@ func TestConfigurationAndHandleValidation(t *testing.T) {
 		}
 	}
 }
+
+func TestValidationErrorDetails(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		fmt.Fprint(w, `<error><code>E_ENTITY_VALIDATION</code><message>Invalid payload</message><components><component><name>pocLinks</name><message>Bad test-secret contact</message></component></components><additionalInfo><message>Check test-secret permissions</message></additionalInfo></error>`)
+	}))
+	defer server.Close()
+	client, _ := New(Config{APIKey: "test-secret", BaseURL: server.URL})
+	_, err := client.GetASSet(context.Background(), "AS-EXAMPLE")
+	if err == nil || !strings.Contains(err.Error(), "pocLinks: Bad [REDACTED] contact") || !strings.Contains(err.Error(), "Check [REDACTED] permissions") || strings.Contains(err.Error(), "test-secret") {
+		t.Fatalf("unexpected validation diagnostic: %v", err)
+	}
+}

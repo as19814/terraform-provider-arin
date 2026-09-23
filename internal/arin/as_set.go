@@ -13,7 +13,7 @@ import (
 )
 
 // ASSet is the complete writable representation of an XML (simple) IRR AS set.
-// Dates and source are server-owned. POC descriptions are labels, not configuration.
+// Dates, source, and POC links are server-owned. POCs are read-only output.
 type ASSet struct {
 	Name, OrgHandle                             string
 	Description, Remarks, Members, MembersByRef []string
@@ -21,7 +21,6 @@ type ASSet struct {
 	CreationDate, LastModifiedDate              string
 }
 type IRRPOC struct{ Handle, Function string }
-
 type irrLine struct {
 	Number int    `xml:"number,attr"`
 	Text   string `xml:",chardata"`
@@ -29,20 +28,18 @@ type irrLine struct {
 type irrMember struct {
 	Name string `xml:"name,attr"`
 }
-type irrPOCXML struct {
-	Handle   string `xml:"handle,attr"`
-	Function string `xml:"function,attr"`
+type irrLinesXML struct {
+	Lines []irrLine `xml:"line"`
 }
 type asSetXML struct {
-	XMLName      xml.Name    `xml:"http://www.arin.net/regrws/core/v1 asSet"`
-	Description  []irrLine   `xml:"description>line"`
-	OrgHandle    string      `xml:"orgHandle"`
-	POCs         []irrPOCXML `xml:"pocLinks>pocLinkRef"`
-	Remarks      []irrLine   `xml:"remarks>line"`
-	Source       string      `xml:"source"`
-	Members      []irrMember `xml:"members>member"`
-	MembersByRef []irrMember `xml:"membersByRef>memberByRef"`
-	Name         string      `xml:"name"`
+	XMLName      xml.Name     `xml:"http://www.arin.net/regrws/core/v1 asSet"`
+	Description  []irrLine    `xml:"description>line"`
+	OrgHandle    string       `xml:"orgHandle"`
+	Remarks      *irrLinesXML `xml:"remarks,omitempty"`
+	Source       string       `xml:"source"`
+	Members      []irrMember  `xml:"members>member"`
+	MembersByRef []irrMember  `xml:"membersByRef>memberByRef"`
+	Name         string       `xml:"name"`
 }
 
 var asSetNamePattern = regexp.MustCompile(`^(?:AS[0-9]+:|AS-[A-Z0-9][A-Z0-9_-]*:)*AS-[A-Z0-9][A-Z0-9_-]*$`)
@@ -87,14 +84,7 @@ func (s ASSet) Validate() error {
 			return errors.New("members_by_ref must contain ANY or uppercase MNT- organization handles")
 		}
 	}
-	for _, p := range s.POCs {
-		if !handlePattern.MatchString(p.Handle) || p.Handle != strings.ToUpper(p.Handle) {
-			return errors.New("POC handles must be uppercase ARIN handles")
-		}
-		if p.Function != "AD" && p.Function != "T" && p.Function != "R" {
-			return errors.New("POC functions must be AD, T, or R")
-		}
-	}
+
 	return nil
 }
 func (s ASSet) marshal() ([]byte, error) {
@@ -105,8 +95,11 @@ func (s ASSet) marshal() ([]byte, error) {
 	for i, v := range s.Description {
 		p.Description = append(p.Description, irrLine{i, v})
 	}
-	for i, v := range s.Remarks {
-		p.Remarks = append(p.Remarks, irrLine{i, v})
+	if len(s.Remarks) > 0 {
+		p.Remarks = &irrLinesXML{}
+		for i, v := range s.Remarks {
+			p.Remarks.Lines = append(p.Remarks.Lines, irrLine{i, v})
+		}
 	}
 	for _, v := range s.Members {
 		p.Members = append(p.Members, irrMember{v})
@@ -114,9 +107,7 @@ func (s ASSet) marshal() ([]byte, error) {
 	for _, v := range s.MembersByRef {
 		p.MembersByRef = append(p.MembersByRef, irrMember{v})
 	}
-	for _, v := range s.POCs {
-		p.POCs = append(p.POCs, irrPOCXML{v.Handle, v.Function})
-	}
+
 	return xml.Marshal(p)
 }
 func decodeASSet(body []byte, name string) (*ASSet, error) {
@@ -186,6 +177,7 @@ func (c *Client) CreateASSet(ctx context.Context, s ASSet) (*ASSet, error) {
 func (c *Client) UpdateASSet(ctx context.Context, s ASSet) (*ASSet, error) {
 	return c.writeASSet(ctx, http.MethodPut, "/rest/irr/as-set/"+url.PathEscape(s.Name), s)
 }
+
 func (c *Client) writeASSet(ctx context.Context, method, path string, s ASSet) (*ASSet, error) {
 	payload, err := s.marshal()
 	if err != nil {

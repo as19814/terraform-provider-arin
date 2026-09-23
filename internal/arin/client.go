@@ -197,14 +197,28 @@ func (c *Client) request(ctx context.Context, method, origin, path, accept strin
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var payload struct {
-			XMLName xml.Name `xml:"error"`
-			Code    string   `xml:"code"`
-			Message string   `xml:"message"`
+			XMLName    xml.Name `xml:"error"`
+			Code       string   `xml:"code"`
+			Message    string   `xml:"message"`
+			Components []struct {
+				Name    string `xml:"name"`
+				Message string `xml:"message"`
+			} `xml:"components>component"`
+			AdditionalInfo []string `xml:"additionalInfo>message"`
 		}
 		apiErr := &APIError{StatusCode: resp.StatusCode}
 		if xml.Unmarshal(body, &payload) == nil {
 			apiErr.Code = c.redact(payload.Code)
-			apiErr.Message = c.redact(payload.Message)
+			details := []string{payload.Message}
+			for _, component := range payload.Components {
+				if component.Name != "" {
+					details = append(details, component.Name+": "+component.Message)
+				} else {
+					details = append(details, component.Message)
+				}
+			}
+			details = append(details, payload.AdditionalInfo...)
+			apiErr.Message = c.redact(strings.Join(details, "; "))
 		}
 		if accept == "application/rdap+json" {
 			var rdapError struct {

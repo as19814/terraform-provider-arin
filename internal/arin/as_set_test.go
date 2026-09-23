@@ -23,17 +23,17 @@ func TestASSetPayload(t *testing.T) {
 	if err := xml.Unmarshal(b, &root); err != nil {
 		t.Fatal(err)
 	}
-	if root.Source != "ARIN" || root.Name != "AS-EXAMPLE" || len(root.POCs) != 2 || root.Description[1].Number != 1 || root.Description[0].Text != "Peers & <routing>" || root.MembersByRef[0].Name != "MNT-EXAMPLE-1" {
+	if root.Source != "ARIN" || root.Name != "AS-EXAMPLE" || root.Description[1].Number != 1 || root.Description[0].Text != "Peers & <routing>" || root.MembersByRef[0].Name != "MNT-EXAMPLE-1" {
 		t.Fatalf("unexpected payload: %+v", root)
 	}
-	if !strings.Contains(string(b), "<membersByRef>") || strings.Contains(string(b), "creationDate") || strings.Contains(string(b), "lastModifiedDate") {
+	if !strings.Contains(string(b), "<membersByRef>") || strings.Contains(string(b), "creationDate") || strings.Contains(string(b), "lastModifiedDate") || strings.Contains(string(b), "pocLinks") {
 		t.Fatal("incorrect writable fields")
 	}
 	decoded, err := decodeASSet(b, "AS-EXAMPLE")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if decoded.Description[0] != testASSet().Description[0] || len(decoded.Members) != 2 || len(decoded.POCs) != 2 {
+	if decoded.Description[0] != testASSet().Description[0] || len(decoded.Members) != 2 {
 		t.Fatalf("unexpected decoded set: %+v", decoded)
 	}
 	empty := testASSet()
@@ -45,7 +45,10 @@ func TestASSetPayload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, container := range []string{"members", "membersByRef", "pocLinks", "remarks"} {
+	if strings.Contains(string(b), "<remarks") {
+		t.Fatal("empty remarks must be omitted to avoid ARIN HTTP 500")
+	}
+	for _, container := range []string{"members", "membersByRef"} {
 		if !strings.Contains(string(b), "<"+container+"></"+container+">") {
 			t.Fatalf("missing explicit empty %s container", container)
 		}
@@ -68,7 +71,6 @@ func TestASSetValidation(t *testing.T) {
 		{"newline", func(s *ASSet) { s.Remarks = []string{"one\ntwo"} }},
 		{"member", func(s *ASSet) { s.Members = []string{"64496"} }},
 		{"ref", func(s *ASSet) { s.MembersByRef = []string{"EXAMPLE-1"} }},
-		{"poc", func(s *ASSet) { s.POCs = []IRRPOC{{"ADMIN-1", "AB"}} }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := testASSet()

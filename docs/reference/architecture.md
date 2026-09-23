@@ -45,8 +45,11 @@ No release workflow is enabled. Documentation generation uses a pinned Go tool d
 `arin_irr_as_set` uses a dedicated complete write model in `internal/arin/as_set.go`,
 not the generic data-source model. XML uses the published `AsSetPayload.rnc`
 spelling `membersByRef`, despite the prose guide's `mbrsByRef` label.
-It includes empty collection containers to clear removed values, XML-escapes
-text and attributes, and omits server-owned timestamps and POC descriptions.
+It includes empty membership containers to clear removed values and XML-escapes
+text and attributes. Empty remarks are omitted: OT&E returns HTTP 500 for an
+empty remarks container, while omission clears them. Timestamps and POC links
+are server-owned and omitted from writes. OT&E rejects POC changes with
+E_ENTITY_VALIDATION; the resource exposes POC links as computed values only.
 Unsupported top-level fields fail reads rather than allowing a lossy update.
 
 The AS set name is the state ID and import ID. Names and organization handles
@@ -60,4 +63,8 @@ Stateful fake-server acceptance tests cover create, update, clearing collections
 import verification, drift correction, external deletion, replacement, and
 final deletion. Client tests cover payload serialization, error redaction,
 conflicts, redirects, asynchronous responses, malformed results, and no replay.
-Live write testing is deferred to an explicit OT&E exercise.
+The opt-in OT&E lifecycle test has passed create, update, remarks clearing,
+import into separate state, a clean plan, deletion, and absence verification.
+All disposable test sets were cleaned up. Production write behavior is untested.
+API diagnostics include redacted component messages and additional information
+to explain field-level validation failures.

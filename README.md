@@ -101,10 +101,10 @@ Every non-report read endpoint in the collected Reg-RWS, IRR, and hosted RPKI gu
 
 `arin_irr_as_set` manages the full XML representation of a simple IRR AS set.
 Names and organization handles are uppercase and changes to either require
-replacement. Membership and POC links are unordered sets; description and remarks
+replacement. Membership is an unordered set; description and remarks
 are ordered lists of lines. Optional collections default to empty, so omitting
 existing values after import plans to remove them. Source is always `ARIN`.
-Advanced RPSL objects are not supported.
+POC links are computed by ARIN from the maintaining organization and cannot be configured on the AS set. Advanced RPSL objects are not supported.
 
 Import an existing set by name before applying configuration:
 
@@ -119,8 +119,9 @@ This guards planned deletion/replacement while the resource block remains in
 configuration; removing the block also removes that protection.
 Deletion removes the AS set from ARIN, not just from Terraform state.
 
-Resource lifecycle tests use a stateful fake API. Live mutation testing has not
-been performed; use OT&E before relying on production writes. Requests are never
+Resource lifecycle tests use a stateful fake API and the real OT&E service.
+Create, update, clearing remarks, import, clean plans, and deletion have passed
+in OT&E. Production writes have not been performed. Requests are never
 automatically retried. If a create times out or returns an unreadable result,
 check whether the object exists and import it if necessary before retrying.
 Updates and deletes retain state on errors. Only a 404 means the object is absent;
@@ -142,9 +143,8 @@ ARIN_TEST_ORG_HANDLE=FT-684 make testote
 
 Set `ARIN_OTE_API_KEY` in the shell, or let the test fall back to `ARIN_API_KEY`.
 The test pins both API origins to OT&E regardless of `ARIN_BASE_URL` and
-`ARIN_RDAP_BASE_URL`. It validates organization access before writing, discovers
-admin and technical POC links, and requires a technical POC for the contact update.
-It creates a randomly named `AS-TF-OTE-*` set, updates membership and contacts,
+`ARIN_RDAP_BASE_URL`. It validates organization access before writing.
+It creates a randomly named `AS-TF-OTE-*` set, updates membership and descriptions,
 clears remarks, imports into separate state, verifies a clean plan, deletes the
 set, and confirms it is absent. Cleanup also checks for an object left behind by
 a failed apply. The generated name is printed for recovery if cleanup fails.

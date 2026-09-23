@@ -41,6 +41,11 @@ func (f *fakeASSetAPI) serve(w http.ResponseWriter, r *http.Request) {
 		}
 	case "POST", "PUT":
 		b, _ := io.ReadAll(r.Body)
+		// Match the OT&E validation rules that exposed the original write bugs.
+		if strings.Contains(string(b), "<pocLinks") || strings.Contains(string(b), "<remarks></remarks>") {
+			http.Error(w, "server-owned POCs or invalid empty remarks", 400)
+			return
+		}
 		var p struct {
 			XMLName xml.Name `xml:"http://www.arin.net/regrws/core/v1 asSet"`
 			Name    string   `xml:"name"`
@@ -65,7 +70,7 @@ func (f *fakeASSetAPI) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		f.writes[r.Method]++
-		s := strings.ReplaceAll(string(b), "</asSet>", fmt.Sprintf("<creationDate>2026-01-01T00:00:00Z</creationDate><lastModifiedDate>2026-01-%02dT00:00:00Z</lastModifiedDate></asSet>", f.writes["POST"]+f.writes["PUT"]))
+		s := strings.ReplaceAll(string(b), "</asSet>", fmt.Sprintf("<pocLinks><pocLinkRef handle=\"ADMIN-1\" function=\"AD\"/><pocLinkRef handle=\"TECH-1\" function=\"T\"/></pocLinks><creationDate>2026-01-01T00:00:00Z</creationDate><lastModifiedDate>2026-01-%02dT00:00:00Z</lastModifiedDate></asSet>", f.writes["POST"]+f.writes["PUT"]))
 		f.objects[p.Name] = s
 		fmt.Fprint(w, s)
 	case "DELETE":
@@ -103,8 +108,7 @@ resource "arin_irr_as_set" "test" {
 func TestAccASSetResourceLifecycle(t *testing.T) {
 	f := setupASSetFake(t)
 	base := asSetConfig("AS-EXAMPLE", `["AS64496","AS64497"]`, `remarks = ["Some remarks"]
- members_by_ref = ["MNT-EXAMPLE-1"]
- poc_links = [{handle="ADMIN-1",function="AD"},{handle="TECH-1",function="T"}]`)
+ members_by_ref = ["MNT-EXAMPLE-1"]`)
 	empty := asSetConfig("AS-EXAMPLE", `[]`, "")
 	replaced := asSetConfig("AS-REPLACED", `["AS64496"]`, "")
 	resource.Test(t, resource.TestCase{
@@ -139,7 +143,7 @@ func TestAccASSetResourceLifecycle(t *testing.T) {
 				resource.TestCheckResourceAttr("arin_irr_as_set.test", "members.#", "0"),
 				resource.TestCheckResourceAttr("arin_irr_as_set.test", "remarks.#", "0"),
 				resource.TestCheckResourceAttr("arin_irr_as_set.test", "members_by_ref.#", "0"),
-				resource.TestCheckResourceAttr("arin_irr_as_set.test", "poc_links.#", "0"),
+				resource.TestCheckResourceAttr("arin_irr_as_set.test", "poc_links.#", "2"),
 			)},
 			// A remotely removed object is recreated.
 			{PreConfig: func() { f.mu.Lock(); defer f.mu.Unlock(); delete(f.objects, "AS-EXAMPLE") }, Config: empty},

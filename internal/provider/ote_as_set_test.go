@@ -48,23 +48,9 @@ func TestOTEASSetLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("OT&E organization preflight failed (no writes attempted): %v", err)
 	}
-	pocs := []map[string]string{}
-	tech := ""
-	for _, v := range values["poc_links"].([]any) {
-		p := v.(map[string]any)
-		function, _ := p["function"].(string)
-		handle, _ := p["handle"].(string)
-		if function == "AD" || function == "T" {
-			pocs = append(pocs, map[string]string{"handle": handle, "function": function})
-		}
-		if function == "T" {
-			tech = handle
-		}
+	if values["handle"] != org {
+		t.Fatal("OT&E returned a mismatched organization")
 	}
-	if tech == "" {
-		t.Fatal("OT&E organization must have a technical POC for the contact update test")
-	}
-	updatedPOCs := append(append([]map[string]string{}, pocs...), map[string]string{"handle": tech, "function": "R"})
 	suffix := make([]byte, 8)
 	if _, err := rand.Read(suffix); err != nil {
 		t.Fatal(err)
@@ -103,12 +89,10 @@ func TestOTEASSetLifecycle(t *testing.T) {
 		description := []string{"Disposable Terraform OT&E lifecycle test"}
 		remarks := []string{"Created by an opt-in provider test"}
 		members := []string{"AS64496"}
-		contacts := pocs
 		if updated {
 			description = append(description, "Updated description")
-			remarks = []string{}
+			remarks = []string{"Updated test remark"}
 			members = []string{"AS64497"}
-			contacts = updatedPOCs
 		}
 		encode := func(v any) string {
 			b, err := json.Marshal(v)
@@ -127,9 +111,9 @@ resource "arin_irr_as_set" "test" {
  description = %s
  remarks = %s
  members = %s
- poc_links = %s
-}`, name, org, encode(description), encode(remarks), encode(members), encode(contacts))
+}`, name, org, encode(description), encode(remarks), encode(members))
 	}
+	cleared := strings.Replace(config(true), `["Updated test remark"]`, `[]`, 1)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("ote-test")())},
 		CheckDestroy: func(_ *terraform.State) error {
@@ -144,12 +128,13 @@ resource "arin_irr_as_set" "test" {
 			{Config: config(false), Check: resource.TestCheckResourceAttr("arin_irr_as_set.test", "id", name)},
 			{Config: config(true), Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckTypeSetElemAttr("arin_irr_as_set.test", "members.*", "AS64497"),
-				resource.TestCheckResourceAttr("arin_irr_as_set.test", "remarks.#", "0"),
-				resource.TestCheckResourceAttr("arin_irr_as_set.test", "poc_links.#", fmt.Sprint(len(updatedPOCs))),
+				resource.TestCheckResourceAttr("arin_irr_as_set.test", "remarks.#", "1"),
+				resource.TestCheckResourceAttrSet("arin_irr_as_set.test", "poc_links.#"),
 			)},
+			{Config: cleared, Check: resource.TestCheckResourceAttr("arin_irr_as_set.test", "remarks.#", "0")},
 			// The acceptance harness imports into a separate state and compares every field.
 			{ResourceName: "arin_irr_as_set.test", ImportState: true, ImportStateVerify: true},
-			{Config: config(true), PlanOnly: true, ExpectNonEmptyPlan: false},
+			{Config: cleared, PlanOnly: true, ExpectNonEmptyPlan: false},
 		},
 	})
 }
