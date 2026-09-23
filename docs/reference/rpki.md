@@ -196,11 +196,15 @@ both complete inventories and confirming disposable IRR route absence.
 
 ## Remaining work
 
-Implement the managed atomic group described in [RPKI bundle requirements](rpki-bundle.md).
-The existing standalone resources do not expose the API's atomic guarantee
-across multiple ROAs and ASPAs. This is a concrete Terraform capability gap, even
-though the shared transaction client supports it and passes OT&E. Coordinated
-ownership of ROA-linked IRR routes also remains in the implementation inventory.
+The [managed atomic bundle](rpki-bundle.md) is now implemented. Terraform mock
+coverage includes multiple ROAs/customer ASPAs, import, combined changes,
+policy-only updates, drift, missing members and uncertain-write recovery. Native
+Terraform create/import, combined changes, IRR links, member removal and destroy
+pass OT&E with both inventory baselines restored.
+
+Coordinated ownership of ROA-linked IRR routes with separately managed IRR
+resources remains in the implementation inventory. Bundles and standalone ROAs
+currently own their links, and `arin_irr_route` rejects linked objects.
 
 Reference: [ARIN RPKI RESTful API guide](https://www.arin.net/resources/manage/rpki/rpki-restful/)
 and its [collected copy](arin-api/rpki/api.md).

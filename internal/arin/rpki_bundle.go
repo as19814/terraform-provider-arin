@@ -77,7 +77,7 @@ func (d RPKIBundleDesired) Validate() error {
 func (o RPKIBundleOwnership) validate() error {
 	handles := map[string]bool{}
 	for label, entry := range o.ROAs {
-		if strings.TrimSpace(label) == "" || !handlePattern.MatchString(entry.Handle) || handles[entry.Handle] {
+		if strings.TrimSpace(label) == "" || strings.ContainsAny(label, "\r\n") || !handlePattern.MatchString(entry.Handle) || handles[entry.Handle] {
 			return errors.New("invalid or repeated bundle ROA ownership")
 		}
 		handles[entry.Handle] = true

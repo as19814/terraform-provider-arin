@@ -1,8 +1,9 @@
 # Managed RPKI bundle implementation requirements
 
-Status: client planning and recovery engine implemented and exercised in OT&E.
-Terraform resource integration remains required; this is not an available
-provider resource.
+Status: `arin_rpki_bundle` is implemented with generated documentation and examples.
+Terraform lifecycle and recovery pass fake-server tests. Native Terraform
+create/import, combined changes, member removal, linked-route cleanup, clean
+plans and destroy pass OT&E with complete baseline restoration.
 
 `PlanRPKIBundle` builds one transaction from explicit prior ownership, desired
 members and freshly read inventories. `ReconcileRPKIBundle` verifies the complete
@@ -11,8 +12,24 @@ mixed changes, unrelated inventory, ownership collisions, incomplete visibility,
 ambiguous matches, malformed receipts, policy-only changes and reused owned
 handles. The native client lifecycle exercises combined ROA creation and ASPA
 replacement, then ROA replacement with the unchanged ASPA retained. It verifies
-baseline restoration and linked-route cleanup. These tests establish the engine
-behavior, not the pending Terraform resource lifecycle below.
+baseline restoration and linked-route cleanup. These tests establish native engine behavior. Terraform fake-server tests now also
+cover multiple ROAs/customers, exact manifest import, atomic updates/removals,
+policy-only changes, drift, missing members, single-category bundles, AS0,
+delayed visibility and recovery without replay. State tests cover malformed and
+partial responses, verification failures, returned identity preservation,
+ambiguous matches and uncertain deletion.
+
+`TestOTERPKIBundleLifecycle` imports an existing ASPA explicitly, adds disposable
+IPv4/IPv6 ROAs while changing its provider set, imports the full manifest,
+replaces the ROAs to enable IRR linking while restoring providers, removes the
+IPv6 member while changing providers again, and destroys the remaining members.
+A second Terraform lifecycle creates both ROAs and the now-absent customer ASPA
+from empty state and destroys them. Both phases check clean plans and preserve
+unrelated ROAs. The test uses the exclusive RPKI baseline journal, verifies
+linked-route absence, restores the original ASPA, compares both complete
+inventories and removes the journal only after successful restoration. The
+native run passed in 17.35 seconds. Multiple customer ASPAs are exercised by
+mocks; the native test uses one customer owned by the sandbox organization.
 
 The hosted RPKI API supports one transaction containing ROA and ASPA additions
 and deletions. `ApplyRPKITransaction` already exercises this behavior in OT&E.
@@ -22,7 +39,7 @@ operation therefore includes an explicit resource for a managed atomic group.
 
 ## Resource contract
 
-Implement `arin_rpki_bundle` with the following ownership model:
+`arin_rpki_bundle` uses the following ownership model:
 
 - `org_handle` identifies the hosted RPKI organization and requires replacement.
 - `name` is a local bundle identity, also immutable. ARIN has no remote bundle
@@ -90,5 +107,7 @@ write blocks create/update/destroy replay. A read error does not establish absen
   baseline. Use the existing exclusive RPKI recovery receipt. Verify complete
   inventory restoration and linked-route cleanup before removing that receipt.
 
-These are open requirements. Existing client-level atomic tests do not establish
-that this Terraform resource exists or that its recovery lifecycle is complete.
+The lifecycle checks above now have Terraform mock and native evidence. Recovery
+faults are injected through the fake server; native tests do not intentionally
+interrupt live transactions. Coordinated ownership with separately managed IRR
+routes remains a distinct open requirement in the broader implementation audit.

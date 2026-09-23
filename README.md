@@ -221,6 +221,8 @@ before retrying a failed apply.
 
 [`arin_roa`](docs/resources/roa.md) manages hosted ROAs with IPv4/IPv6 prefixes, maximum lengths, AS0, and optional IRR links. Updates atomically replace the generated handle. Import by `ORG-HANDLE/ROA-HANDLE`. Linked routes are preserved on destroy unless `delete_linked_routes = true`. Uncertain writes retain a recovery journal and block repeat submission.
 
+[`arin_rpki_bundle`](docs/resources/rpki_bundle.md) manages an explicit group of ROAs and ASPAs in one atomic transaction. Stable ROA labels survive handle replacements. Import uses an exact member manifest; recovery state blocks uncertain transaction replay. Terraform lifecycle and recovery pass fake-server tests. Native create/import, combined changes, linked-route cleanup and destroy pass OT&E with baseline restoration. See [bundle coverage](docs/reference/rpki-bundle.md).
+
 [`arin_report_request`](docs/resources/report_request.md) submits an associations, reassignment or WhoWas report and retains its ticket receipt. Refresh and ticket expiry never resubmit it; destroy only forgets the receipt. WhoWas requires account access. See [report lifecycle and recovery](docs/reference/reports-tickets.md).
 
 [`arin_ticket_status`](docs/resources/ticket_status.md) closes an existing resolved ticket, imports by ticket number, and avoids rewriting already closed tickets. Destroy leaves the server ticket intact. Open tickets cannot be closed through this operation.
