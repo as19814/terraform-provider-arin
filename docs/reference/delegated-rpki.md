@@ -681,9 +681,11 @@ rollback, conflicting versions, incomplete paths, existing locks, corruption,
 symlinks and permissions. A process crash leaves a lock requiring recovery.
 
 The directory must persist across runs. Removing it discards local history;
-changing the configured anchor creates a separate history scope. Anchor rotation,
-crash recovery, repository retrieval and issuance/Terraform integration remain
-unfinished. This storage does not add native delegated sandbox evidence.
+changing the configured anchor creates a separate history scope. The explicit
+anchor-history migration below preserves existing watermarks across that change.
+Crash-lock recovery remains manual. Repository retrieval and issuance/Terraform
+integration are implemented in the later sections. This storage does not add
+native delegated sandbox evidence.
 
 ## Issuance resource-path gate
 
@@ -1980,3 +1982,35 @@ verifies native three-certificate discovery using a shared notification URL.
 Distinct-repository discovery and rejection cases retain signed TLS fixture
 coverage. This does not verify native delegated provisioning or publication
 mutations, which still require enrollment.
+
+## Migrating history to a replacement resource anchor
+
+After independently establishing trust in a replacement resource anchor, stop
+provider and recovery processes using the history directory. Before changing the
+configured `resource_anchor_pem`, carry its rollback history forward explicitly:
+
+```sh
+go run ./tools/rpki-manifest-history \
+  -directory /private/arin/manifests \
+  -previous-anchor /private/arin/previous-resource-anchor.pem \
+  -replacement-anchor /private/arin/replacement-resource-anchor.pem \
+  -migrate
+```
+
+The command does not establish trust, discover a new anchor or change Terraform
+configuration. It only merges local history into the replacement anchor's scope.
+The replacement must be a currently valid resource CA anchor; the old certificate
+may have expired. Both scopes are locked in deterministic order. Missing or
+corrupt source history, occupied locks, conflicting manifests and inconsistent
+number/time order fail. Existing destination watermarks are never lowered.
+The destination is atomically replaced and the source remains intact, so repeating
+a completed migration is safe. Configure the replacement anchor before restarting
+validation; concurrent writes to the old scope after migration are not mirrored.
+
+Watermarks remain scoped to issuer public keys and manifest URIs. A new issuer key
+or manifest URI has no prior matching watermark; migration does not claim continuity
+for those identities. Tests cover same-key anchor renewal, changed-key anchors,
+merging older/newer destinations, rollback rejection after reopening, conflicting
+evidence, missing/corrupt files, symlinks and occupied locks. Native anchor rotation
+has not been exercised. The command cannot remove crash locks or reconstruct lost
+history, and it makes no network requests.

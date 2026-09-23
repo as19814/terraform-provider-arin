@@ -404,3 +404,7 @@ and validates an existing resource certificate's issuer chain from ordered RRDP
 repositories and an explicitly pinned anchor. Its output can supply the certificate
 resource's `issuer_chain_pem`. No API credentials are used; persistent private
 cache and manifest-history directories preserve polling and rollback protection.
+
+When explicitly replacing a trusted resource anchor, use the
+[manifest-history migration command](docs/reference/delegated-rpki.md#migrating-history-to-a-replacement-resource-anchor)
+to preserve existing issuer rollback watermarks before switching configuration.
