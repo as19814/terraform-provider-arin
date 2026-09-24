@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build private release candidates without publishing or signing them."""
+"""Build release candidates without publishing or signing them."""
 import argparse
 import hashlib
 import json
@@ -32,6 +32,12 @@ try:
                 info.external_attr = 0o100755 << 16
                 info.compress_type = zipfile.ZIP_DEFLATED
                 zipped.writestr(info, binary.read_bytes())
+                for name in ('LICENSE', 'NOTICE'):
+                    info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+                    info.create_system = 3
+                    info.external_attr = 0o100644 << 16
+                    info.compress_type = zipfile.ZIP_DEFLATED
+                    zipped.writestr(info, (ROOT / name).read_bytes())
             print(archive.name, flush=True)
     manifest = out / f'terraform-provider-arin_{args.version}_manifest.json'
     manifest.write_text(json.dumps({'version': 1, 'metadata': {'protocol_versions': ['6.0']}}, indent=2)+'\n')
