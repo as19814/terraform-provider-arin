@@ -22,7 +22,7 @@ func ticketMessageXML(id string) string {
 }
 
 func TestAddTicketMessage(t *testing.T) {
-	for _, mode := range []string{"success", "closed", "preflight_forbidden", "append_forbidden", "lost_response", "invalid_identity", "partial_response", "verification_forbidden", "wrong_read_identity", "changed_content", "redirect"} {
+	for _, mode := range []string{"success", "closed", "preflight_forbidden", "append_forbidden", "server_error", "lost_response", "invalid_identity", "partial_response", "verification_forbidden", "wrong_read_identity", "changed_content", "redirect"} {
 		t.Run(mode, func(t *testing.T) {
 			var writes, reads atomic.Int32
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +69,11 @@ func TestAddTicketMessage(t *testing.T) {
 					}
 					if mode == "append_forbidden" {
 						w.WriteHeader(403)
+						return
+					}
+					if mode == "server_error" {
+						w.WriteHeader(http.StatusInternalServerError)
+						fmt.Fprint(w, `<error xmlns="http://www.arin.net/regrws/core/v1"><code>E_UNSPECIFIED</code></error>`)
 						return
 					}
 					if mode == "lost_response" {
@@ -133,6 +138,9 @@ func TestAddTicketMessage(t *testing.T) {
 			} else {
 				if err == nil || receipt.Confirmed {
 					t.Fatal("unconfirmed submission accepted")
+				}
+				if mode == "server_error" && (receipt.Message != nil || reads.Load() != 0) {
+					t.Fatal("server error must retain an uncertain receipt without inventing a message identity")
 				}
 				if (mode == "partial_response" || mode == "verification_forbidden" || mode == "wrong_read_identity") && (receipt.Message == nil || receipt.Message.ID != "7") {
 					t.Fatal("trustworthy returned ID lost")

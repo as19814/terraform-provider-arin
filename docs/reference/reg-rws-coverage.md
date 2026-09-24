@@ -74,10 +74,13 @@ The method guide's header-authenticated phone-add example names the POC root whi
 ## Gates that remain outside this reconciliation
 
 - Organization creation is awaiting review. Successful live mutable CRUD, Admin association replacement and deletion still need that original disposable object.
-- Native ticket submission and full Terraform NET-removal correspondence require new explicit correspondence approval. The two approved client removal messages were already consumed; this audit does not authorize repeats.
+- Full Terraform NET-removal correspondence passed for both IP families, in addition to both client tests. All four message approvals were consumed. Native ticket submission returned an uncertain HTTP 500 after the POST-to-PUT correction; successful delivery needs reconciliation before another authorized attempt.
 - A successful live ticket closure requires a disposable RESOLVED ticket. Closed-ticket reads/no-op lifecycle coverage does not prove that transition.
 - WhoWas, Bulk Whois and invalid-POC retrieval need account access. Bulk/invalid-POC are separate download services, not missing Reg-RWS methods.
-- Delegated provisioning/publication uses separate signed protocols. Repository/path verification now passes OT&E, but signed lifecycles still need enrollment; recovery edge cases and the profile audit remain implementation work.
+- Delegated provisioning/publication uses separate signed protocols. Repository/path verification now passes OT&E, but authenticated signed lifecycles still need enrollment. Manifest migration and process-exit recovery have local regression coverage; native anchor rotation remains unverified.
 - Public Whois-RWS and RDAP are separate interfaces. Their dedicated audits remain authoritative. Whois delegation search is still ambiguous: the guide lists a descriptive delegation-name item without an unambiguous matrix key, while the documented exact lookup and relationship operations work. No generic search has been inferred from a server ignoring a predicate.
 
 The objective remains open. This reconciliation removes uncertainty about the documented Reg-RWS operation inventory; it does not substitute endpoint counts for payload, lifecycle or native evidence.
+
+See [OT&E completion prerequisites](ote-completion.md) for the September 24
+investigation, the staff escalation workflow and concrete completion checks.

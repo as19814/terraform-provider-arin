@@ -152,9 +152,10 @@ attachment endpoint. Filename confirmation does not verify attachment bytes.
 
 Mock tests cover XML escaping, numbered lines, base64 attachments, payload limits,
 invalid identities, closed tickets, rejected requests, lost responses, redirects,
-partial response recovery, read failures and changed read-back content. No live
-message has been submitted for this implementation. Native correspondence needs
-explicit approval. There is no server-side message update or delete operation in
+partial response recovery, read failures and changed read-back content. The
+approved native PUT attempt returned HTTP 500, as detailed below; successful
+delivery is unconfirmed. Further correspondence needs explicit approval.
+There is no server-side message update or delete operation in
 the documented methods.
 
 ## Terraform message receipts
