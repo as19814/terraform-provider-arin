@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 75 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-five managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, delegated publication bundles and resource certificates, report requests, ticket messages and closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md), with an [operation-by-operation Reg-RWS map](docs/reference/reg-rws-coverage.md). The repository is private and the provider has not been published to a registry.
+The provider includes 75 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-four managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, delegated publication bundles and resource certificates, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md), with an [operation-by-operation Reg-RWS map](docs/reference/reg-rws-coverage.md). The repository is private and the provider has not been published to a registry. See the [release readiness review](docs/reference/release-readiness.md) for tested scope, remaining interoperability gaps and candidate packaging.
 
 ## Configuration
 
@@ -239,17 +239,18 @@ metadata resource when Terraform also manages the owning ROA or bundle.
 
 [`arin_ticket_status`](docs/resources/ticket_status.md) closes an existing resolved ticket, imports by ticket number, and avoids rewriting already closed tickets. Destroy leaves the server ticket intact. Open tickets cannot be closed through this operation. The optional `update_method = "payload"` uses a fresh full-ticket payload and preserves all fields except status; the default uses the status-only endpoint.
 
-[`arin_ticket_message`](docs/resources/ticket_message.md) appends correspondence and attachments to an existing ticket. Changes submit a new message; refresh and destroy never alter server correspondence. Import uses `TICKET/MESSAGE`. Uncertain responses block retries until reconciliation and import. Terraform lifecycle and recovery pass mocks. Import, attachment state, refresh and state-only destroy pass read-only OT&E tests against an existing report message; native submission remains unverified.
+Ticket-message submission is not supported. Existing messages and attachments remain readable through the `arin_ticket_message` and `arin_ticket_attachment` data sources.
 
-The provider deliberately excludes these approval-gated services:
+The provider deliberately excludes these operations:
 
+- Ticket-message submission (the removed `arin_ticket_message` resource).
 - Bulk Whois downloads (`arin_bulk_whois`).
 - Reports of resources without valid POCs (`arin_invalid_pocs`).
 - Historical Whois (WhoWas) report requests (`who_was_asn` and `who_was_net`).
 
-These services require separate ARIN access approval and terms of use. They are outside this provider's scope, not pending implementation or live-test blockers. Public RDAP and Whois-RWS lookups, associations reports and reassignment reports remain supported.
+The download and WhoWas services require separate ARIN access approval and terms of use. Ticket-message submission was removed after unresolved OT&E server errors. They are outside this provider's scope, not pending implementation or live-test blockers. Public RDAP and Whois-RWS lookups, associations reports and reassignment reports remain supported.
 
-The `download_base_url` provider option and `ARIN_DOWNLOAD_BASE_URL` setting are also removed. Existing configurations using the removed data sources or WhoWas report types must be updated. Back up any existing state before removing obsolete entries; forgetting a report receipt does not delete its ARIN ticket.
+The `download_base_url` provider option and `ARIN_DOWNLOAD_BASE_URL` setting are also removed. Existing configurations using removed resources, data sources or WhoWas report types must be updated. Back up any existing state before removing obsolete entries; forgetting a report receipt does not delete its ARIN ticket.
 
 ## Next steps
 

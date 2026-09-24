@@ -23,7 +23,7 @@ jobs:
       - name: Install build dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends build-essential ca-certificates curl git unzip
+          apt-get install -y --no-install-recommends build-essential ca-certificates curl git unzip python3
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Configure container Git workspace
         run: |
@@ -52,3 +52,7 @@ jobs:
           go generate ./...
           git diff --exit-code -- docs examples
           test -z "$(git ls-files --others --exclude-standard docs examples)"
+      - name: Check provider schema compatibility baseline
+        run: python3 scripts/check-schema.py
+      - name: Check reachable Go vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...

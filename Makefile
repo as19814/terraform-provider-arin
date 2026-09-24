@@ -30,7 +30,7 @@ testlive:
 # Serialize packages because client and provider tests share sandbox objects.
 .PHONY: testote
 testote:
-	ARIN_OTE_WRITE_TESTS=1 TF_ACC=1 go test -p 1 ./internal/arin ./internal/provider -run '^TestOTE(ASSet|IRRRoute|IRRRouteMetadata|IRRLinkedRoute|RouteSet|Autnum|Customer|CustomerNetGraph|Net|NetMultiBlock|NetMetadata|NetRemove|NetAssignmentClient|DelegationClient|Delegation|DelegationNameserver|POC|POCClient|POCContacts|OrgPOC|OrgPOCClient|RPKIClient|RPKIBundle|RPSLClient|RPSLRead|RPSLResource|ASPA|ROA|ReportClient|ReportResource|ReportRead|TicketMessageImport|TicketStatusClient|TicketStatus)Lifecycle$$|^TestOTEOrganizationClientNoChange$$|^TestOTEOrgResourceRecovery$$' -v -count=1 -timeout 10m
+	ARIN_OTE_WRITE_TESTS=1 TF_ACC=1 go test -p 1 ./internal/arin ./internal/provider -run '^TestOTE(ASSet|IRRRoute|IRRRouteMetadata|IRRLinkedRoute|RouteSet|Autnum|Customer|CustomerNetGraph|Net|NetMultiBlock|NetMetadata|NetRemove|NetAssignmentClient|DelegationClient|Delegation|DelegationNameserver|POC|POCClient|POCContacts|OrgPOC|OrgPOCClient|RPKIClient|RPKIBundle|RPSLClient|RPSLRead|RPSLResource|ASPA|ROA|ReportClient|ReportResource|ReportRead|TicketStatusClient|TicketStatus)Lifecycle$$|^TestOTEOrganizationClientNoChange$$|^TestOTEOrgResourceRecovery$$' -v -count=1 -timeout 10m
 
 # Credential-free OT&E trust anchor and RRDP notification verification.
 .PHONY: testotepublic
@@ -41,3 +41,14 @@ testotepublic:
 .PHONY: testoterepository
 testoterepository:
 	ARIN_OTE_REPOSITORY_TESTS=1 go test ./internal/arin -run '^TestOTEPublicRPKIRepository$$' -v -count=1 -timeout 6m
+
+.PHONY: checkschema vuln package
+checkschema: build
+	python3 scripts/check-schema.py
+
+vuln:
+	go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+
+# VERSION is required; packaging never publishes a release.
+package:
+	python3 scripts/package-provider.py "$(VERSION)"

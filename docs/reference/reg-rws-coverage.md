@@ -2,7 +2,7 @@
 
 Reviewed on 2026-09-23 against the [current Reg-RWS method guide](https://www.arin.net/resources/registry/regrws/methods/), its [saved copy](arin-api/reg-rws/methods.md), provider registration and client implementations. IRR and hosted RPKI cross-references were checked against their [IRR](https://www.arin.net/resources/manage/irr/irr-restful/) and [RPKI](https://www.arin.net/resources/manage/rpki/rpki-restful/) guides.
 
-A fresh bounded HTTPS fetch confirmed that all 56 operation headings match the saved guide, in order. The 56 operation sections are accounted for below: 54 mapped operations and two deliberately excluded WhoWas request operations. This establishes operation coverage, not complete native verification. Each evidence link distinguishes mock tests, successful sandbox operations, account restrictions and remaining cases. A client method is identified explicitly when Terraform models the equivalent desired state through another endpoint. Header/query authentication variants are transports for the same operation, not separate resources.
+A fresh bounded HTTPS fetch confirmed that all 56 operation headings match the saved guide, in order. The 56 operation sections are accounted for below: 53 mapped operations and three deliberately excluded operations (WhoWas requests and ticket-message submission). This establishes operation coverage, not complete native verification. Each evidence link distinguishes mock tests, successful sandbox operations, account restrictions and remaining cases. A client method is identified explicitly when Terraform models the equivalent desired state through another endpoint. Header/query authentication variants are transports for the same operation, not separate resources.
 
 | Documented operation | Terraform surface | Client/catalog | Evidence and limits |
 | --- | --- | --- | --- |
@@ -53,7 +53,7 @@ A fresh bounded HTTPS fetch confirmed that all 56 operation headings match the s
 | Get a List of ROAs for an Org | [data `arin_roas`](../data-sources/roas.md), [data `arin_roa`](../data-sources/roa.md) | [read_catalog.go](../../internal/arin/read_catalog.go) | [Audit](rpki.md) Individual selection is performed on the organization inventory. |
 | Create & Delete ASPAs | [resource `arin_aspa`](../resources/aspa.md), [resource `arin_rpki_bundle`](../resources/rpki_bundle.md) | [rpki.go](../../internal/arin/rpki.go) | [Audit](rpki-bundle.md) |
 | Get a List of ASPAs for an Org | [data `arin_aspas`](../data-sources/aspas.md), [data `arin_aspa`](../data-sources/aspa.md) | [read_catalog.go](../../internal/arin/read_catalog.go) | [Audit](rpki.md) Individual selection is performed on the organization inventory. |
-| Add Message to Ticket | [resource `arin_ticket_message`](../resources/ticket_message.md) | [ticket_message.go](../../internal/arin/ticket_message.go) | [Audit](reports-tickets.md) Append-only receipt; native read-only import passed. An approved attempt corrected POST to documented PUT; PUT returned uncertain HTTP 500 and requires read-only reconciliation. |
+| Add Message to Ticket | Not supported | Deliberately excluded | Removed after unresolved native HTTP 500; existing message reads remain supported. |
 | Modify Ticket | [resource `arin_ticket_status`](../resources/ticket_status.md) | [ticket_payload.go](../../internal/arin/ticket_payload.go) | [Audit](reports-tickets.md) Full-payload and status-only methods supported. Native RESOLVED-to-CLOSED transition remains unverified. |
 | Modify Ticket Status | [resource `arin_ticket_status`](../resources/ticket_status.md) | [ticket.go](../../internal/arin/ticket.go) | [Audit](reports-tickets.md) Full-payload and status-only methods supported. Native RESOLVED-to-CLOSED transition remains unverified. |
 | Get Ticket Details | [data `arin_ticket`](../data-sources/ticket.md) | [read_catalog.go](../../internal/arin/read_catalog.go) | [Audit](reports-tickets.md) |
@@ -74,7 +74,7 @@ The method guide's header-authenticated phone-add example names the POC root whi
 ## Gates that remain outside this reconciliation
 
 - Organization creation is awaiting review. Successful live mutable CRUD, Admin association replacement and deletion still need that original disposable object.
-- Full Terraform NET-removal correspondence passed for both IP families, in addition to both client tests. All four message approvals were consumed. Native ticket submission returned an uncertain HTTP 500 after the POST-to-PUT correction; successful delivery needs reconciliation before another authorized attempt.
+- Full Terraform NET-removal correspondence passed for both IP families, in addition to both client tests. All four message approvals were consumed. Ticket-message submission was removed after its uncertain HTTP 500; historical receipts remain intact.
 - A successful live ticket closure requires a disposable RESOLVED ticket. Closed-ticket reads/no-op lifecycle coverage does not prove that transition.
 - WhoWas, Bulk Whois and invalid-POC retrieval are deliberately excluded, not pending account-access work.
 - Delegated provisioning/publication uses separate signed protocols. Repository/path verification now passes OT&E, but authenticated signed lifecycles still need enrollment. Manifest migration and process-exit recovery have local regression coverage; native anchor rotation remains unverified.

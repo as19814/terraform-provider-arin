@@ -1,0 +1,56 @@
+name: Private release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Candidate version, for example 0.1.0-rc.1'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: [self-hosted, yyj]
+    container:
+      image: ubuntu:24.04
+    timeout-minutes: 25
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential ca-certificates curl git unzip python3
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Configure container Git workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
+        with:
+          terraform_version: '1.15.5'
+          terraform_wrapper: false
+      - name: Verify candidate
+        run: |
+          test -z "$(gofmt -l main.go internal tools)"
+          terraform fmt -check -recursive examples
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+          make check
+          make checkschema vuln
+          go generate ./...
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard docs examples)"
+      - name: Build candidate archives
+        env:
+          CANDIDATE_VERSION: ${{ inputs.version }}
+        run: python3 scripts/package-provider.py "$CANDIDATE_VERSION"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: provider-candidate
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
