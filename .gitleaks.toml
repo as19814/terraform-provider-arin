@@ -1,0 +1,34 @@
+title = "ARIN provider secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Published ARIN Quick Start sample, not a project credential"
+condition = "AND"
+paths = ['''^docs/reference/arin-api/reg-rws/quickstart\.md$''']
+regexTarget = "secret"
+regexes = ['''^API-E85E-A05C-4A23-BB9C$''']
+
+[[allowlists]]
+description = "Published ARIN report-download examples, not project credentials"
+condition = "AND"
+paths = ['''^docs/reference/arin-api/reports/(?:invalid-pocs|bulk-whois)\.md$''']
+regexTarget = "secret"
+regexes = ['''^API-1111-2222-3333-4444$''']
+
+[[allowlists]]
+description = "XML schema path strings, not credentials"
+condition = "AND"
+paths = ['''^internal/arin/delegation\.go$''']
+regexTarget = "secret"
+regexes = ['''^delegationKeys/delegationKey(?:/[A-Za-z]+)?$''']
+
+[[rules]]
+id = "arin-api-key"
+description = "ARIN API key"
+regex = '''\bAPI-(?:[A-Fa-f0-9]{4}-){3}[A-Fa-f0-9]{4}\b'''
+keywords = ["API-"]
+[[rules.allowlists]]
+description = "Explicit synthetic all-zero key used in tests"
+regexes = ['''^API-0000-0000-0000-0000$''']
