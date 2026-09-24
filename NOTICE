@@ -1,0 +1,13 @@
+Copyright 2026 Foundability Technologies, Inc.
+A company incorporated in British Columbia, Canada.
+
+Original project code and documentation are licensed under MPL-2.0; see LICENSE.
+Third-party material retains its own copyright and applicable terms.
+
+The documentation archive under docs/reference/arin-api contains material from
+ARIN and other upstream publishers. The source URLs and retrieval provenance are
+recorded in its indexes and manifests. MPL-2.0 does not relicense those materials.
+Dependencies listed in go.mod retain their respective licenses.
+
+ARIN and Terraform names identify the services and tools supported by this
+independent project. This project is not an official ARIN or HashiCorp provider.

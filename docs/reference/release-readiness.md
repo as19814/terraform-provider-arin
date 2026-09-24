@@ -1,6 +1,6 @@
 # Release readiness
 
-This is a private, pre-release provider. It exposes 24 resources and 75 data
+This is an alpha provider. It exposes 24 resources and 75 data
 sources after excluding ticket-message submission, WhoWas requests, Bulk Whois
 and invalid-POC downloads. No registry release or production mutation is implied
 by running CI or packaging a candidate.
@@ -81,10 +81,56 @@ invalid versions and existing output directories, uses trimmed build paths and
 fixed ZIP timestamps, and marks incomplete builds. It does not sign or publish.
 Cross-compilation verifies builds, not runtime behavior on every operating system.
 
-The manually dispatched **Private release candidate** workflow runs on
-`[self-hosted, yyj]`, checks the candidate and uploads private workflow artifacts.
+The manually dispatched **Release candidate** workflow runs on
+standard GitHub-hosted `ubuntu-24.04` runners, checks the candidate and uploads workflow artifacts (visibility follows the repository).
 It has no repository write permission and does not create tags or releases.
 For a private pilot, verify archive checksums and install through Terraform's
 filesystem mirror or an explicit development override. Public registry delivery,
-signing, a distribution license decision, cross-platform runtime tests and a published upgrade policy remain
+signing and cross-platform runtime tests remain
 separate release work.
+
+
+## Alpha compatibility and public readiness
+
+Original project code is MPL-2.0, with upstream materials excluded as described
+in NOTICE. Before 1.0, schema and behavior can change between releases. Pin the
+provider version, retain state backups, and review migration notes before an
+upgrade. Uncertain-operation state and recovery journals must be preserved.
+
+The September 24 production pilot exercised import of existing resources,
+creation of 428 networks, network public-comment updates, expansion of one
+hosted ROA to 479 exact prefixes with automatic IRR links, and AUT-NUM creation.
+Post-apply plans were clean. RIPE's public validator confirmed all 479 prefix
+and origin authorizations. This evidence does not close the other live-test
+limitations listed above.
+
+History scanning uses Gitleaks with default rules plus an ARIN-key rule. Narrow
+exceptions cover only publicly documented sample keys in specific upstream
+files and XML property paths. No real credentials were found in the full-history
+Gitleaks/TruffleHog audit or exact comparisons with local keys. No history rewrite
+was needed for secrets.
+
+## Repository publication checklist
+
+The repository remains private until its owner authorizes publication. Main requires
+an up-to-date passing `test` check, a pull request, resolved conversations and linear
+history, including for administrators. Force pushes and deletion are blocked. Release
+tags matching `v*` cannot be rewritten or deleted. Independent review is not required
+while there is only one maintainer; enable it when a second maintainer joins.
+
+Secret scanning and push protection are enabled. Actions use read-only tokens and
+pinned action revisions. Standard GitHub-hosted Ubuntu runners keep contributor code
+off the organization's shared runners. No live ARIN credentials are needed by CI.
+
+GitHub rejects the following settings while this repository is private. Immediately
+after an authorized visibility change, run:
+
+```sh
+python3 scripts/enable-public-security.py
+```
+
+This enables approval for all external contributors' workflow runs and private
+vulnerability reporting, then verifies both settings. It refuses to run on a private
+repository and never changes repository visibility. Source publication does not
+publish binaries or a Terraform Registry release; release signing remains a separate
+step.
