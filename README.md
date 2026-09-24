@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 77 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-five managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, delegated publication bundles and resource certificates, report requests, ticket messages and closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md), with an [operation-by-operation Reg-RWS map](docs/reference/reg-rws-coverage.md). The repository is private and the provider has not been published to a registry.
+The provider includes 75 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-five managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, delegated publication bundles and resource certificates, report requests, ticket messages and closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md), with an [operation-by-operation Reg-RWS map](docs/reference/reg-rws-coverage.md). The repository is private and the provider has not been published to a registry.
 
 ## Configuration
 
@@ -235,17 +235,25 @@ authorization. Import is required because IRR cannot create a ROA link. Use the
 metadata resource when Terraform also manages the owning ROA or bundle.
 
 
-[`arin_report_request`](docs/resources/report_request.md) submits an associations, reassignment or WhoWas report and retains its ticket receipt. Refresh and ticket expiry never resubmit it; destroy only forgets the receipt. WhoWas requires account access. See [report lifecycle and recovery](docs/reference/reports-tickets.md).
+[`arin_report_request`](docs/resources/report_request.md) submits an associations or reassignment report and retains its ticket receipt. Refresh and ticket expiry never resubmit it; destroy only forgets the receipt. See [report lifecycle and recovery](docs/reference/reports-tickets.md).
 
 [`arin_ticket_status`](docs/resources/ticket_status.md) closes an existing resolved ticket, imports by ticket number, and avoids rewriting already closed tickets. Destroy leaves the server ticket intact. Open tickets cannot be closed through this operation. The optional `update_method = "payload"` uses a fresh full-ticket payload and preserves all fields except status; the default uses the status-only endpoint.
 
 [`arin_ticket_message`](docs/resources/ticket_message.md) appends correspondence and attachments to an existing ticket. Changes submit a new message; refresh and destroy never alter server correspondence. Import uses `TICKET/MESSAGE`. Uncertain responses block retries until reconciliation and import. Terraform lifecycle and recovery pass mocks. Import, attachment state, refresh and state-only destroy pass read-only OT&E tests against an existing report message; native submission remains unverified.
 
-[`arin_bulk_whois`](docs/data-sources/bulk_whois.md) and [`arin_invalid_pocs`](docs/data-sources/invalid_pocs.md) download existing approved artifacts. Set `include_content = false` to retain only size, filename and digest metadata. Bulk Whois access approval is required; the current sandbox account has no approval, so successful native downloads remain unverified.
+The provider deliberately excludes these approval-gated services:
+
+- Bulk Whois downloads (`arin_bulk_whois`).
+- Reports of resources without valid POCs (`arin_invalid_pocs`).
+- Historical Whois (WhoWas) report requests (`who_was_asn` and `who_was_net`).
+
+These services require separate ARIN access approval and terms of use. They are outside this provider's scope, not pending implementation or live-test blockers. Public RDAP and Whois-RWS lookups, associations reports and reassignment reports remain supported.
+
+The `download_base_url` provider option and `ARIN_DOWNLOAD_BASE_URL` setting are also removed. Existing configurations using the removed data sources or WhoWas report types must be updated. Back up any existing state before removing obsolete entries; forgetting a report receipt does not delete its ARIN ticket.
 
 ## Next steps
 
-Continue the [coverage inventory](docs/reference/implementation-status.md): finish delegated RPKI recovery and trust-anchor handling, verify signed interoperability once sandbox enrollment is available, and close the remaining organization, ticket and account-access validation gaps. IRR, organization, contact, hosted RPKI and ticket resources already have documented lifecycle behavior and tests.
+Continue the [coverage inventory](docs/reference/implementation-status.md): finish delegated RPKI recovery and trust-anchor handling, verify signed interoperability once sandbox enrollment is available, and close the remaining organization and ticket validation gaps. IRR, organization, contact, hosted RPKI and ticket resources already have documented lifecycle behavior and tests.
 
 Start with the [API index](docs/reference/arin-api/README.md), [provider notes](docs/reference/arin-api/PROVIDER-NOTES.md), and [schema findings](docs/reference/arin-api/schemas/README.md).
 

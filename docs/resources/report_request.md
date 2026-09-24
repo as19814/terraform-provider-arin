@@ -3,12 +3,12 @@
 page_title: "arin_report_request Resource - arin"
 subcategory: ""
 description: |-
-  Submit one ARIN report request and retain its ticket receipt. Creation succeeds when ARIN accepts the request; report generation may finish later. Refresh only reads the ticket and never requests another report, including after ticket expiry. Change the request or explicitly replace this resource to submit a new report. Destroy forgets the receipt; it does not cancel, delete or close the ticket. Uncertain submission blocks retries until its ticket is reconciled. WhoWas requires prior account authorization. Report contents remain available through ticket/message/attachment data sources.
+  Submit one ARIN report request and retain its ticket receipt. Creation succeeds when ARIN accepts the request; report generation may finish later. Refresh only reads the ticket and never requests another report, including after ticket expiry. Change the request or explicitly replace this resource to submit a new report. Destroy forgets the receipt; it does not cancel, delete or close the ticket. Uncertain submission blocks retries until its ticket is reconciled. WhoWas reports are not supported. Report contents remain available through ticket/message/attachment data sources.
 ---
 
 # arin_report_request (Resource)
 
-Submit one ARIN report request and retain its ticket receipt. Creation succeeds when ARIN accepts the request; report generation may finish later. Refresh only reads the ticket and never requests another report, including after ticket expiry. Change the request or explicitly replace this resource to submit a new report. Destroy forgets the receipt; it does not cancel, delete or close the ticket. Uncertain submission blocks retries until its ticket is reconciled. WhoWas requires prior account authorization. Report contents remain available through ticket/message/attachment data sources.
+Submit one ARIN report request and retain its ticket receipt. Creation succeeds when ARIN accepts the request; report generation may finish later. Refresh only reads the ticket and never requests another report, including after ticket expiry. Change the request or explicitly replace this resource to submit a new report. Destroy forgets the receipt; it does not cancel, delete or close the ticket. Uncertain submission blocks retries until its ticket is reconciled. WhoWas reports are not supported. Report contents remain available through ticket/message/attachment data sources.
 
 ## Example Usage
 
@@ -23,12 +23,6 @@ resource "arin_report_request" "reassignments" {
   target      = "NET-192-0-2-0-1"
 }
 
-# WhoWas requires account authorization before requesting historical data.
-resource "arin_report_request" "history" {
-  report_type = "who_was_asn"
-  target      = "19814"
-}
-
 # ticket_number can be used with ticket, message and attachment data sources.
 # Destroy forgets the receipt; it does not delete or cancel the report ticket.
 ```
@@ -38,11 +32,11 @@ resource "arin_report_request" "history" {
 
 ### Required
 
-- `report_type` (String) associations, reassignment, who_was_asn or who_was_net. Changes submit a new request.
+- `report_type` (String) associations or reassignment. Changes submit a new request.
 
 ### Optional
 
-- `target` (String) Empty for associations; NET handle for reassignment; decimal ASN for who_was_asn; canonical IPv4/IPv6 address (not CIDR) for who_was_net. Changes submit a new request.
+- `target` (String) Empty for associations; NET handle for reassignment. Changes submit a new request.
 
 ### Read-Only
 
@@ -67,5 +61,4 @@ The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/c
 ```shell
 terraform import arin_report_request.associations associations/20260923-X1
 terraform import arin_report_request.reassignments reassignment/NET-192-0-2-0-1/20260923-X2
-terraform import arin_report_request.history who_was_asn/19814/20260923-X3
 ```

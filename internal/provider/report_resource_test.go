@@ -47,8 +47,6 @@ func (f *reportFake) handler(w http.ResponseWriter, r *http.Request) {
 			kind = "ASSOCIATIONS_REPORT"
 		case strings.HasPrefix(r.URL.Path, "/rest/report/reassignment/"):
 			kind = "REASSIGNMENT_REPORT"
-		case strings.HasPrefix(r.URL.Path, "/rest/report/whoWas/"):
-			kind = "WHOWAS_REPORT"
 		default:
 			w.WriteHeader(404)
 			return
@@ -99,24 +97,18 @@ func TestAccReportRequestLifecycle(t *testing.T) {
 	f, _ := setupReportFake(t)
 	first := reportConfig("associations", "")
 	next := reportConfig("reassignment", "NET-192-0-2-0-1")
-	historyASN := reportConfig("who_was_asn", "19814")
-	historyNet := reportConfig("who_was_net", "2001:db8::1")
 	resource.Test(t, resource.TestCase{ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("test")())}, Steps: []resource.TestStep{
 		{Config: first, Check: resource.TestCheckResourceAttr("arin_report_request.test", "ticket_number", "20260923-X1")},
 		{ResourceName: "arin_report_request.test", ImportState: true, ImportStateId: "associations/20260923-X1", ImportStateVerify: true},
 		{Config: first, PlanOnly: true},
 		{Config: next, Check: resource.TestCheckResourceAttr("arin_report_request.test", "ticket_number", "20260923-X2")},
 		{ResourceName: "arin_report_request.test", ImportState: true, ImportStateId: "reassignment/NET-192-0-2-0-1/20260923-X2", ImportStateVerify: true},
-		{Config: historyASN, Check: resource.TestCheckResourceAttr("arin_report_request.test", "ticket_number", "20260923-X3")},
-		{ResourceName: "arin_report_request.test", ImportState: true, ImportStateId: "who_was_asn/19814/20260923-X3", ImportStateVerify: true},
-		{Config: historyNet, Check: resource.TestCheckResourceAttr("arin_report_request.test", "ticket_number", "20260923-X4")},
-		{ResourceName: "arin_report_request.test", ImportState: true, ImportStateId: "who_was_net/2001:db8::1/20260923-X4", ImportStateVerify: true},
-		{Config: historyNet, PreConfig: func() { f.mu.Lock(); defer f.mu.Unlock(); delete(f.tickets, "20260923-X4") }, Check: resource.TestCheckResourceAttr("arin_report_request.test", "ticket_available", "false")},
-		{Config: historyNet, PlanOnly: true},
+		{Config: next, PreConfig: func() { f.mu.Lock(); defer f.mu.Unlock(); delete(f.tickets, "20260923-X2") }, Check: resource.TestCheckResourceAttr("arin_report_request.test", "ticket_available", "false")},
+		{Config: next, PlanOnly: true},
 	}, CheckDestroy: func(_ *terraform.State) error {
 		f.mu.Lock()
 		defer f.mu.Unlock()
-		if f.submissions != 4 || len(f.tickets) != 3 || f.tickets["20260923-X1"].Status != "CLOSED" {
+		if f.submissions != 2 || len(f.tickets) != 1 || f.tickets["20260923-X1"].Status != "CLOSED" {
 			return fmt.Errorf("report resubmitted on refresh/expiry or destroy mutated a ticket")
 		}
 		return nil
@@ -164,6 +156,27 @@ func TestAccReportPendingSubmissionRecovery(t *testing.T) {
 				}
 				return nil
 			}})
+		})
+	}
+}
+
+func TestAccWhoWasReportsExcluded(t *testing.T) {
+	for _, kind := range []string{"who_was_asn", "who_was_net"} {
+		t.Run(kind, func(t *testing.T) {
+			f, _ := setupReportFake(t)
+			target := "64496"
+			if kind == "who_was_net" {
+				target = "192.0.2.1"
+			}
+			resource.Test(t, resource.TestCase{
+				ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"arin": providerserver.NewProtocol6WithError(New("test")())},
+				Steps:                    []resource.TestStep{{Config: reportConfig(kind, target), PlanOnly: true, ExpectError: regexp.MustCompile("report type must be associations or reassignment")}},
+			})
+			f.mu.Lock()
+			defer f.mu.Unlock()
+			if f.submissions != 0 {
+				t.Fatal("excluded WhoWas type submitted a report")
+			}
 		})
 	}
 }

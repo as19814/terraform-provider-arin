@@ -21,8 +21,6 @@ func TestReportRequests(t *testing.T) {
 	}{
 		{ReportRequest{Type: ReportAssociations}, "/rest/report/associations", "ASSOCIATIONS_REPORT"},
 		{ReportRequest{Type: ReportReassignment, Target: "NET-192-0-2-0-1"}, "/rest/report/reassignment/NET-192-0-2-0-1", "USER_REASSIGNMENT_REPORT"},
-		{ReportRequest{Type: ReportWhoWasASN, Target: "64496"}, "/rest/report/whoWas/asn/64496", "WHOWAS_REPORT"},
-		{ReportRequest{Type: ReportWhoWasNet, Target: "2001:db8::1"}, "/rest/report/whoWas/net/2001:db8::1", "WHOWAS_REPORT"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.request.Type, func(t *testing.T) {
@@ -46,7 +44,7 @@ func TestReportRequests(t *testing.T) {
 	}
 }
 func TestReportValidation(t *testing.T) {
-	for _, r := range []ReportRequest{{Type: "unknown"}, {Type: ReportAssociations, Target: "unexpected"}, {Type: ReportReassignment, Target: "../ticket"}, {Type: ReportReassignment, Target: "FT-684"}, {Type: ReportWhoWasASN, Target: "0"}, {Type: ReportWhoWasASN, Target: "064496"}, {Type: ReportWhoWasASN, Target: "4294967296"}, {Type: ReportWhoWasNet, Target: "192.0.2.0/24"}, {Type: ReportWhoWasNet, Target: "fe80::1%en0"}, {Type: ReportWhoWasNet, Target: "::ffff:192.0.2.1"}} {
+	for _, r := range []ReportRequest{{Type: "unknown"}, {Type: ReportAssociations, Target: "unexpected"}, {Type: ReportReassignment, Target: "../ticket"}, {Type: ReportReassignment, Target: "FT-684"}, {Type: "who_was_asn", Target: "64496"}, {Type: "who_was_asn", Target: "064496"}, {Type: "who_was_asn", Target: "4294967296"}, {Type: "who_was_net", Target: "192.0.2.1"}, {Type: "who_was_net", Target: "fe80::1%en0"}, {Type: "who_was_net", Target: "::ffff:192.0.2.1"}} {
 		if r.Validate() == nil {
 			t.Fatalf("invalid report accepted: %#v", r)
 		}

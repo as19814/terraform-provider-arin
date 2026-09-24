@@ -30,25 +30,23 @@ const (
 
 // Config is immutable after New. HTTPClient allows callers to supply a transport.
 type Config struct {
-	APIKey          string
-	BaseURL         string
-	RDAPBaseURL     string
-	WhoisBaseURL    string
-	DownloadBaseURL string
-	Timeout         time.Duration
-	UserAgent       string
-	HTTPClient      *http.Client
+	APIKey       string
+	BaseURL      string
+	RDAPBaseURL  string
+	WhoisBaseURL string
+	Timeout      time.Duration
+	UserAgent    string
+	HTTPClient   *http.Client
 }
 
 // Client is safe for concurrent use. Credentials are never placed in request URLs.
 type Client struct {
-	baseURL         string
-	rdapBaseURL     string
-	whoisBaseURL    string
-	downloadBaseURL string
-	apiKey          string
-	userAgent       string
-	http            *http.Client
+	baseURL      string
+	rdapBaseURL  string
+	whoisBaseURL string
+	apiKey       string
+	userAgent    string
+	http         *http.Client
 }
 
 func ValidateBaseURL(raw string) error {
@@ -103,19 +101,6 @@ func New(cfg Config) (*Client, error) {
 			return nil, fmt.Errorf("invalid whois_base_url: %w", err)
 		}
 	}
-	if cfg.DownloadBaseURL == "" {
-		switch strings.TrimRight(cfg.BaseURL, "/") {
-		case ProductionURL:
-			cfg.DownloadBaseURL = DownloadProductionURL
-		case OTEURL:
-			cfg.DownloadBaseURL = DownloadOTEURL
-		}
-	}
-	if cfg.DownloadBaseURL != "" {
-		if err := ValidateBaseURL(cfg.DownloadBaseURL); err != nil {
-			return nil, fmt.Errorf("invalid download_base_url: %w", err)
-		}
-	}
 	if cfg.Timeout == 0 {
 		cfg.Timeout = DefaultTimeout
 	}
@@ -132,7 +117,7 @@ func New(cfg Config) (*Client, error) {
 	hc.Timeout = cfg.Timeout
 	// Never forward credentials or replay mutations through redirects.
 	hc.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
-	return &Client{baseURL: strings.TrimRight(cfg.BaseURL, "/"), rdapBaseURL: strings.TrimRight(cfg.RDAPBaseURL, "/"), whoisBaseURL: strings.TrimRight(cfg.WhoisBaseURL, "/"), downloadBaseURL: strings.TrimRight(cfg.DownloadBaseURL, "/"), apiKey: cfg.APIKey, userAgent: cfg.UserAgent, http: &hc}, nil
+	return &Client{baseURL: strings.TrimRight(cfg.BaseURL, "/"), rdapBaseURL: strings.TrimRight(cfg.RDAPBaseURL, "/"), whoisBaseURL: strings.TrimRight(cfg.WhoisBaseURL, "/"), apiKey: cfg.APIKey, userAgent: cfg.UserAgent, http: &hc}, nil
 }
 
 // APIError exposes status and sanitized ARIN error fields without retaining a raw body.

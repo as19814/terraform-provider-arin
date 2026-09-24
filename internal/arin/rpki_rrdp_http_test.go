@@ -126,17 +126,22 @@ func TestRPKIRRDPHTTPFailures(t *testing.T) {
 }
 
 func TestRPKIRRDPHTTPErrorPrivacy(t *testing.T) {
-	client := rrdpHTTPClient{Transport: downloadTransport(func(r *http.Request) (*http.Response, error) {
+	client := rrdpHTTPClient{Transport: rrdpTestTransport(func(r *http.Request) (*http.Response, error) {
 		return nil, errors.New("secret response from " + r.URL.String())
 	})}
 	_, err := client.FetchNotification(context.Background(), "https://repo.example/n?token=private", time.Time{})
 	if err == nil || strings.Contains(err.Error(), "private") || strings.Contains(err.Error(), "secret") {
 		t.Fatal("transport details leaked")
 	}
-	client.Transport = downloadTransport(func(r *http.Request) (*http.Response, error) {
+	client.Transport = rrdpTestTransport(func(r *http.Request) (*http.Response, error) {
 		return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader("malformed"))}, nil
 	})
 	if _, err := client.FetchNotification(context.Background(), "https://repo.example/n", time.Time{}); err == nil {
 		t.Fatal("invalid XML accepted")
 	}
 }
+
+// rrdpTestTransport injects HTTP behavior without a live repository.
+type rrdpTestTransport func(*http.Request) (*http.Response, error)
+
+func (f rrdpTestTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }

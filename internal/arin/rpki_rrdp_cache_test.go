@@ -160,7 +160,7 @@ func TestRPKIRRDPCacheRejectsInvalidState(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			client := rrdpHTTPClient{Transport: downloadTransport(func(*http.Request) (*http.Response, error) {
+			client := rrdpHTTPClient{Transport: rrdpTestTransport(func(*http.Request) (*http.Response, error) {
 				t.Error("invalid cache reached HTTP")
 				return nil, errors.New("unexpected request")
 			})}

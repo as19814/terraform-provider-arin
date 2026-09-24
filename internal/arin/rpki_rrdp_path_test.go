@@ -99,7 +99,7 @@ func TestRPKIRRDPPathRetrieval(t *testing.T) {
 
 func TestRPKIRRDPPathPreflight(t *testing.T) {
 	f, _ := manifestPathFixture(t, "valid")
-	client := rrdpHTTPClient{Transport: downloadTransport(func(*http.Request) (*http.Response, error) {
+	client := rrdpHTTPClient{Transport: rrdpTestTransport(func(*http.Request) (*http.Response, error) {
 		t.Error("invalid configuration dispatched HTTP")
 		return nil, errRPKIRRDP
 	})}

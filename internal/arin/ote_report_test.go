@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -54,7 +53,7 @@ func TestOTEReportClientLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	slices.SortFunc(networks, func(a, b Network) int { return strings.Compare(a.Handle, b.Handle) })
-	netHandle, address := "", ""
+	netHandle := ""
 	for _, network := range networks {
 		if !strings.Contains(strings.ToLower(network.Type), "allocation") {
 			continue
@@ -65,18 +64,13 @@ func TestOTEReportClientLifecycle(t *testing.T) {
 		}
 		if net.OrgHandle == org && len(net.Blocks) > 0 {
 			netHandle = network.Handle
-			address = net.Blocks[0].StartAddress
 			break
 		}
 	}
 	if netHandle == "" {
 		t.Fatal("requires an owned allocation for report tests")
 	}
-	aspas, err := c.ListASPAs(ctx, org)
-	if err != nil || len(aspas) == 0 {
-		t.Fatalf("requires an owned hosted ASPA to discover a WhoWas ASN target: %v", err)
-	}
-	requests := []ReportRequest{{Type: ReportAssociations}, {Type: ReportReassignment, Target: netHandle}, {Type: ReportWhoWasASN, Target: strconv.FormatInt(aspas[0].CustomerASN, 10)}, {Type: ReportWhoWasNet, Target: address}}
+	requests := []ReportRequest{{Type: ReportAssociations}, {Type: ReportReassignment, Target: netHandle}}
 	cache, err := os.UserCacheDir()
 	if err != nil {
 		t.Fatal(err)
@@ -163,9 +157,6 @@ func TestOTEReportClientLifecycle(t *testing.T) {
 				t.Fatal("report receipt does not match request")
 			}
 			if receipt.RejectionStatus != 0 {
-				if (request.Type == ReportWhoWasASN || request.Type == ReportWhoWasNet) && receipt.RejectionStatus == 401 && receipt.RejectionCode == "E_AUTHENTICATION" {
-					t.Skip("account lacks WhoWas access; definite rejection receipt retained, not resubmitted")
-				}
 				t.Fatalf("unexpected report rejection: HTTP %d %s; inspect %s", receipt.RejectionStatus, receipt.RejectionCode, receiptPath)
 			}
 			if receipt.Ticket == nil || receipt.Ticket.Number == "" {

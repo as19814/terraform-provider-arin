@@ -1,17 +1,16 @@
 # OT&E completion prerequisites
 
 Investigated September 24, 2026. This records incomplete native verification,
-not missing Terraform registrations. The provider exposes 25 resources and 77
+not missing Terraform registrations. The provider exposes 25 resources and 75
 data sources. Account-specific request drafts and observations remain in the
-private user cache, outside Git.
+private user cache, outside Git. Bulk Whois, invalid-POC downloads and WhoWas
+requests are excluded from scope and no longer completion prerequisites.
 
 | Remaining verification | Observed cause or evidence | Completion check |
 | --- | --- | --- |
 | Disposable organization CRUD and Admin POC replacement | Creation ticket remains Pending Review with action assigned to ARIN. The organization appears in the authenticated UI without Modify, but Reg-RWS returns 404. The same key reads the baseline organization successfully. | ARIN confirms activation, GET returns the intended disposable record, then Terraform import/update/Admin replacement/delete and absence verification pass. |
 | Ticket-message submission | The original POST was a provider defect, corrected to documented PUT. The approved PUT returned HTTP 500 E_UNSPECIFIED. Full-ticket reads and UI inspection show no matching subject. The server-side cause and commit outcome are unknown. | ARIN reconciles the attempt. An existing confirmed message can be imported; any further submission needs separate approval. Verify attachment bytes, refresh, clean plan and receipt-only destroy. |
 | Both ticket-closing methods | Disposable reports close automatically, so native tests have exercised reads and no-ops rather than RESOLVED-to-CLOSED writes. | Obtain two disposable RESOLVED tickets, test one per method, and confirm CLOSED through fresh reads. |
-| Bulk Whois and invalid-POC downloads | HTTP 403, and the account UI requires a signed Bulk Whois request form and approval. | Obtain access through the required account process, then verify real download parsing. |
-| WhoWas report requests | Access denied; the account UI separately requires WhoWas approval and terms. | Obtain access, submit an authorized sandbox report, then read and verify its result. |
 | Delegated RPKI provisioning and publication | The eligible organization is enrolled in Hosted RPKI, with no delegated parent/repository responses available. | Establish delegated enrollment and exchange identities, then verify authenticated signed lifecycles and restoration against OT&E. |
 
 The pending organization and missing Modify action are consistent with incomplete

@@ -2,7 +2,7 @@
 
 Reviewed on 2026-09-23 against the [current Reg-RWS method guide](https://www.arin.net/resources/registry/regrws/methods/), its [saved copy](arin-api/reg-rws/methods.md), provider registration and client implementations. IRR and hosted RPKI cross-references were checked against their [IRR](https://www.arin.net/resources/manage/irr/irr-restful/) and [RPKI](https://www.arin.net/resources/manage/rpki/rpki-restful/) guides.
 
-A fresh bounded HTTPS fetch confirmed that all 56 operation headings match the saved guide, in order. All 56 operation sections have an implementation mapping below. This establishes operation coverage, not complete native verification. Each evidence link distinguishes mock tests, successful sandbox operations, account restrictions and remaining cases. A client method is identified explicitly when Terraform models the equivalent desired state through another endpoint. Header/query authentication variants are transports for the same operation, not separate resources.
+A fresh bounded HTTPS fetch confirmed that all 56 operation headings match the saved guide, in order. The 56 operation sections are accounted for below: 54 mapped operations and two deliberately excluded WhoWas request operations. This establishes operation coverage, not complete native verification. Each evidence link distinguishes mock tests, successful sandbox operations, account restrictions and remaining cases. A client method is identified explicitly when Terraform models the equivalent desired state through another endpoint. Header/query authentication variants are transports for the same operation, not separate resources.
 
 | Documented operation | Terraform surface | Client/catalog | Evidence and limits |
 | --- | --- | --- | --- |
@@ -45,8 +45,8 @@ A fresh bounded HTTPS fetch confirmed that all 56 operation headings match the s
 | Delete Phone from POC | [resource `arin_poc_phone`](../resources/poc_phone.md) | [poc_contacts.go](../../internal/arin/poc_contacts.go) | [Audit](pocs.md) |
 | Add Email to POC | [resource `arin_poc_email`](../resources/poc_email.md) | [poc_contacts.go](../../internal/arin/poc_contacts.go) | [Audit](pocs.md) |
 | Delete Email from POC | [resource `arin_poc_email`](../resources/poc_email.md) | [poc_contacts.go](../../internal/arin/poc_contacts.go) | [Audit](pocs.md) |
-| Request WhoWas ASN Report | [resource `arin_report_request`](../resources/report_request.md) | [report.go](../../internal/arin/report.go) | [Audit](reports-tickets.md) GET submits a report; modeled as a resource. Native WhoWas returns access-denied 401. |
-| Request WhoWas NET Report | [resource `arin_report_request`](../resources/report_request.md) | [report.go](../../internal/arin/report.go) | [Audit](reports-tickets.md) GET submits a report; modeled as a resource. Native WhoWas returns access-denied 401. |
+| Request WhoWas ASN Report | Not supported | Deliberately excluded | Separate access approval and terms; outside provider scope. |
+| Request WhoWas NET Report | Not supported | Deliberately excluded | Separate access approval and terms; outside provider scope. |
 | Request Associations Report | [resource `arin_report_request`](../resources/report_request.md) | [report.go](../../internal/arin/report.go) | [Audit](reports-tickets.md) GET submits a report; modeled as a resource, not a read-only data source. |
 | Request Reassignment Report | [resource `arin_report_request`](../resources/report_request.md) | [report.go](../../internal/arin/report.go) | [Audit](reports-tickets.md) GET submits a report; modeled as a resource, not a read-only data source. |
 | Create and Delete ROAs | [resource `arin_roa`](../resources/roa.md), [resource `arin_rpki_bundle`](../resources/rpki_bundle.md) | [rpki.go](../../internal/arin/rpki.go) | [Audit](rpki-bundle.md) |
@@ -76,7 +76,7 @@ The method guide's header-authenticated phone-add example names the POC root whi
 - Organization creation is awaiting review. Successful live mutable CRUD, Admin association replacement and deletion still need that original disposable object.
 - Full Terraform NET-removal correspondence passed for both IP families, in addition to both client tests. All four message approvals were consumed. Native ticket submission returned an uncertain HTTP 500 after the POST-to-PUT correction; successful delivery needs reconciliation before another authorized attempt.
 - A successful live ticket closure requires a disposable RESOLVED ticket. Closed-ticket reads/no-op lifecycle coverage does not prove that transition.
-- WhoWas, Bulk Whois and invalid-POC retrieval need account access. Bulk/invalid-POC are separate download services, not missing Reg-RWS methods.
+- WhoWas, Bulk Whois and invalid-POC retrieval are deliberately excluded, not pending account-access work.
 - Delegated provisioning/publication uses separate signed protocols. Repository/path verification now passes OT&E, but authenticated signed lifecycles still need enrollment. Manifest migration and process-exit recovery have local regression coverage; native anchor rotation remains unverified.
 - Public Whois-RWS and RDAP are separate interfaces. Their dedicated audits remain authoritative. Whois delegation search is still ambiguous: the guide lists a descriptive delegation-name item without an unambiguous matrix key, while the documented exact lookup and relationship operations work. No generic search has been inferred from a server ignoring a predicate.
 

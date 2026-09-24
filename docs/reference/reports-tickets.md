@@ -40,7 +40,7 @@ correct report, remove only the pending receipt from state, and import that tick
 using its original report type and target. Refresh and destroy block while this
 recovery remains outstanding. Do not discard pending state to force a retry.
 
-Mock Terraform tests verify all four report types, import, request replacement,
+Mock Terraform tests verify both supported report types, import, request replacement,
 clean plans, expiry without resubmission, and destroy without server mutations.
 Recovery tests cover both a partial response and a completely lost response. They
 prove an ordinary second apply cannot duplicate the request even with
@@ -108,14 +108,12 @@ still unverified because these disposable reports close automatically.
 
 ## Client coverage
 
-`ReportRequest` supports four types:
+`ReportRequest` supports two types:
 
 | Type | Target | Endpoint |
 | --- | --- | --- |
 | `associations` | Empty | `/rest/report/associations` |
 | `reassignment` | Uppercase NET handle | `/rest/report/reassignment/NETHANDLE` |
-| `who_was_asn` | Canonical decimal ASN | `/rest/report/whoWas/asn/ASNUMBER` |
-| `who_was_net` | Canonical IPv4/IPv6 address, not CIDR | `/rest/report/whoWas/net/IPADDRESS` |
 
 `RequestReport` validates its input, submits once, and checks the returned ticket
 metadata and report type. It does not poll or resubmit. A decoded ticket number
@@ -214,10 +212,8 @@ With the current OT&E account:
 - Associations reports were accepted, completed and automatically closed.
 - Reassignment reports for an owned direct allocation were accepted, completed
   and automatically closed.
-- WhoWas ASN and NET requests returned HTTP 401, `E_AUTHENTICATION`, explicitly
-  stating that the account lacks WhoWas access. These are account-access limits,
-  not evidence that the endpoints are unavailable. Client paths and payloads have
-  mock coverage; native successful generation remains unverified.
+- Historical WhoWas probes returned access-denied responses. WhoWas request
+  support has since been removed from scope, including its live probes.
 - A successful RESOLVED-to-CLOSED write has not yet been observed live because the
   report tickets closed automatically. Existing unrelated tickets are not closed
   merely to exercise this operation.
@@ -237,10 +233,9 @@ expiry produces a read error rather than silently requesting another report.
 
 An uncertain receipt without a ticket number blocks resubmission. Inspect the
 account's ticket list and reconcile the result before editing or removing that
-receipt. Definite WhoWas authorization rejections are retained and reported as
-skipped live coverage. After account access is granted, only those definite
-rejection receipts may be removed to allow a new authorized attempt. Do not remove
-receipts for accepted or uncertain requests to force a retry.
+receipt. Do not remove receipts for accepted or uncertain requests to force a retry.
+Historical WhoWas rejection receipts may remain in the private cache; current tests
+do not read or replay them.
 
 ARIN documents report-ticket deletion 90 days after closure unless retention is
 selected in ARIN Online. The API does not expose that retention setting.
@@ -278,9 +273,7 @@ Full-ticket PUT preserves this field along with all other unchanged payload byte
 `MessagePayload.rnc` fields map to generated identity/date, subject, ordered text,
 category, embedded filename/base64 attachments and attachment references. Reference
 IDs select fixed authenticated endpoints; response URLs are never followed.
-These checks establish the associations report's attachment path. Successful
-WhoWas reports remain dependent on account access and are not inferred from this
-result.
+These checks establish the associations report's attachment path. WhoWas submission is deliberately excluded.
 
 ## Native message receipt import
 
@@ -320,7 +313,7 @@ supply a ticket-message import fixture. None of these checks resubmitted a reque
 
 ## Remaining work
 
-Native successful WhoWas generation requires account access. The ticket read
+WhoWas report requests are outside provider scope. The ticket read
 endpoint/payload audit and existing-message import, attachment state, refresh
 and state-only destroy are verified. New message submission and uncertain-write
 recovery still have mock coverage only. Full-ticket modification passes mocks;
