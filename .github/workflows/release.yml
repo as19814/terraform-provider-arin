@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    environment: release
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:24.04
+    timeout-minutes: 25
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential ca-certificates curl git unzip python3 gnupg gh
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Configure container Git workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Require a version tag on main
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          git merge-base --is-ancestor HEAD origin/main
+          python3 -c 'import os,re; assert re.fullmatch(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?", os.environ["RELEASE_TAG"]), "Invalid release tag"'
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e
+        with:
+          terraform_version: '1.15.5'
+          terraform_wrapper: false
+      - name: Test release signing
+        run: python3 -m unittest discover -s scripts -p "test_*.py"
+      - name: Scan Git history for secrets
+        run: |
+          for attempt in 1 2 3; do
+            if go install github.com/zricethezav/gitleaks/v8@v8.30.1; then break; fi
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+          gitleaks git . --log-opts="--all --full-history" --redact --ignore-gitleaks-allow
+      - name: Verify release
+        run: |
+          test -z "$(gofmt -l main.go internal tools)"
+          terraform fmt -check -recursive examples
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+          make check
+          make checkschema vuln
+          go generate ./...
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard docs examples)"
+      - name: Build release archives
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 scripts/package-provider.py "${RELEASE_TAG#v}"
+      - name: Sign and verify release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          PASSPHRASE: ${{ secrets.PASSPHRASE }}
+          GPG_FINGERPRINT: ${{ vars.GPG_FINGERPRINT }}
+        run: python3 scripts/sign-release.py "dist/${RELEASE_TAG#v}"
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          flags=()
+          if [[ "$RELEASE_TAG" == *-* ]]; then flags+=(--prerelease --latest=false); fi
+          gh release create "$RELEASE_TAG" --verify-tag --draft --title "$RELEASE_TAG" \
+            --notes-file RELEASE_NOTES.md "${flags[@]}" "dist/${RELEASE_TAG#v}/"*
+          gh release edit "$RELEASE_TAG" --draft=false

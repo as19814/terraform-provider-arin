@@ -21,7 +21,7 @@ jobs:
       - name: Install build dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends build-essential ca-certificates curl git unzip python3
+          apt-get install -y --no-install-recommends build-essential ca-certificates curl git unzip python3 gnupg
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
@@ -36,9 +36,15 @@ jobs:
         with:
           terraform_version: '1.15.5'
           terraform_wrapper: false
+      - name: Test release signing
+        run: python3 -m unittest discover -s scripts -p "test_*.py"
       - name: Scan Git history for secrets
         run: |
-          go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          for attempt in 1 2 3; do
+            if go install github.com/zricethezav/gitleaks/v8@v8.30.1; then break; fi
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            sleep 5
+          done
           gitleaks git . --log-opts="--all --full-history" --redact --ignore-gitleaks-allow
       - name: Verify candidate
         run: |

@@ -86,8 +86,8 @@ standard GitHub-hosted `ubuntu-24.04` runners, checks the candidate and uploads 
 It has no repository write permission and does not create tags or releases.
 For a private pilot, verify archive checksums and install through Terraform's
 filesystem mirror or an explicit development override. Public registry delivery,
-signing and cross-platform runtime tests remain
-separate release work.
+cross-platform runtime tests remain separate release work. Signed delivery is
+implemented by the [release workflow](publishing.md).
 
 
 ## Alpha compatibility and public readiness
@@ -112,7 +112,7 @@ was needed for secrets.
 
 ## Repository publication checklist
 
-The repository remains private until its owner authorizes publication. Main requires
+The repository is public. Main requires
 an up-to-date passing `test` check, a pull request, resolved conversations and linear
 history, including for administrators. Force pushes and deletion are blocked. Release
 tags matching `v*` cannot be rewritten or deleted. Independent review is not required
@@ -122,8 +122,8 @@ Secret scanning and push protection are enabled. Actions use read-only tokens an
 pinned action revisions. Standard GitHub-hosted Ubuntu runners keep contributor code
 off the organization's shared runners. No live ARIN credentials are needed by CI.
 
-GitHub rejects the following settings while this repository is private. Immediately
-after an authorized visibility change, run:
+External contributor approval and private vulnerability reporting were enabled
+after publication. To reapply and verify these settings, run:
 
 ```sh
 python3 scripts/enable-public-security.py
@@ -132,5 +132,5 @@ python3 scripts/enable-public-security.py
 This enables approval for all external contributors' workflow runs and private
 vulnerability reporting, then verifies both settings. It refuses to run on a private
 repository and never changes repository visibility. Source publication does not
-publish binaries or a Terraform Registry release; release signing remains a separate
-step.
+publish binaries or a Terraform Registry release. Follow the
+[publishing procedure](publishing.md) for signed releases.
