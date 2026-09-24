@@ -219,7 +219,7 @@ func TestOTETicketMessageImportLifecycle(t *testing.T) {
 
 func TestTicketMessageImportTransportGuard(t *testing.T) {
 	for _, request := range []struct{ method, url string }{
-		{"POST", "https://reg.ote.arin.net/rest/ticket/20260923-X1/message"},
+		{"PUT", "https://reg.ote.arin.net/rest/ticket/20260923-X1/message"},
 		{"GET", "https://reg.ote.arin.net/rest/report/associations"},
 		{"GET", "https://reg.arin.net/rest/ticket/20260923-X1/summary"},
 		{"GET", "https://reg.ote.arin.net/rest/ticket/20260923-X2/summary"},

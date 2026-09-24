@@ -62,7 +62,7 @@ func (r *ticketMessageResource) Schema(_ context.Context, _ resource.SchemaReque
 		"text":               schema.ListAttribute{Optional: true, Computed: true, Sensitive: true, ElementType: types.StringType, Default: listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})), PlanModifiers: []planmodifier.List{listplanmodifier.RequiresReplace()}, MarkdownDescription: "Ordered text lines. Changes send a new message."},
 		"attachments":        schema.MapAttribute{Optional: true, Computed: true, Sensitive: true, ElementType: types.StringType, Default: mapdefault.StaticValue(types.MapValueMust(types.StringType, map[string]attr.Value{})), PlanModifiers: []planmodifier.Map{mapplanmodifier.RequiresReplace()}, MarkdownDescription: "Filename to base64 content. Changes send a new message. The encoded request and each downloaded attachment are limited to 4 MiB."},
 		"created_date":       schema.StringAttribute{Computed: true, MarkdownDescription: "Server message creation date."},
-		"pending_submission": schema.BoolAttribute{Computed: true, MarkdownDescription: "An uncertain POST requires reconciliation and import before retries."},
+		"pending_submission": schema.BoolAttribute{Computed: true, MarkdownDescription: "An uncertain PUT requires reconciliation and import before retries."},
 		"message_available":  schema.BoolAttribute{Computed: true, MarkdownDescription: "False after a previously confirmed message returns 404. The receipt remains and is not resubmitted."},
 	}}
 }
@@ -167,7 +167,7 @@ func (r *ticketMessageResource) Create(ctx context.Context, req resource.CreateR
 	m.Pending = types.BoolValue(!receipt.Confirmed)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
 	if err != nil {
-		resp.Diagnostics.AddError("Message submission requires reconciliation", err.Error()+". Preserve this receipt. Identify the message in ARIN, back up state, remove only this pending receipt, and import TICKET/MESSAGE. Do not resubmit an uncertain POST.")
+		resp.Diagnostics.AddError("Message submission requires reconciliation", err.Error()+". Preserve this receipt. Identify the message in ARIN, back up state, remove only this pending receipt, and import TICKET/MESSAGE. Do not resubmit an uncertain PUT.")
 	}
 }
 func (r *ticketMessageResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {

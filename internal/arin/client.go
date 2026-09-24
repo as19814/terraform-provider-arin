@@ -221,8 +221,9 @@ func (c *Client) doRequest(ctx context.Context, method, origin, path, accept str
 	}
 	if !replayable {
 		// Do not use http.NoBody or a rewindable bytes.Reader here. Both make
-		// GET eligible for transport retries. The body emits zero wire bytes.
-		req.Body = io.NopCloser(bytes.NewReader(nil))
+		// GET eligible for transport retries. Preserve mutation payloads while
+		// preventing an append from being replayed after a lost response.
+		req.Body = io.NopCloser(bytes.NewReader(payload))
 		req.GetBody = nil
 	}
 	if authenticated {

@@ -24,8 +24,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// This approval has not been granted. Neither ordinary OT&E opt-ins nor the
-// consumed NET-removal approvals authorize this separate ticket append.
+// The approved PUT was attempted once and returned an uncertain HTTP 500.
+// Approval is consumed. Preserve intent evidence and never automatically resend.
 const oteTicketAppendApproved = false
 const oteTicketAppendSubject = "Terraform provider OT&E ticket-message test"
 const oteTicketAppendText = "Verifying ticket-message submission for our disposable sandbox organization request. No additional registry changes are requested."
@@ -74,7 +74,7 @@ func (g *ticketAppendTransport) RoundTrip(req *http.Request) (*http.Response, er
 	if req.Method == http.MethodGet {
 		return g.reads.RoundTrip(req)
 	}
-	if g.attempted || req.Method != http.MethodPost || req.URL.Scheme != "https" || req.URL.Host != "reg.ote.arin.net" || req.URL.User != nil || req.URL.RawQuery != "" || req.URL.Path != "/rest/ticket/"+g.number+"/message" {
+	if g.attempted || req.Method != http.MethodPut || req.URL.Scheme != "https" || req.URL.Host != "reg.ote.arin.net" || req.URL.User != nil || req.URL.RawQuery != "" || req.URL.Path != "/rest/ticket/"+g.number+"/message" {
 		return nil, errors.New("only one exact approved sandbox ticket append is permitted")
 	}
 	raw, err := io.ReadAll(io.LimitReader(req.Body, int64(len(oteTicketAppendXML)+1)))
@@ -156,7 +156,7 @@ func TestOTETicketMessageSubmitLifecycle(t *testing.T) {
 		t.Fatal("requires the existing ticket-only disposable organization receipt")
 	}
 	number := receipt.Result.TicketNumber
-	path := filepath.Join(dir, fmt.Sprintf("ote-ticket-append-20260923-%x.json", hash[:8]))
+	path := filepath.Join(dir, fmt.Sprintf("ote-ticket-append-put-20260923-%x.json", hash[:8]))
 	for _, p := range []string{path, path + ".confirmed.json"} {
 		if _, err := os.Lstat(p); !os.IsNotExist(err) {
 			t.Fatal("prior ticket append evidence blocks another send")
@@ -242,7 +242,7 @@ func TestTicketAppendReplayGuard(t *testing.T) {
 			if mode == "changed" {
 				body = strings.Replace(body, "evidence.txt", "other.txt", 1)
 			}
-			req, _ := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(body))
+			req, _ := http.NewRequest(http.MethodPut, endpoint, strings.NewReader(body))
 			response, err := guard.RoundTrip(req)
 			if response != nil {
 				response.Body.Close()
@@ -256,7 +256,7 @@ func TestTicketAppendReplayGuard(t *testing.T) {
 			}
 			if mode == "valid" || mode == "lost" {
 				fresh := &ticketAppendTransport{number: guard.number, path: path, transport: wire}
-				retry, _ := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(body))
+				retry, _ := http.NewRequest(http.MethodPut, endpoint, strings.NewReader(body))
 				if _, err := fresh.RoundTrip(retry); err == nil || calls != 1 {
 					t.Fatal("request replayed after reopening")
 				}

@@ -25,7 +25,7 @@ type TicketMessage struct {
 
 // TicketMessageSubmission preserves an attempted append even when its response
 // is lost. A nil Message means the caller must reconcile the ticket's messages;
-// it is not permission to repeat POST. Confirmed requires a successful fresh GET.
+// it is not permission to repeat PUT. Confirmed requires a successful fresh GET.
 type TicketMessageSubmission struct {
 	TicketNumber string
 	Message      *TicketMessage
@@ -130,7 +130,7 @@ func (c *Client) AddTicketMessage(ctx context.Context, number string, message Re
 		return nil, errors.New("messages cannot be added to a closed ticket")
 	}
 	receipt := &TicketMessageSubmission{TicketNumber: number}
-	response, err := c.request(ctx, http.MethodPost, c.baseURL, "/rest/ticket/"+url.PathEscape(number)+"/message", "application/xml", true, body)
+	response, err := c.doRequest(ctx, http.MethodPut, c.baseURL, "/rest/ticket/"+url.PathEscape(number)+"/message", "application/xml", true, body, false)
 	if err != nil {
 		return receipt, err
 	}

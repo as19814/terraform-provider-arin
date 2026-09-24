@@ -136,15 +136,15 @@ client and Terraform receipt resource are implemented as described below.
 
 `AddTicketMessage` validates the ticket identity and correspondence before any
 request, reads current ticket status, and rejects CLOSED tickets. It sends one
-POST to `/rest/ticket/TICKETNUMBER/message` with numbered text lines, a NONE or
+PUT to `/rest/ticket/TICKETNUMBER/message` with numbered text lines, a NONE or
 JUSTIFICATION category and optional base64 attachments. Generated IDs and dates
 are omitted. The encoded request is limited to 4 MiB, matching the existing
-client limit. No automatic POST retries or redirects are allowed.
+client limit. No automatic PUT retries or redirects are allowed.
 
 A returned `TicketMessageSubmission` records that submission was attempted even
 when the response is lost or rejected. A trustworthy message ID survives errors
 in later response fields. Callers must persist intent before invoking the client
-and reconcile uncertain results, never repeat POST just because an error occurred.
+and reconcile uncertain results, never repeat PUT just because an error occurred.
 The client confirms success through a fresh GET of the exact returned ID and
 checks subject, text, category and attachment filenames. Attachment references
 are exposed without following response URLs; content retrieval uses the existing
@@ -163,7 +163,7 @@ the documented methods.
 ordered text, category and filename-to-base64 attachment map. Content fields are
 sensitive. Changing any submission input replaces the resource and sends another
 message. Refresh only reads the existing message. An expired message sets
-`message_available=false` and retains the receipt without another POST. Destroy
+`message_available=false` and retains the receipt without another PUT. Destroy
 forgets local management and leaves the correspondence in ARIN.
 
 Import uses `TICKET/MESSAGE` and reads the message plus each attachment through
@@ -177,16 +177,16 @@ message identity, with `pending_submission=true`. Refresh and destroy reject thi
 state, including when Terraform taints a failed creation and plans replacement.
 Back up state, identify the accepted message in ARIN, remove only the pending
 receipt with `terraform state rm`, then import `TICKET/MESSAGE`. Neither text
-matching nor an empty result is used to guess that a POST should be retried.
+matching nor an empty result is used to guess that a PUT should be retried.
 Definite HTTP rejection responses leave no pending receipt. As with other
 Terraform resources, a process crash before the provider returns state requires
 external reconciliation; the resource cannot guarantee durable state before its
-POST. Preserve external records of message intent for that failure mode.
+PUT. Preserve external records of message intent for that failure mode.
 
 Fake-server Terraform tests verify create, attachment import, clean plans, input
 replacement, expiry and state-only destroy. Partial and lost responses are tested
 through failed creation, a blocked second apply with `create_before_destroy`,
-manual import recovery and clean plans, with exactly one POST. State tests also
+manual import recovery and clean plans, with exactly one PUT. State tests also
 verify pending read/delete guards, returned-ID preservation and definite rejection
 without pending state. No live correspondence was sent for these tests.
 
@@ -299,7 +299,7 @@ even though creation requires a non-closed ticket.
 
 Mock Terraform coverage follows the same import-first flow with literal `${...}`
 and `%{...}` text and Unicode to verify configuration escaping without template
-evaluation. Transport guard tests reject POSTs, report-generation GETs, production,
+evaluation. Transport guard tests reject PUTs, report-generation GETs, production,
 unrelated tickets, query authentication and path traversal before dispatch.
 Account content stays in temporary test state and is neither printed nor committed.
 
@@ -331,13 +331,13 @@ References: [ARIN Reg-RWS methods](https://www.arin.net/resources/manage/regrws/
 and [payloads](https://www.arin.net/resources/manage/regrws/payloads/), with local
 copies in [the API documentation index](arin-api/README.md).
 
-## Prepared native ticket-message submission
+## Guarded native ticket-message submission
 
 `TestOTETicketMessageSubmitLifecycle` is disabled by the code-level
 `oteTicketAppendApproved = false` gate. It is excluded from `make testote` and
 requires its own `ARIN_OTE_TICKET_APPEND_TESTS=1` opt-in in addition to the existing
-OT&E settings. No approval for this separate correspondence has been received.
-Previously approved NET-removal messages do not authorize it.
+OT&E settings. The user separately approved this one message. The attempt and uncertain outcome
+are recorded below; the approval is now consumed.
 
 The prepared target is the existing ticket-only disposable organization creation
 receipt for FT-684, which must still be `PENDING_REVIEW`. The exact proposed message
@@ -346,12 +346,12 @@ is subject `Terraform provider OT&E ticket-message test`, text
 category `NONE`, with `evidence.txt` containing the seven bytes `evidence`.
 The message will remain on the ARIN ticket after the test.
 
-The transport restricts reads to the saved sandbox ticket and permits one POST
+The transport restricts reads to the saved sandbox ticket and permits one PUT
 with the exact serialized payload. Before dispatch it exclusively creates a
 mode-0600 intent receipt and syncs both file and directory. Existing evidence,
 changed content, wrong origin/ticket/query and uncertain results prevent replay,
 including after reopening the guard. Intent receipts use the private cache prefix
-`ote-ticket-append-20260923-<org-hash>.json`; successful state-only destruction
+`ote-ticket-append-put-20260923-<org-hash>.json`; successful state-only destruction
 retains a separate `.confirmed.json` receipt with the returned message identity.
 Do not remove these receipts. After an authorized send, disable the code gate
 again, including if the response is lost.
@@ -359,5 +359,29 @@ again, including if the response is lost.
 The identical Terraform test passes against the fake server: submission, receipt
 state, import with attachment retrieval and state verification, refresh, clean
 plans and state-only destroy. It asserts exactly one submission and a retained
-server message. Native submission remains unverified pending separate approval
-and execution. No new correspondence was sent while preparing these tests.
+server message. Native submission was attempted as recorded below; successful acceptance remains
+unverified.
+
+### Authorized submission result and method correction
+
+The authorized native test exposed an implementation error: the client used POST,
+but the documented Add Message method is PUT. OT&E rejected POST with HTTP 405
+`E_METHOD_NOT_ALLOWED`. A fresh full-ticket read found no matching subject.
+The client, mocks and guard were corrected to PUT, and the request body was made
+non-rewindable without dropping its XML payload. Focused tests verify the method,
+wire payload, non-rewindable body and existing uncertain-submission behavior.
+
+The same approved message was then attempted once with PUT. OT&E returned HTTP
+500 `E_UNSPECIFIED`. Terraform recorded an uncertain receipt and refused state-only
+destroy pending reconciliation. A fresh full-ticket read returned one existing
+message and no matching approved subject; the ticket remained `PENDING_REVIEW`.
+A later read again found no matching subject, and that observation is retained
+privately alongside the PUT intent. Absence from these reads does not prove the
+append was never processed. No further
+send is authorized or attempted, and the code gate is disabled again.
+
+Private intent evidence from both attempts is retained: the original
+`ote-ticket-append-20260923-*` receipt for the definitive 405 rejection and the
+`ote-ticket-append-put-20260923-*` receipt for the uncertain PUT. No confirmation
+receipt was created. Further work requires read-only reconciliation or ARIN
+confirmation, not an automatic retry.

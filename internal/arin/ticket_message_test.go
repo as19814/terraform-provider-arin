@@ -13,12 +13,16 @@ import (
 	"testing"
 )
 
+type ticketMessageWireFunc func(*http.Request) (*http.Response, error)
+
+func (f ticketMessageWireFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
 func ticketMessageXML(id string) string {
 	return `<message xmlns="` + registrationNamespace + `" xmlns:m="` + messageNamespace + `"><m:messageId>` + id + `</m:messageId><m:createdDate>2026-09-23T00:00:00Z</m:createdDate><subject>Test &amp; evidence</subject><text><line number="1">First &lt;line&gt;</line><line number="2">Second line</line></text><category>JUSTIFICATION</category><attachmentReferences><attachmentReference><attachmentId>A1</attachmentId><attachmentFilename>evidence.txt</attachmentFilename></attachmentReference></attachmentReferences></message>`
 }
 
 func TestAddTicketMessage(t *testing.T) {
-	for _, mode := range []string{"success", "closed", "preflight_forbidden", "post_forbidden", "lost_response", "invalid_identity", "partial_response", "verification_forbidden", "wrong_read_identity", "changed_content", "redirect"} {
+	for _, mode := range []string{"success", "closed", "preflight_forbidden", "append_forbidden", "lost_response", "invalid_identity", "partial_response", "verification_forbidden", "wrong_read_identity", "changed_content", "redirect"} {
 		t.Run(mode, func(t *testing.T) {
 			var writes, reads atomic.Int32
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +40,7 @@ func TestAddTicketMessage(t *testing.T) {
 						status = "CLOSED"
 					}
 					fmt.Fprint(w, reportTicketXML("20260923-X1", "QUESTION", status))
-				case r.Method == "POST" && r.URL.Path == "/rest/ticket/20260923-X1/message":
+				case r.Method == "PUT" && r.URL.Path == "/rest/ticket/20260923-X1/message":
 					writes.Add(1)
 					raw, err := io.ReadAll(r.Body)
 					if err != nil {
@@ -63,7 +67,7 @@ func TestAddTicketMessage(t *testing.T) {
 					if strings.Contains(string(raw), "messageId") || strings.Contains(string(raw), "createdDate") {
 						t.Error("generated fields submitted")
 					}
-					if mode == "post_forbidden" {
+					if mode == "append_forbidden" {
 						w.WriteHeader(403)
 						return
 					}
@@ -106,7 +110,12 @@ func TestAddTicketMessage(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			c, _ := New(Config{APIKey: "test-key", BaseURL: server.URL})
+			c, _ := New(Config{APIKey: "test-key", BaseURL: server.URL, HTTPClient: &http.Client{Transport: ticketMessageWireFunc(func(req *http.Request) (*http.Response, error) {
+				if req.Method == http.MethodPut && (req.GetBody != nil || req.Body == nil || req.Body == http.NoBody) {
+					t.Error("ticket append must have a non-rewindable payload")
+				}
+				return http.DefaultTransport.RoundTrip(req)
+			})}})
 			receipt, err := c.AddTicketMessage(context.Background(), "20260923-X1", RegistrationMessage{Subject: "Test & evidence", Text: []string{"First <line>", "Second line"}, Category: "JUSTIFICATION", Attachments: []RegistrationAttachment{{Filename: "evidence.txt", Data: []byte("evidence")}}})
 			if mode == "closed" || mode == "preflight_forbidden" {
 				if err == nil || writes.Load() != 0 || receipt != nil {

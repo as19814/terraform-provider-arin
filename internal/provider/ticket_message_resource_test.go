@@ -41,7 +41,7 @@ func setupTicketMessageFake(t *testing.T) *ticketMessageFake {
 			return
 		}
 		base := "/rest/ticket/20260923-X1/message"
-		if r.Method == "POST" && r.URL.Path == base {
+		if r.Method == "PUT" && r.URL.Path == base {
 			if f.reject {
 				w.WriteHeader(403)
 				return

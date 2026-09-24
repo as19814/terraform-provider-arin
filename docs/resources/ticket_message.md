@@ -46,7 +46,7 @@ resource "arin_ticket_message" "example" {
 - `id` (String) TICKET/MESSAGE, or a temporary recovery identity.
 - `message_available` (Boolean) False after a previously confirmed message returns 404. The receipt remains and is not resubmitted.
 - `message_id` (String) Generated message ID within the ticket.
-- `pending_submission` (Boolean) An uncertain POST requires reconciliation and import before retries.
+- `pending_submission` (Boolean) An uncertain PUT requires reconciliation and import before retries.
 
 ## Import
 
