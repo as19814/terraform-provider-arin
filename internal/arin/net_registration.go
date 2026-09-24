@@ -219,7 +219,14 @@ func decodeRegisteredNetNode(root *xmlNode, handle string) (*RegisteredNet, erro
 	str := func(k string) string { s, _ := v[k].(string); return s }
 	n := &RegisteredNet{Handle: str("handle"), Name: str("name"), ParentNetHandle: str("parent_net_handle"), OrgHandle: str("org_handle"), CustomerHandle: str("customer_handle"), RegistrationDate: str("registration_date")}
 	version, _ := v["ip_version"].(int64)
-	n.Version = int(version)
+	switch version {
+	case 4:
+		n.Version = 4
+	case 6:
+		n.Version = 6
+	default:
+		return nil, errors.New("ARIN returned an invalid NET address family")
+	}
 	if !handlePattern.MatchString(n.Handle) || (handle != "" && n.Handle != handle) || n.Name == "" || n.RegistrationDate == "" || (n.Version != 4 && n.Version != 6) || (n.OrgHandle == "") == (n.CustomerHandle == "") {
 		return nil, errors.New("ARIN returned an incomplete or mismatched NET")
 	}
@@ -240,8 +247,8 @@ func decodeRegisteredNetNode(root *xmlNode, handle string) (*RegisteredNet, erro
 	for _, item := range v["net_blocks"].([]any) {
 		b := item.(map[string]any)
 		number, ok := b["cidr_length"].(int64)
-		if !ok {
-			return nil, errors.New("missing NET block CIDR length")
+		if !ok || number < 0 || number > 128 {
+			return nil, errors.New("missing or invalid NET block CIDR length")
 		}
 		block := RegisteredNetBlock{Type: netString(b, "type"), Description: netString(b, "description"), StartAddress: netString(b, "start_address"), EndAddress: netString(b, "end_address"), CIDRLength: int(number)}
 		start, e1 := netip.ParseAddr(block.StartAddress)

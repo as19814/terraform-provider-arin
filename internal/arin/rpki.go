@@ -317,7 +317,7 @@ func decodeROA(n *xmlNode) (*ROA, error) {
 		b := item.(map[string]any)
 		ip, err := netip.ParseAddr(netString(b, "start_address"))
 		bits, ok := b["cidr_length"].(int64)
-		if err != nil || ip.Is4In6() || !ok || bits < 0 || bits > int64(ip.BitLen()) {
+		if err != nil || ip.Is4In6() || !ok || bits < 0 || bits > 128 || bits > int64(ip.BitLen()) {
 			return nil, errors.New("ARIN returned an invalid ROA resource")
 		}
 		prefix := netip.PrefixFrom(ip, int(bits))

@@ -200,7 +200,7 @@ func decodeWhoisRecord(root *xmlNode, spec ReadSpec) (map[string]any, error) {
 			first, _ := netip.ParseAddr(block["start_address"].(string))
 			last, _ := netip.ParseAddr(block["end_address"].(string))
 			bits := block["cidr_length"].(int64)
-			if bits < 0 || bits > int64(start.BitLen()) || first.BitLen() != start.BitLen() || last.BitLen() != start.BitLen() || first.Compare(start) < 0 || last.Compare(end) > 0 || first.Compare(last) > 0 {
+			if bits < 0 || bits > 128 || bits > int64(start.BitLen()) || first.BitLen() != start.BitLen() || last.BitLen() != start.BitLen() || first.Compare(start) < 0 || last.Compare(end) > 0 || first.Compare(last) > 0 {
 				return nil, errors.New("ARIN returned an invalid Whois network block")
 			}
 			prefix := netip.PrefixFrom(first, int(bits))

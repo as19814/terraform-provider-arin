@@ -133,6 +133,7 @@ func TestWhoisInvalidTypedFields(t *testing.T) {
 		{"net", "<version>4", "<version>6"},
 		{"net", "<cidrLength>24", "<cidrLength>25"},
 		{"net", "<cidrLength>24", "<cidrLength>129"},
+		{"net", "<cidrLength>24", "<cidrLength>4294967320"},
 		{"delegation", "<keyTag>12345", "<keyTag>65536"},
 		{"delegation", "<digest>abcd", "<digest>xyz"},
 	} {
