@@ -69,6 +69,9 @@ func TestRegisteredNetRoundTrip(t *testing.T) {
 		strings.Replace(string(b), "<type>", "<extension>new</extension><type>", 1),
 		strings.Replace(string(b), "192.0.2.7", "192.0.2.8", 1),
 		strings.Replace(string(b), "<version>4</version>", "", 1),
+		strings.Replace(string(b), "<version>4</version>", "<version>4294967300</version>", 1),
+		strings.Replace(string(b), "<cidrLength>29</cidrLength>", "<cidrLength>4294967325</cidrLength>", 1),
+		strings.Replace(string(b), "<cidrLength>29</cidrLength>", "<cidrLength>-1</cidrLength>", 1),
 	} {
 		if _, err := decodeRegisteredNet([]byte(body), n.Handle); err == nil {
 			t.Fatal("accepted incomplete network")

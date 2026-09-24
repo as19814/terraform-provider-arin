@@ -1,18 +1,21 @@
-name: Release candidate
+name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Candidate version, for example 0.1.0-rc.1'
-        required: true
-        type: string
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  package:
+  publish:
+    environment: release
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:24.04
@@ -21,13 +24,19 @@ jobs:
       - name: Install build dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends build-essential ca-certificates curl git unzip python3 gnupg
+          apt-get install -y --no-install-recommends build-essential ca-certificates curl git unzip python3 gnupg gh
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Configure container Git workspace
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Require a version tag on main
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          git merge-base --is-ancestor HEAD origin/main
+          python3 scripts/release_common.py "${RELEASE_TAG#v}"
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
           go-version-file: go.mod
@@ -46,7 +55,7 @@ jobs:
             sleep 5
           done
           gitleaks git . --log-opts="--all --full-history" --redact --ignore-gitleaks-allow
-      - name: Verify candidate
+      - name: Verify release
         run: |
           test -z "$(gofmt -l main.go internal tools)"
           terraform fmt -check -recursive examples
@@ -57,13 +66,26 @@ jobs:
           go generate ./...
           git diff --exit-code
           test -z "$(git ls-files --others --exclude-standard docs examples)"
-      - name: Build candidate archives
+      - name: Build release archives
         env:
-          CANDIDATE_VERSION: ${{ inputs.version }}
-        run: python3 scripts/package-provider.py "$CANDIDATE_VERSION"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: provider-candidate
-          path: dist/
-          if-no-files-found: error
-          retention-days: 14
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 scripts/package-provider.py "${RELEASE_TAG#v}"
+      - name: Sign and verify release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          PASSPHRASE: ${{ secrets.PASSPHRASE }}
+          GPG_FINGERPRINT: ${{ vars.GPG_FINGERPRINT }}
+        run: python3 scripts/sign-release.py "dist/${RELEASE_TAG#v}"
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          flags=()
+          if [[ "$RELEASE_TAG" == *-* ]]; then flags+=(--prerelease --latest=false); fi
+          gh release create "$RELEASE_TAG" --verify-tag --draft --title "$RELEASE_TAG" \
+            --notes-file RELEASE_NOTES.md "${flags[@]}" "dist/${RELEASE_TAG#v}/"*
+          gh release edit "$RELEASE_TAG" --draft=false

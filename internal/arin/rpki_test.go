@@ -88,7 +88,7 @@ func TestRPKIReadStrictness(t *testing.T) {
 	if err != nil || roa.Resources[0].MaxLength != nil {
 		t.Fatal("ROA read failed")
 	}
-	for _, bad := range []string{strings.Replace(testROA, "</roaSpec>", "<unknown/></roaSpec>", 1), strings.Replace(testROA, "192.0.2.255", "192.0.3.255", 1), strings.Replace(testROA, "<ipVersion>4", "<ipVersion>6", 1), strings.Replace(testROA, "</roaSpec>", "<asNumber>2</asNumber></roaSpec>", 1)} {
+	for _, bad := range []string{strings.Replace(testROA, "<cidrLength>24", "<cidrLength>4294967320", 1), strings.Replace(testROA, "</roaSpec>", "<unknown/></roaSpec>", 1), strings.Replace(testROA, "192.0.2.255", "192.0.3.255", 1), strings.Replace(testROA, "<ipVersion>4", "<ipVersion>6", 1), strings.Replace(testROA, "</roaSpec>", "<asNumber>2</asNumber></roaSpec>", 1)} {
 		n, _ := parseXML([]byte(bad))
 		if _, err := decodeROA(n); err == nil {
 			t.Fatal("invalid ROA accepted")

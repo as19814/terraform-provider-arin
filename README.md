@@ -2,9 +2,13 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 75 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-four managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, delegated publication bundles and resource certificates, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md), with an [operation-by-operation Reg-RWS map](docs/reference/reg-rws-coverage.md). **Alpha:** APIs and Terraform state compatibility may change before 1.0. The provider has not been published to the Terraform Registry. Original project code is licensed under [MPL-2.0](LICENSE); see [NOTICE](NOTICE) for third-party material. See the [release readiness review](docs/reference/release-readiness.md) for tested scope, remaining interoperability gaps and candidate packaging.
+The provider includes 75 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-four managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, delegated publication bundles and resource certificates, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md), with an [operation-by-operation Reg-RWS map](docs/reference/reg-rws-coverage.md). **Alpha:** APIs and Terraform state compatibility may change before 1.0. Signed versions are distributed through [GitHub Releases](https://github.com/as19814/terraform-provider-arin/releases); the Terraform Registry address is `as19814/arin`. Original project code is licensed under [MPL-2.0](LICENSE); see [NOTICE](NOTICE) for third-party material. See the [release readiness review](docs/reference/release-readiness.md) for tested scope, remaining interoperability gaps and candidate packaging.
 
 ## Configuration
+
+Once the selected release appears in the Registry, run `terraform init` to install
+it. Prereleases require an exact version constraint. For a local development build,
+use the development override described below.
 
 For authenticated registration, IRR, RPKI, and ticket reads, set `ARIN_API_KEY` in your shell. The provider sends it as an authorization header, and your account must have authority over the requested records. Public network/ASN discovery and contact references use RDAP without sending an API key and work without credentials. Public Whois-RWS record lookups also require no API key.
 
@@ -12,7 +16,8 @@ For authenticated registration, IRR, RPKI, and ticket reads, set `ARIN_API_KEY` 
 terraform {
   required_providers {
     arin = {
-      source = "as19814/arin"
+      source  = "as19814/arin"
+      version = "0.1.0-alpha.1"
     }
   }
 }
@@ -49,7 +54,7 @@ make check
 make generate
 ```
 
-To use the unpublished binary, create `.terraformrc.local` in this checkout with an absolute path to its `bin` directory:
+To use a locally built binary, create `.terraformrc.local` in this checkout with an absolute path to its `bin` directory:
 
 ```hcl
 provider_installation {
@@ -60,7 +65,7 @@ provider_installation {
 }
 ```
 
-Set `TF_CLI_CONFIG_FILE` to the absolute path of this file, then run `terraform plan` in a directory containing your configuration. With a development override, skip `terraform init` for a configuration that only uses this provider; it is not available from the public registry. Configurations needing other providers or modules still need those dependencies initialized separately.
+Set `TF_CLI_CONFIG_FILE` to the absolute path of this file, then run `terraform plan` in a directory containing your configuration. With a development override, skip `terraform init` for a configuration that only uses this provider; Terraform uses the local executable directly. Configurations needing other providers or modules still need those dependencies initialized separately.
 
 Rebuild with `make build` after source changes. Use `bin/terraform-provider-arin -debug` when attaching a Go debugger.
 
@@ -422,3 +427,5 @@ to preserve existing issuer rollback watermarks before switching configuration.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for checks and the contribution process.
 Report vulnerabilities privately using [SECURITY.md](SECURITY.md).
+
+Maintainers: see the [signed release procedure](docs/reference/publishing.md).

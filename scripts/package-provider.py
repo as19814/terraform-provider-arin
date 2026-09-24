@@ -5,22 +5,25 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
 import tempfile
 import zipfile
+
+from release_common import PLATFORMS, validate_version
 
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('version', help='Semantic version, for example 0.1.0-rc.1')
 args = parser.parse_args()
-if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?', args.version):
-    raise SystemExit('Invalid version')
+try:
+    validate_version(args.version)
+except ValueError as error:
+    parser.error(str(error))
 out = ROOT / 'dist' / args.version
 out.mkdir(parents=True, exist_ok=False)
 try:
     with tempfile.TemporaryDirectory(prefix='arin-release-') as directory:
-        for system, arch in [('linux', 'amd64'), ('linux', 'arm64'), ('darwin', 'amd64'), ('darwin', 'arm64'), ('windows', 'amd64')]:
+        for system, arch in PLATFORMS:
             binary_name = 'terraform-provider-arin_v'+args.version+('_x6.exe' if system == 'windows' else '_x6')
             binary = Path(directory) / binary_name
             env = dict(os.environ, CGO_ENABLED='0', GOOS=system, GOARCH=arch)
