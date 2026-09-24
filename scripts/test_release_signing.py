@@ -6,6 +6,9 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
+
+from release_common import PLATFORMS, validate_version
 
 SIGNER = Path(__file__).with_name('sign-release.py')
 
@@ -40,7 +43,15 @@ class ReleaseSigningTests(unittest.TestCase):
         self.manifest = self.root / 'terraform-provider-arin_0.0.0-test_manifest.json'
         self.manifest.write_text('{"version":1,"metadata":{"protocol_versions":["6.0"]}}\n')
         self.sums = self.root / 'terraform-provider-arin_0.0.0-test_SHA256SUMS'
-        self.sums.write_text(hashlib.sha256(self.manifest.read_bytes()).hexdigest() + '  ' + self.manifest.name + '\n')
+        for system, arch in PLATFORMS:
+            path = self.root / f'terraform-provider-arin_0.0.0-test_{system}_{arch}.zip'
+            with zipfile.ZipFile(path, 'w') as archive:
+                archive.writestr('disposable-test-binary', b'test fixture')
+        self.write_checksums()
+
+    def write_checksums(self):
+        self.sums.write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name + '\n'
+                                    for p in sorted(self.root.iterdir()) if p != self.sums))
 
     def sign(self, env=None):
         return subprocess.run([sys.executable, str(SIGNER), str(self.root)],
@@ -69,6 +80,19 @@ class ReleaseSigningTests(unittest.TestCase):
                 self.assertNotEqual(self.sign().returncode, 0)
                 p.unlink()
 
+    def test_missing_platform_archive(self):
+        next(self.root.glob('*linux_amd64.zip')).unlink()
+        self.write_checksums()
+        self.assertNotEqual(self.sign().returncode, 0)
+        self.assertFalse(Path(str(self.sums) + '.sig').exists())
+
+    def test_manifest_without_archives(self):
+        for path in self.root.glob('*.zip'):
+            path.unlink()
+        self.write_checksums()
+        self.assertNotEqual(self.sign().returncode, 0)
+        self.assertFalse(Path(str(self.sums) + '.sig').exists())
+
     def test_wrong_fingerprint(self):
         env = dict(self.signenv, GPG_FINGERPRINT='0' * 40)
         self.assertNotEqual(self.sign(env).returncode, 0)
@@ -77,6 +101,20 @@ class ReleaseSigningTests(unittest.TestCase):
     def test_parent_path_in_manifest(self):
         self.sums.write_text('0' * 64 + '  ../outside\n')
         self.assertNotEqual(self.sign().returncode, 0)
+
+
+class ReleaseVersionTests(unittest.TestCase):
+    def test_valid_versions(self):
+        for version in ('0.1.0', '0.1.0-alpha.1', '1.2.3-0', '1.2.3-01a', '1.2.3-alpha-01'):
+            with self.subTest(version=version):
+                self.assertEqual(validate_version(version), version)
+
+    def test_invalid_versions(self):
+        for version in ('1.2.3-01', '1.2.3-alpha.01', '01.2.3', 'v1.2.3', '1.2.3-',
+                        '1.2.3-alpha..1', '../1.2.3', '1.2.3\n'):
+            with self.subTest(version=version):
+                with self.assertRaises(ValueError):
+                    validate_version(version)
 
 
 if __name__ == '__main__':

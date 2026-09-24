@@ -8,6 +8,8 @@ import re
 import subprocess
 import tempfile
 
+from release_common import PLATFORMS, validate_version
+
 parser = argparse.ArgumentParser()
 parser.add_argument('directory', type=Path)
 args = parser.parse_args()
@@ -16,6 +18,9 @@ sums = list(root.glob('terraform-provider-arin_*_SHA256SUMS'))
 if len(sums) != 1 or (root / 'INCOMPLETE').exists():
     raise SystemExit('Expected one complete release checksum manifest.')
 sums = sums[0]
+version = validate_version(sums.name.removeprefix('terraform-provider-arin_').removesuffix('_SHA256SUMS'))
+expected = {f'terraform-provider-arin_{version}_{system}_{arch}.zip' for system, arch in PLATFORMS}
+expected.add(f'terraform-provider-arin_{version}_manifest.json')
 files = set()
 for line in sums.read_text().splitlines():
     digest, name = line.split('  ', 1)
@@ -25,8 +30,8 @@ for line in sums.read_text().splitlines():
     if path.is_symlink() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
         raise SystemExit('Release checksum mismatch: ' + name)
     files.add(name)
-if not files or not any(name.endswith('_manifest.json') for name in files):
-    raise SystemExit('Missing release manifest.')
+if files != expected:
+    raise SystemExit('Expected all five platform archives and the versioned release manifest.')
 if {p.name for p in root.iterdir()} != files | {sums.name}:
     raise SystemExit('Unexpected files in unsigned release directory.')
 fingerprint = os.environ['GPG_FINGERPRINT'].upper()

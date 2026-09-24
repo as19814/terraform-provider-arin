@@ -36,7 +36,7 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           git merge-base --is-ancestor HEAD origin/main
-          python3 -c 'import os,re; assert re.fullmatch(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?", os.environ["RELEASE_TAG"]), "Invalid release tag"'
+          python3 scripts/release_common.py "${RELEASE_TAG#v}"
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
           go-version-file: go.mod
