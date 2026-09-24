@@ -2,7 +2,7 @@
 
 A Terraform provider for ARIN, developed by AS19814 using the Terraform Plugin Framework and protocol version 6.
 
-The provider includes 75 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-four managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, delegated publication bundles and resource certificates, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md), with an [operation-by-operation Reg-RWS map](docs/reference/reg-rws-coverage.md). The repository is private and the provider has not been published to a registry. See the [release readiness review](docs/reference/release-readiness.md) for tested scope, remaining interoperability gaps and candidate packaging.
+The provider includes 75 read-only data sources spanning registration records, network discovery, DNS delegations, contacts, customers, IRR, hosted RPKI, delegated publication and provisioning inventories, ASN registrations, and existing tickets. See the [complete catalog](docs/reference/data-sources.md). Twenty-four managed resources cover reverse DNS delegations and individual nameservers, existing network metadata, downstream network registrations, customer and POC records, individual POC emails and phones, organizations and their POC associations, hosted ROAs, ASPAs and atomic bundles, delegated publication bundles and resource certificates, report requests, ticket closure, simple IRR AS sets, route sets, aut-num routing policies, IPv4/IPv6 routes and linked-route ownership, and advanced RPSL objects. Each resource documents its supported creation, update, deletion and import behavior. Track the full sandbox implementation in the [coverage inventory](docs/reference/implementation-status.md), with an [operation-by-operation Reg-RWS map](docs/reference/reg-rws-coverage.md). **Alpha:** APIs and Terraform state compatibility may change before 1.0. The provider has not been published to the Terraform Registry. Original project code is licensed under [MPL-2.0](LICENSE); see [NOTICE](NOTICE) for third-party material. See the [release readiness review](docs/reference/release-readiness.md) for tested scope, remaining interoperability gaps and candidate packaging.
 
 ## Configuration
 
@@ -23,11 +23,11 @@ provider "arin" {
 }
 
 data "arin_org" "ours" {
-  handle = "FT-684"
+  handle = "EXAMPLE-1"
 }
 
 data "arin_networks" "ours" {
-  org_handle = "FT-684"
+  org_handle = "EXAMPLE-1"
 }
 
 output "networks" {
@@ -41,7 +41,7 @@ output "networks" {
 
 ## Local development
 
-Requires Go 1.25.8 or newer and Terraform CLI. CI uses Terraform 1.15.5.
+Requires Go 1.27.0 or newer and Terraform CLI. CI uses Terraform 1.15.5.
 
 ```sh
 make build
@@ -76,7 +76,7 @@ Rebuild with `make build` after source changes. Use `bin/terraform-provider-arin
 The fake server remains the default for deterministic tests and CI. Live tests need a separate opt-in, an existing organization handle, and your shell's API key:
 
 ```sh
-ARIN_TEST_ORG_HANDLE=FT-684 ARIN_BASE_URL=https://reg.arin.net make testlive
+ARIN_TEST_ORG_HANDLE=EXAMPLE-1 ARIN_BASE_URL=https://reg.arin.net make testlive
 ```
 
 `make testlive` sets `ARIN_LIVE_TESTS=1` and `TF_ACC=1` and disables test caching. It reads only; it does not create, update, or delete ARIN records. Public discovery uses RDAP and does not transmit the key. The selected live organization must have a network to exercise the chained registration test. Optional families are read only when existing objects are discovered. CI receives no ARIN credentials and does not run live tests. No private fixtures or account responses are committed.
@@ -263,7 +263,7 @@ Start with the [API index](docs/reference/arin-api/README.md), [provider notes](
 The managed resources and API clients have a separate opt-in sandbox test command:
 
 ```sh
-ARIN_TEST_ORG_HANDLE=FT-684 make testote
+ARIN_TEST_ORG_HANDLE=EXAMPLE-1 make testote
 ```
 
 Set `ARIN_OTE_API_KEY` in the shell. Older IRR tests also support an
@@ -333,7 +333,7 @@ general handle/name search, or combine specific filters in a map, for example:
 ```hcl
 data "arin_whois_orgs" "matching" {
   filters = {
-    handle = "FT-684"
+    handle = "EXAMPLE-1"
     name   = "Foundability*"
   }
   show_details = true
@@ -417,3 +417,8 @@ cache and manifest-history directories preserve polling and rollback protection.
 When explicitly replacing a trusted resource anchor, use the
 [manifest-history migration command](docs/reference/delegated-rpki.md#migrating-history-to-a-replacement-resource-anchor)
 to preserve existing issuer rollback watermarks before switching configuration.
+
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for checks and the contribution process.
+Report vulnerabilities privately using [SECURITY.md](SECURITY.md).
