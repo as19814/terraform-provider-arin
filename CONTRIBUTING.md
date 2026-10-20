@@ -3,7 +3,7 @@
 Contributions to original project files are made under MPL-2.0. Third-party
 reference material retains its own terms; preserve provenance and notices.
 
-Use Go 1.27.0 or newer and Terraform 1.15.5. Run:
+Use Go 1.27.3 or newer and Terraform 1.15.5. Run:
 
 ```sh
 make check checkschema vuln

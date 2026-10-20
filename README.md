@@ -46,7 +46,7 @@ output "networks" {
 
 ## Local development
 
-Requires Go 1.27.0 or newer and Terraform CLI. CI uses Terraform 1.15.5.
+Requires Go 1.27.3 or newer and Terraform CLI. CI uses Terraform 1.15.5.
 
 ```sh
 make build

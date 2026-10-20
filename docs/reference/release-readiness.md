@@ -64,6 +64,10 @@ September 24 audit found reachable advisories in gRPC, x/net and x/text; depende
 versions were updated and Go builds aligned to 1.27.0. A passing scan only covers
 known vulnerabilities in the analyzed call graph.
 
+The October 20 runner audit found newer reachable advisories. The current
+minimum toolchain is Go 1.27.3, with golang.org/x/net 0.60.0 and its required
+transitive dependency updates. CI retains the same mandatory vulnerability gate.
+
 Existing tests cover credential redaction, redirect rejection, mutation replay
 prevention, uncertain-write recovery and preservation of unrelated objects.
 Sensitive Terraform attributes still reside in state. Store state and private
