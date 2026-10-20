@@ -16,7 +16,7 @@ jobs:
     environment: release
     permissions:
       contents: write
-    runs-on: ["self-hosted", "Linux", "X64"]
+    runs-on: ubuntu-24.04
     container:
       image: ubuntu:24.04
     timeout-minutes: 25
